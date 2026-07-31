@@ -1,0 +1,6 @@
+email,firstname,lastname,company,attributes
+jane.doe@example.com,Jane,Doe,Acme Corp,"{""city"": ""London"", ""tier"": ""gold"", ""projects"": 3, ""likes_tea"": true}"
+bob.smith@example.com,Bob,Smith,Example Inc,"{""city"": ""New York"", ""tier"": ""silver"", ""job_title"": ""Engineer""}"
+alice@example.com,Alice,Chen,,"{""city"": ""Singapore""}"
+minimal@example.com,,,,
+legacy-name@example.com,,,,""

@@ -1,0 +1,5 @@
+# Deprecated alias — use the default compose file instead:
+#
+#   docker compose up --build
+#
+# This file is kept so older docs/commands still work.

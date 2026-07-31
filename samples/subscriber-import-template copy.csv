@@ -1,0 +1,6 @@
+email,name,attributes
+jane.doe@example.com,Jane Doe,"{""city"": ""London"", ""tier"": ""gold"", ""projects"": 3, ""likes_tea"": true}"
+bob.smith@example.com,Bob Smith,"{""city"": ""New York"", ""tier"": ""silver"", ""job_title"": ""Engineer""}"
+alice@example.com,Alice Chen,"{""city"": ""Singapore"", ""company"": ""Acme Corp""}"
+minimal@example.com,,
+name-from-email@example.com,,

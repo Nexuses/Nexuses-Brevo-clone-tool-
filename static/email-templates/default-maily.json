@@ -1,0 +1,27 @@
+{
+  "type": "doc",
+  "content": [
+    {
+      "type": "heading",
+      "attrs": { "level": 2, "textAlign": "left" },
+      "content": [{ "type": "text", "text": "Hello " }]
+    },
+    {
+      "type": "paragraph",
+      "attrs": { "textAlign": "left" },
+      "content": [
+        {
+          "type": "variable",
+          "attrs": { "id": "name", "fallback": "there", "showIfKey": null }
+        }
+      ]
+    },
+    {
+      "type": "paragraph",
+      "attrs": { "textAlign": "left" },
+      "content": [
+        { "type": "text", "text": "Edit this message with the Maily editor." }
+      ]
+    }
+  ]
+}

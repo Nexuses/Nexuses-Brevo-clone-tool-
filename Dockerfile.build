@@ -1,0 +1,41 @@
+# Multi-stage image that builds listmonk from source (including Maily + visual editor assets).
+# Usage:
+#   docker build -f Dockerfile.build -t listmonk-custom:local .
+#   docker compose -f docker-compose.build.yml up
+
+FROM golang:1.26.1-bookworm AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    ca-certificates git curl \
+  && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+  && apt-get install -y --no-install-recommends nodejs \
+  && corepack enable \
+  && corepack prepare yarn@1.22.22 --activate \
+  && rm -rf /var/lib/apt/lists/*
+
+ENV GOPATH=/go
+ENV CGO_ENABLED=0
+ENV PATH="${GOPATH}/bin:/usr/local/go/bin:${PATH}"
+
+WORKDIR /src
+COPY . .
+
+RUN go install github.com/knadh/stuffbin/...@latest \
+  && make dist
+
+FROM alpine:latest
+
+RUN apk --no-cache add ca-certificates tzdata shadow su-exec
+
+WORKDIR /listmonk
+
+COPY --from=builder /src/listmonk .
+COPY --from=builder /src/config.toml.sample config.toml
+COPY docker-entrypoint.sh /usr/local/bin/
+
+RUN chmod +x /usr/local/bin/docker-entrypoint.sh
+
+EXPOSE 9000
+
+ENTRYPOINT ["docker-entrypoint.sh"]
+CMD ["./listmonk"]
