@@ -1,18 +1,21 @@
 <template>
   <section class="campaign">
     <campaign-report
-      v-if="isEditing && !showEditor && data.id"
+      v-if="showReport"
       :campaign="data"
-      @edit="showEditor = true"
+      @edit="goToEditor"
     />
 
     <template v-else>
     <header class="columns page-header">
       <div class="column is-6">
-        <p v-if="isEditing">
-          <a href="#" class="campaign-report__back-inline" @click.prevent="showEditor = false">
-            <b-icon icon="arrow-left" size="is-small" /> Back to report
-          </a>
+        <p v-if="isEditing && canViewReport">
+          <router-link
+            class="campaign-report__back-inline"
+            :to="{ name: 'campaign', params: { id: data.id }, query: { view: 'report' } }"
+          >
+            <b-icon icon="chart-box-outline" size="is-small" /> View report
+          </router-link>
         </p>
         <p v-if="isEditing && data.status" class="tags">
           <b-tag v-if="isEditing" :class="data.status">
@@ -434,7 +437,6 @@ export default Vue.extend({
 
       isNew: false,
       isEditing: false,
-      showEditor: false,
       isHeadersVisible: false,
       isAttachFieldVisible: false,
       isAttachModalOpen: false,
@@ -885,10 +887,26 @@ export default Vue.extend({
         this.data = d;
       });
     },
+
+    goToEditor() {
+      this.$router.replace({
+        name: 'campaign',
+        params: { id: this.data.id },
+        hash: this.$route.hash || '',
+      });
+    },
   },
 
   computed: {
     ...mapState(['serverConfig', 'loading', 'lists', 'templates']),
+
+    showReport() {
+      return this.isEditing && !!this.data.id && this.$route.query.view === 'report';
+    },
+
+    canViewReport() {
+      return !!this.data.id;
+    },
 
     canManage() {
       return this.$can('campaigns:manage_all', 'campaigns:manage');
@@ -1010,12 +1028,8 @@ export default Vue.extend({
     // Fetch campaign.
     if (this.isEditing) {
       this.getCampaign(id).then(() => {
-        if (this.$route.hash !== '') {
+        if (this.$route.hash !== '' && this.$route.query.view !== 'report') {
           this.activeTab = this.$route.hash.replace('#', '');
-          this.showEditor = true;
-        }
-        if (this.$route.query.edit === '1') {
-          this.showEditor = true;
         }
       });
     } else {

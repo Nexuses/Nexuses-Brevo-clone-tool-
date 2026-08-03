@@ -1,5 +1,7 @@
 <template>
   <section class="lists">
+    <crm-subnav />
+
     <header class="columns page-header">
       <div class="column is-10">
         <h1 class="title is-4 mb-2">
@@ -102,7 +104,7 @@
       <b-table-column v-slot="props" field="subscriber_count" :label="$t('globals.terms.subscribers')"
         header-class="cy-subscribers" numeric sortable centered>
         <template v-if="$can('subscribers:get_all', 'subscribers:get')">
-          <router-link :to="`/subscribers/lists/${props.row.id}`">
+          <router-link :to="`/contacts/lists/${props.row.id}`">
             {{ $utils.formatNumber(props.row.subscriberCount) }}
             <span class="is-size-7 view">{{ $t('globals.buttons.view') }}</span>
           </router-link>
@@ -116,7 +118,7 @@
         <div class="fields stats">
           <p v-for="(count, status) in filterStatuses(props.row)" :key="status">
             <label for="#">{{ $tc(`subscribers.status.${status}`, count) }}</label>
-            <router-link :to="`/subscribers/lists/${props.row.id}?subscription_status=${status}`" :class="status">
+            <router-link :to="`/contacts/lists/${props.row.id}?subscription_status=${status}`" :class="status">
               {{ $utils.formatNumber(count) }}
             </router-link>
           </p>
@@ -188,12 +190,14 @@
 import Vue from 'vue';
 import { mapState } from 'vuex';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
+import CrmSubnav from '../components/CrmSubnav.vue';
 import ListForm from './ListForm.vue';
 
 export default Vue.extend({
   components: {
     ListForm,
     EmptyPlaceholder,
+    CrmSubnav,
   },
 
   data() {

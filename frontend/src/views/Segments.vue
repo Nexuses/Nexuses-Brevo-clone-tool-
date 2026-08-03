@@ -1,0 +1,212 @@
+<template>
+  <section class="crm-page segments-page">
+    <crm-subnav />
+
+    <header class="columns page-header">
+      <div class="column is-8">
+        <h1 class="title is-4">Segments</h1>
+        <p class="crm-page__lead">
+          This is where you organize your segments. Create, modify, and manage segments for targeted
+          interactions, and keep them in folders for easy navigation.
+        </p>
+        <p class="crm-page__links">
+          <a href="https://listmonk.app/docs/querying-and-segmentation" target="_blank" rel="noopener noreferrer">
+            Understanding filters and segmentation
+          </a>
+          <a href="https://listmonk.app/docs/lists" target="_blank" rel="noopener noreferrer">
+            Differences between Lists and Segments
+          </a>
+        </p>
+      </div>
+      <div class="column has-text-right">
+        <b-button type="is-dark" icon-left="plus" class="btn-new" @click="createSegment" data-cy="btn-new-segment">
+          Create a segment
+        </b-button>
+      </div>
+    </header>
+
+    <div class="crm-toolbar">
+      <b-field>
+        <b-input
+          v-model="query"
+          expanded
+          placeholder="Search a segment name or ID"
+          icon="magnify"
+          data-cy="segment-search"
+        />
+      </b-field>
+      <div class="crm-toolbar__folder">
+        All folders ({{ filteredSegments.length }} segments)
+      </div>
+    </div>
+
+    <div class="crm-card-table">
+      <table class="table is-fullwidth is-hoverable">
+        <thead>
+          <tr>
+            <th>Segment</th>
+            <th>ID</th>
+            <th>Folder</th>
+            <th>Contacts</th>
+            <th>Last edit</th>
+            <th class="has-text-right">Actions</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="s in filteredSegments" :key="s.id">
+            <td>
+              <a href="#" class="crm-link" @click.prevent="editSegment(s)">{{ s.name }}</a>
+            </td>
+            <td class="has-text-grey">#{{ s.id }}</td>
+            <td>{{ s.folder }}</td>
+            <td>{{ $utils.formatNumber(s.contacts) }}</td>
+            <td>{{ formatDate(s.updatedAt) }}</td>
+            <td class="has-text-right">
+              <b-dropdown position="is-bottom-left" class="campaign-actions-menu">
+                <template #trigger>
+                  <button type="button" class="campaign-actions-trigger" aria-label="Actions">
+                    <span class="campaign-kebab" aria-hidden="true"><span /><span /><span /></span>
+                  </button>
+                </template>
+                <div class="campaign-actions-panel">
+                  <a href="#" class="campaign-action" aria-label="Edit" @click.prevent="editSegment(s)">
+                    <b-tooltip label="Edit" type="is-dark" position="is-left">
+                      <b-icon icon="pencil-outline" />
+                    </b-tooltip>
+                  </a>
+                  <a href="#" class="campaign-action" aria-label="Delete" @click.prevent="deleteSegment(s)">
+                    <b-tooltip label="Delete" type="is-dark" position="is-left">
+                      <b-icon icon="trash-can-outline" />
+                    </b-tooltip>
+                  </a>
+                </div>
+              </b-dropdown>
+            </td>
+          </tr>
+          <tr v-if="filteredSegments.length === 0">
+            <td colspan="6" class="has-text-centered has-text-grey py-5">
+              No segments yet. Create one to get started.
+            </td>
+          </tr>
+        </tbody>
+      </table>
+      <div class="crm-card-table__foot">
+        <span>{{ filteredSegments.length }} of {{ segments.length }}</span>
+      </div>
+    </div>
+  </section>
+</template>
+
+<script>
+import dayjs from 'dayjs';
+import CrmSubnav from '../components/CrmSubnav.vue';
+
+const STORAGE_KEY = 'nexuses.crm.segments';
+
+const DEFAULT_SEGMENTS = [
+  {
+    id: 1,
+    name: 'Engaged contacts',
+    folder: 'My segments',
+    contacts: 0,
+    updatedAt: new Date().toISOString(),
+  },
+  {
+    id: 2,
+    name: 'Recent signups',
+    folder: 'My segments',
+    contacts: 0,
+    updatedAt: new Date().toISOString(),
+  },
+];
+
+export default {
+  name: 'Segments',
+  components: { CrmSubnav },
+
+  data() {
+    return {
+      query: '',
+      segments: [],
+    };
+  },
+
+  computed: {
+    filteredSegments() {
+      const q = this.query.trim().toLowerCase();
+      if (!q) return this.segments;
+      return this.segments.filter((s) => (
+        s.name.toLowerCase().includes(q) || String(s.id).includes(q)
+      ));
+    },
+  },
+
+  methods: {
+    formatDate(iso) {
+      return dayjs(iso).format('MMM D, YYYY, h:mm A');
+    },
+
+    load() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        this.segments = raw ? JSON.parse(raw) : [...DEFAULT_SEGMENTS];
+      } catch (e) {
+        this.segments = [...DEFAULT_SEGMENTS];
+      }
+    },
+
+    save() {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(this.segments));
+    },
+
+    createSegment() {
+      this.$utils.prompt('Create a segment', {
+        placeholder: 'Segment name',
+        value: '',
+      }, (name) => {
+        const trimmed = (name || '').trim();
+        if (!trimmed) return;
+        const nextId = this.segments.reduce((max, s) => Math.max(max, s.id), 0) + 1;
+        this.segments.unshift({
+          id: nextId,
+          name: trimmed,
+          folder: 'My segments',
+          contacts: 0,
+          updatedAt: new Date().toISOString(),
+        });
+        this.save();
+        this.$utils.toast('Segment created');
+      });
+    },
+
+    editSegment(s) {
+      this.$utils.prompt('Edit segment', {
+        placeholder: 'Segment name',
+        value: s.name,
+      }, (name) => {
+        const trimmed = (name || '').trim();
+        if (!trimmed) return;
+        this.segments = this.segments.map((item) => (
+          item.id === s.id
+            ? { ...item, name: trimmed, updatedAt: new Date().toISOString() }
+            : item
+        ));
+        this.save();
+        this.$utils.toast('Segment updated');
+      });
+    },
+
+    deleteSegment(s) {
+      this.$utils.confirm(`Delete segment "${s.name}"?`, () => {
+        this.segments = this.segments.filter((x) => x.id !== s.id);
+        this.save();
+        this.$utils.toast('Segment deleted');
+      });
+    },
+  },
+
+  mounted() {
+    this.load();
+  },
+};
+</script>

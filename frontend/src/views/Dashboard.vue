@@ -71,7 +71,7 @@
           <router-link
             v-for="c in plannedCampaigns"
             :key="`planned-${c.id}`"
-            :to="{ name: 'campaign', params: { id: c.id } }"
+            :to="{ name: 'campaign', params: { id: c.id }, query: { view: 'report' } }"
             class="home-brevo__campaign-row"
           >
             <div class="home-brevo__campaign-main">
@@ -124,7 +124,7 @@
           <router-link
             v-for="c in recentCampaigns"
             :key="`recent-${c.id}`"
-            :to="{ name: 'campaign', params: { id: c.id } }"
+            :to="{ name: 'campaign', params: { id: c.id }, query: { view: 'report' } }"
             class="home-brevo__campaign-row is-compact"
           >
             <div class="home-brevo__campaign-main">

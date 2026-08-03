@@ -1,5 +1,7 @@
 <template>
   <section class="forms content relative">
+    <marketing-subnav />
+
     <h1 class="title is-4">
       {{ $t('forms.title') }}
     </h1>
@@ -50,12 +52,14 @@
 import Vue from 'vue';
 import { mapState } from 'vuex';
 import CodeEditor from '../components/CodeEditor.vue';
+import MarketingSubnav from '../components/MarketingSubnav.vue';
 
 export default Vue.extend({
   name: 'ListForm',
 
   components: {
     'code-editor': CodeEditor,
+    MarketingSubnav,
   },
 
   data() {

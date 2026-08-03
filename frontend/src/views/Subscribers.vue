@@ -1,9 +1,11 @@
 <template>
   <section class="subscribers">
+    <crm-subnav />
+
     <header class="columns page-header">
       <div class="column is-10">
         <h1 class="title is-4">
-          {{ $t('globals.terms.subscribers') }}
+          {{ $t('menu.contacts') }}
           <span v-if="!isNaN(subscribers.total)">
             (<span data-cy="count">{{ subscribers.total }}</span>)
           </span>
@@ -107,7 +109,7 @@
 
       <b-table-column v-slot="props" field="email" :label="$t('subscribers.email')" header-class="cy-email" sortable
         :td-attrs="$utils.tdID">
-        <a :href="`/subscribers/${props.row.id}`" @click.prevent="showEditForm(props.row)"
+        <a :href="`/contacts/${props.row.id}`" @click.prevent="showEditForm(props.row)"
           :class="{ 'blocklisted': props.row.status === 'blocklisted' }">
           {{ props.row.email }}
           <copy-text :text="`${props.row.email}`" hide-text />
@@ -117,7 +119,7 @@
         </b-tag>
         <b-taglist>
           <template v-for="l in props.row.lists">
-            <router-link :to="`/subscribers/lists/${l.id}`" :key="l.id" style="padding-right:0.5em;">
+            <router-link :to="`/contacts/lists/${l.id}`" :key="l.id" style="padding-right:0.5em;">
               <b-tag :class="l.subscriptionStatus" size="is-small" :key="l.id">
                 {{ l.name }}
                 <sup v-if="l.optin === 'double' || l.subscriptionStatus == 'unsubscribed'">
@@ -153,7 +155,7 @@
               <b-icon icon="cloud-download-outline" size="is-small" />
             </b-tooltip>
           </a>
-          <a v-if="$can('subscribers:manage')" :href="`/subscribers/${props.row.id}`"
+          <a v-if="$can('subscribers:manage')" :href="`/contacts/${props.row.id}`"
             @click.prevent="showEditForm(props.row)" data-cy="btn-edit" :aria-label="$t('globals.buttons.edit')">
             <b-tooltip :label="$t('globals.buttons.edit')" type="is-dark">
               <b-icon icon="pencil-outline" size="is-small" />
@@ -189,6 +191,7 @@
 import Vue from 'vue';
 import { mapState } from 'vuex';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
+import CrmSubnav from '../components/CrmSubnav.vue';
 import { uris } from '../constants';
 import SubscriberBulkList from './SubscriberBulkList.vue';
 import SubscriberForm from './SubscriberForm.vue';
@@ -200,6 +203,7 @@ export default Vue.extend({
     SubscriberBulkList,
     CopyText,
     EmptyPlaceholder,
+    CrmSubnav,
   },
 
   data() {

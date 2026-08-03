@@ -1,23 +1,26 @@
 <template>
-  <section>
+  <section :class="{ 'template-form-page': asPage }">
     <form @submit.prevent="onSubmit">
-      <div class="modal-card content template-modal-content" style="width: auto">
-        <header class="modal-card-head">
+      <div :class="asPage ? 'template-page-card content' : 'modal-card content template-modal-content'" style="width: auto">
+        <header :class="asPage ? 'template-page-card__head' : 'modal-card-head'">
           <b-button @click="onTogglePreview" class="is-pulled-right" type="is-primary" icon-left="file-find-outline">
             {{ $t('templates.preview') }} (F9)
           </b-button>
 
-          <template v-if="isEditing">
-            <h4>{{ data.name }}</h4>
-            <p class="has-text-grey is-size-7">
-              {{ $t('globals.fields.id') }}: <span data-cy="id"><copy-text :text="`${data.id}`" /></span>
-            </p>
+          <template v-if="!asPage">
+            <template v-if="isEditing">
+              <h4>{{ data.name }}</h4>
+              <p class="has-text-grey is-size-7">
+                {{ $t('globals.fields.id') }}: <span data-cy="id"><copy-text :text="`${data.id}`" /></span>
+              </p>
+            </template>
+            <h4 v-else>
+              {{ $t('templates.newTemplate') }}
+            </h4>
           </template>
-          <h4 v-else>
-            {{ $t('templates.newTemplate') }}
-          </h4>
         </header>
-        <section expanded class="modal-card-body mb-0 pb-0">
+
+        <section expanded :class="asPage ? 'template-page-card__body' : 'modal-card-body mb-0 pb-0'">
           <div class="columns">
             <div class="column is-9">
               <b-field :label="$t('globals.fields.name')" label-position="on-border">
@@ -47,7 +50,7 @@
           <div class="columns" v-if="form.type === 'tx'">
             <div class="column is-12">
               <b-field :label="$t('templates.subject')" label-position="on-border">
-                <b-input :maxlength="200" :ref="'focus'" v-model="form.subject" name="name"
+                <b-input :maxlength="200" v-model="form.subject" name="subject"
                   :placeholder="$t('templates.subject')" required />
               </b-field>
             </div>
@@ -78,8 +81,9 @@
             </a>
           </p>
         </section>
-        <footer class="modal-card-foot has-text-right">
-          <b-button @click="$parent.close()">
+
+        <footer :class="asPage ? 'template-page-card__foot' : 'modal-card-foot has-text-right'">
+          <b-button @click="onClose">
             {{ $t('globals.buttons.close') }}
           </b-button>
           <b-button v-if="$can('templates:manage')" native-type="submit" type="is-primary" :loading="loading.templates">
@@ -114,11 +118,11 @@ export default Vue.extend({
   props: {
     data: { type: Object, default: () => { } },
     isEditing: { type: Boolean, default: false },
+    asPage: { type: Boolean, default: false },
   },
 
   data() {
     return {
-      // Binds form input values.
       form: {
         name: '',
         subject: '',
@@ -144,12 +148,19 @@ export default Vue.extend({
       }
     },
 
+    onClose() {
+      if (this.asPage) {
+        this.$emit('cancel');
+        return;
+      }
+      this.$parent.close();
+    },
+
     onSubmit() {
       if (this.isEditing) {
         this.updateTemplate();
         return;
       }
-
       this.createTemplate();
     },
 
@@ -164,8 +175,10 @@ export default Vue.extend({
       };
 
       this.$api.createTemplate(data).then((d) => {
-        this.$emit('finished');
-        this.$parent.close();
+        this.$emit('finished', d);
+        if (!this.asPage) {
+          this.$parent.close();
+        }
         this.$utils.toast(this.$t('globals.messages.created', { name: d.name }));
       });
     },
@@ -181,8 +194,10 @@ export default Vue.extend({
       };
 
       this.$api.updateTemplate(data).then((d) => {
-        this.$emit('finished');
-        this.$parent.close();
+        this.$emit('finished', d);
+        if (!this.asPage) {
+          this.$parent.close();
+        }
         this.$utils.toast(`'${d.name}' updated`);
       });
     },
@@ -198,10 +213,22 @@ export default Vue.extend({
   },
 
   mounted() {
-    this.form = { ...this.$props.data };
+    this.form = {
+      name: '',
+      subject: '',
+      type: 'campaign',
+      body: '',
+      bodySource: null,
+      ...this.$props.data,
+    };
+    if (this.form.body === null || this.form.body === undefined) {
+      this.form.body = '';
+    }
 
     this.$nextTick(() => {
-      this.$refs.focus.focus();
+      if (this.$refs.focus && this.$refs.focus.focus) {
+        this.$refs.focus.focus();
+      }
     });
 
     window.addEventListener('keydown', this.onPreviewShortcut);
