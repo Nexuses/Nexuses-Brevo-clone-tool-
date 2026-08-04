@@ -17,6 +17,8 @@
         data-cy="crm-segments" icon="tag-outline" :label="$t('menu.segments')" />
       <b-menu-item :to="{ name: 'companies' }" tag="router-link" :active="activeItem.companies"
         data-cy="crm-companies" icon="newspaper-variant-outline" :label="$t('menu.companies')" />
+      <b-menu-item :to="{ name: 'tasks' }" tag="router-link" :active="activeItem.tasks"
+        data-cy="crm-tasks" icon="check-circle-outline" :label="$t('menu.tasks')" />
       <b-menu-item v-if="$can('subscribers:import')" :to="{ name: 'import' }" tag="router-link"
         :active="activeItem.import" data-cy="import" icon="file-upload-outline" :label="$t('menu.import')" />
       <b-menu-item v-if="$can('bounces:get')" :to="{ name: 'bounces' }" tag="router-link" :active="activeItem.bounces"
@@ -37,10 +39,6 @@
       <b-menu-item v-if="$can('templates:get')" :to="{ name: 'templates' }" tag="router-link"
         :active="activeItem.templates || activeItem.template" data-cy="templates" icon="file-image-outline"
         :label="$t('menu.templates')" />
-      <b-menu-item v-if="$can('campaigns:manage')" :to="{ name: 'campaign', params: { id: 'new' } }" tag="router-link"
-        data-cy="new-campaign" icon="plus" :label="$t('menu.newCampaign')" />
-      <b-menu-item v-if="$can('media:*')" :to="{ name: 'media' }" tag="router-link" :active="activeItem.media"
-        data-cy="media" icon="image-outline" :label="$t('menu.media')" />
     </b-menu-item><!-- marketing -->
 
     <b-menu-item v-if="$can('users:*', 'roles:*')" :expanded="activeGroup.users" :active="activeGroup.users"

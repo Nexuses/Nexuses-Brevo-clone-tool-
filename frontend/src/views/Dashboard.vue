@@ -4,13 +4,8 @@
 
     <header class="home-brevo__hello">
       <h1 class="home-brevo__greeting">Hello {{ displayName }}</h1>
-      <a href="#" class="home-brevo__customize" @click.prevent>
-        <b-icon icon="view-grid-outline" size="is-small" />
-        Customize page
-      </a>
     </header>
 
-    <!-- Calendar + planned campaigns -->
     <section class="home-brevo__planner">
       <div class="home-brevo__calendar">
         <div class="home-brevo__cal-head">
@@ -48,26 +43,47 @@
       <div class="home-brevo__planned">
         <div class="home-brevo__planned-head">
           <h2>Planned for {{ plannedLabel }}</h2>
-          <b-dropdown v-if="$can('campaigns:manage')" position="is-bottom-left">
+          <b-dropdown position="is-bottom-left">
             <template #trigger>
               <button type="button" class="home-brevo__btn-dark">
                 + Create
-                <b-icon icon="chevron-down" size="is-small" />
+                <b-icon icon="arrow-down" size="is-small" />
               </button>
             </template>
-            <b-dropdown-item tag="router-link" :to="{ name: 'campaign', params: { id: 'new' } }">
+            <b-dropdown-item
+              v-if="$can('campaigns:manage')"
+              @click.native="goCreateCampaign"
+            >
               Campaign
             </b-dropdown-item>
-            <b-dropdown-item tag="router-link" :to="{ name: 'subscribers' }">
-              Contact
+            <b-dropdown-item @click.native="openTaskForm()">
+              Task
             </b-dropdown-item>
           </b-dropdown>
         </div>
 
-        <div v-if="plannedCampaigns.length === 0" class="home-brevo__empty">
-          No campaigns on this day.
+        <div v-if="plannedItems.length === 0" class="home-brevo__empty">
+          Nothing planned on this day.
         </div>
         <div v-else class="home-brevo__campaign-list">
+          <button
+            v-for="task in plannedTasks"
+            :key="`task-${task.id}`"
+            type="button"
+            class="home-brevo__campaign-row is-task"
+            @click="openTaskForm(task)"
+          >
+            <div class="home-brevo__campaign-main">
+              <div class="home-brevo__campaign-title">{{ task.name }}</div>
+              <div class="home-brevo__campaign-meta">
+                #{{ task.id }} · {{ task.time || '' }}
+                <span class="home-brevo__status" :class="task.highPriority ? 'is-paused' : 'is-scheduled'">
+                  <span class="dot" /> {{ task.highPriority ? 'High priority' : 'Task' }}
+                </span>
+                <span class="home-brevo__pill">{{ typeLabel(task.type) }}</span>
+              </div>
+            </div>
+          </button>
           <router-link
             v-for="c in plannedCampaigns"
             :key="`planned-${c.id}`"
@@ -104,7 +120,6 @@
       </div>
     </section>
 
-    <!-- Last campaigns + Contacts -->
     <section class="home-brevo__grid">
       <article class="home-brevo__card">
         <header class="home-brevo__card-head">
@@ -202,7 +217,6 @@
       </div>
     </section>
 
-    <!-- Automation CTA (no plan usage) -->
     <section class="home-brevo__cta">
       <div class="home-brevo__cta-art" aria-hidden="true">✉️</div>
       <div class="home-brevo__cta-body">
@@ -220,6 +234,16 @@
         </router-link>
       </div>
     </section>
+
+    <b-modal :active.sync="isTaskFormVisible" :width="560" scroll="keep" class="task-form-modal">
+      <task-form
+        v-if="isTaskFormVisible"
+        :data="editingTask"
+        :default-date="selectedDate.toDate()"
+        @close="isTaskFormVisible = false"
+        @finished="onTaskFinished"
+      />
+    </b-modal>
   </section>
 </template>
 
@@ -227,20 +251,26 @@
 import dayjs from 'dayjs';
 import Vue from 'vue';
 import { mapState } from 'vuex';
+import TaskForm, { loadTasks } from '../components/TaskForm.vue';
 
 export default Vue.extend({
   name: 'Home',
+
+  components: { TaskForm },
 
   data() {
     return {
       isLoading: true,
       campaigns: [],
+      tasks: [],
       totalContacts: 0,
       newContacts: 0,
       today: dayjs().startOf('day'),
       selectedDate: dayjs().startOf('day'),
       viewMonth: dayjs().startOf('month'),
       weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
+      isTaskFormVisible: false,
+      editingTask: null,
     };
   },
 
@@ -268,12 +298,14 @@ export default Vue.extend({
         const d = this.campaignDay(c);
         if (d) set.add(d.format('YYYY-MM-DD'));
       });
+      this.tasks.forEach((t) => {
+        if (t.dueDate) set.add(t.dueDate);
+      });
       return set;
     },
 
     calendarCells() {
       const start = this.viewMonth.startOf('month');
-      // Monday-first: dayjs().day() Sun=0 … Sat=6 → Mon=0
       let pad = start.day() - 1;
       if (pad < 0) pad = 6;
       const daysInMonth = this.viewMonth.daysInMonth();
@@ -298,6 +330,15 @@ export default Vue.extend({
       }).slice(0, 5);
     },
 
+    plannedTasks() {
+      const key = this.selectedDate.format('YYYY-MM-DD');
+      return this.tasks.filter((t) => t.dueDate === key && t.status !== 'done');
+    },
+
+    plannedItems() {
+      return [...this.plannedTasks, ...this.plannedCampaigns];
+    },
+
     recentCampaigns() {
       return [...this.campaigns]
         .sort((a, b) => {
@@ -313,10 +354,34 @@ export default Vue.extend({
   },
 
   methods: {
+    typeLabel(type) {
+      const map = {
+        todo: 'To do', call: 'Call', email: 'Email', meeting: 'Meeting',
+      };
+      return map[type] || 'Task';
+    },
+
+    openTaskForm(task) {
+      this.editingTask = task && task.id ? { ...task } : null;
+      this.isTaskFormVisible = true;
+    },
+
+    goCreateCampaign() {
+      this.$router.push({ name: 'campaign', params: { id: 'new' } });
+    },
+
+    onTaskFinished() {
+      this.tasks = loadTasks();
+    },
+
     fetchData() {
       this.isLoading = true;
+      this.tasks = loadTasks();
+
       const countsP = this.$api.getDashboardCounts().then((data) => {
         this.totalContacts = (data.subscribers && data.subscribers.total) || 0;
+      }).catch(() => {
+        this.totalContacts = 0;
       });
 
       const campaignsP = this.$api.getCampaigns({
@@ -332,7 +397,6 @@ export default Vue.extend({
         this.campaigns = [];
       });
 
-      // Approximate new contacts in last 30 days via subscriber query.
       const since = dayjs().subtract(30, 'day').format('YYYY-MM-DD');
       const newSubsP = this.$api.getSubscribers({
         page: 1,

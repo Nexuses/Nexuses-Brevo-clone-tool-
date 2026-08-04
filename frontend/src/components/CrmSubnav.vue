@@ -23,6 +23,7 @@ export default {
         { name: 'lists', label: 'Lists', match: ['lists', 'list'] },
         { name: 'segments', label: 'Segments', match: ['segments'] },
         { name: 'companies', label: 'Companies', match: ['companies'] },
+        { name: 'tasks', label: 'Tasks', match: ['tasks'] },
       ];
     },
   },

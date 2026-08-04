@@ -99,6 +99,12 @@ const routes = [
     component: () => import('../views/Companies.vue'),
   },
   {
+    path: '/tasks',
+    name: 'tasks',
+    meta: { title: 'menu.tasks', group: 'crm' },
+    component: () => import('../views/Tasks.vue'),
+  },
+  {
     path: '/campaigns',
     name: 'campaigns',
     meta: { title: 'globals.terms.campaigns', group: 'marketing' },

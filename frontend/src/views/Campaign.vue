@@ -1,5 +1,7 @@
 <template>
   <section class="campaign">
+    <marketing-subnav />
+
     <campaign-report
       v-if="showReport"
       :campaign="data"
@@ -412,6 +414,7 @@ import CampaignReport from '../components/CampaignReport.vue';
 import CopyText from '../components/CopyText.vue';
 import Editor from '../components/Editor.vue';
 import ListSelector from '../components/ListSelector.vue';
+import MarketingSubnav from '../components/MarketingSubnav.vue';
 import Media from './Media.vue';
 
 export default Vue.extend({
@@ -422,6 +425,7 @@ export default Vue.extend({
     CopyText,
     CampaignPreview,
     CampaignReport,
+    MarketingSubnav,
   },
 
   data() {

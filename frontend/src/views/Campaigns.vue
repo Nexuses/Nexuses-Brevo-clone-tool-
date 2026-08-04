@@ -3,19 +3,20 @@
     <marketing-subnav />
 
     <header class="columns page-header">
-      <div class="column is-10">
-        <h1 class="title is-4">
-          {{ $t('globals.terms.campaigns') }}
-          <span v-if="!isNaN(campaigns.total)">({{ campaigns.total }})</span>
-        </h1>
+      <div class="column is-8">
+        <h1 class="title is-4">Campaigns</h1>
       </div>
       <div class="column has-text-right">
-        <b-field v-if="$can('campaigns:manage')" expanded>
-          <b-button expanded :to="{ name: 'campaign', params: { id: 'new' } }" tag="router-link" class="btn-new"
-            type="is-primary" icon-left="plus" data-cy="btn-new">
-            Create campaign
-          </b-button>
-        </b-field>
+        <b-button
+          v-if="$can('campaigns:manage')"
+          :to="{ name: 'campaign', params: { id: 'new' } }"
+          tag="router-link"
+          type="is-dark"
+          class="btn-new"
+          data-cy="btn-new"
+        >
+          Create campaign
+        </b-button>
       </div>
     </header>
 
@@ -40,26 +41,20 @@
       @sort="onSort"
     >
       <template #top-left>
-        <div class="columns">
-          <div class="column is-6">
-            <form @submit.prevent="getCampaigns">
-              <div>
-                <b-field>
-                  <b-input
-                    v-model="queryParams.query"
-                    name="query"
-                    expanded
-                    :placeholder="$t('campaigns.queryPlaceholder')"
-                    icon="magnify"
-                    ref="query"
-                  />
-                  <p class="controls">
-                    <b-button native-type="submit" type="is-primary" icon-left="magnify" />
-                  </p>
-                </b-field>
-              </div>
-            </form>
-          </div>
+        <div class="campaigns-brevo__toolbar">
+          <form @submit.prevent="getCampaigns" class="campaigns-brevo__search">
+            <b-field>
+              <b-input
+                v-model="queryParams.query"
+                name="query"
+                expanded
+                placeholder="Search for a campaign"
+                icon="magnify"
+                ref="query"
+              />
+            </b-field>
+          </form>
+          <div class="crm-toolbar__folder">All statuses</div>
         </div>
 
         <div class="actions" v-if="bulk.checked.length > 0">
@@ -68,12 +63,6 @@
           </a>
           <span class="a">
             {{ $tc('globals.messages.numSelected', numSelectedCampaigns, { num: numSelectedCampaigns }) }}
-            <span v-if="!bulk.all && campaigns.total > campaigns.perPage">
-              &mdash;
-              <a href="#" @click.prevent="onSelectAll" data-cy="select-all-campaigns">
-                {{ $tc('globals.messages.selectAll', campaigns.total, { num: campaigns.total }) }}
-              </a>
-            </span>
           </span>
         </div>
       </template>

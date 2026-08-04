@@ -9,14 +9,6 @@
           This is where you organize your segments. Create, modify, and manage segments for targeted
           interactions, and keep them in folders for easy navigation.
         </p>
-        <p class="crm-page__links">
-          <a href="https://listmonk.app/docs/querying-and-segmentation" target="_blank" rel="noopener noreferrer">
-            Understanding filters and segmentation
-          </a>
-          <a href="https://listmonk.app/docs/lists" target="_blank" rel="noopener noreferrer">
-            Differences between Lists and Segments
-          </a>
-        </p>
       </div>
       <div class="column has-text-right">
         <b-button type="is-dark" icon-left="plus" class="btn-new" @click="createSegment" data-cy="btn-new-segment">

@@ -2,15 +2,14 @@
   <section class="lists">
     <crm-subnav />
 
-    <header class="columns page-header">
-      <div class="column is-10">
-        <h1 class="title is-4 mb-2">
-          {{ $t('globals.terms.lists') }}
-          <span v-if="queryParams.status === 'archived'" class="has-text-grey-light">/ {{ queryParams.status }} </span>
-          <span v-if="!isNaN(lists.total)">({{ lists.total }})</span>
-        </h1>
-
-        <div class="is-size-7">
+    <header class="columns page-header lists-brevo__header">
+      <div class="column is-8">
+        <h1 class="title is-4 mb-2">Lists</h1>
+        <p class="crm-page__lead">
+          This is where you organize your lists. Create, modify, and manage custom lists for targeted
+          interactions, and keep them in folders for easy navigation.
+        </p>
+        <div class="is-size-7 mt-2">
           <router-link v-if="queryParams.status !== 'archived'" :to="{ name: 'lists', query: { status: 'archived' } }">
             {{ $t('globals.buttons.view') }} {{ $t('lists.archived').toLowerCase() }} &rarr;
           </router-link>
@@ -20,93 +19,72 @@
         </div>
       </div>
       <div class="column has-text-right">
-        <b-field v-if="$can('lists:manage_all')" expanded>
-          <b-button expanded type="is-primary" icon-left="plus" class="btn-new" @click="showNewForm" data-cy="btn-new">
-            {{ $t('globals.buttons.new') }}
-          </b-button>
-        </b-field>
+        <b-button
+          v-if="$can('lists:manage_all')"
+          type="is-dark"
+          icon-left="plus"
+          class="btn-new"
+          @click="showNewForm"
+          data-cy="btn-new"
+        >
+          Create a list
+        </b-button>
       </div>
     </header>
+
+    <div class="crm-toolbar">
+      <div class="crm-toolbar__folder">
+        All folders ({{ lists.total || 0 }} lists)
+      </div>
+      <b-field>
+        <b-input
+          v-model="queryParams.query"
+          name="query"
+          expanded
+          icon="magnify"
+          placeholder="Search a list name or ID"
+          ref="query"
+          data-cy="query"
+          @keyup.native.enter="getLists"
+        />
+      </b-field>
+    </div>
 
     <b-table :data="lists.results" :loading="loading.listsFull" @check-all="onTableCheck" @check="onTableCheck"
       :checked-rows.sync="bulk.checked" hoverable default-sort="createdAt" paginated backend-pagination
       pagination-position="both" @page-change="onPageChange" :current-page="queryParams.page" :per-page="lists.perPage"
-      :total="lists.total" checkable backend-sorting @sort="onSort">
+      :total="lists.total" checkable backend-sorting @sort="onSort" class="lists-brevo__table">
       <template #top-left>
-        <div class="columns">
-          <div class="column is-6">
-            <form @submit.prevent="getLists">
-              <b-field>
-                <b-input v-model="queryParams.query" name="query" expanded icon="magnify" ref="query" data-cy="query" />
-                <p class="controls">
-                  <b-button native-type="submit" type="is-primary" icon-left="magnify" data-cy="btn-query" />
-                </p>
-              </b-field>
-            </form>
-          </div>
-        </div>
         <div class="actions" v-if="bulk.checked.length > 0">
           <a class="a" href="#" @click.prevent="deleteLists" data-cy="btn-delete-lists">
             <b-icon icon="trash-can-outline" size="is-small" /> {{ $t('globals.buttons.delete') }}
           </a>
           <span class="a">
             {{ $tc('globals.messages.numSelected', numSelectedLists, { num: numSelectedLists }) }}
-            <span v-if="!bulk.all && lists.total > lists.perPage">
-              &mdash;
-              <a href="#" @click.prevent="onSelectAll" data-cy="select-all-lists">
-                {{ $tc('globals.messages.selectAll', lists.total, { num: lists.total }) }}
-              </a>
-            </span>
           </span>
         </div>
       </template>
 
-      <b-table-column v-slot="props" field="name" :label="$t('globals.fields.name')" header-class="cy-name" sortable
-        width="25%" paginated backend-pagination pagination-position="both" :td-attrs="$utils.tdID"
-        @page-change="onPageChange">
-        <div>
-          <a :href="`/lists/${props.row.id}`" @click.prevent="showEditForm(props.row)">
-            {{ props.row.name }}
-          </a>
-          <b-taglist>
-            <b-tag class="is-small" v-for="t in props.row.tags" :key="t">
-              {{ t }}
-            </b-tag>
-          </b-taglist>
-        </div>
+      <b-table-column v-slot="props" field="name" label="Lists" header-class="cy-name" sortable
+        width="28%" :td-attrs="$utils.tdID">
+        <router-link class="crm-link" :to="`/contacts/lists/${props.row.id}`">
+          {{ props.row.name }}
+        </router-link>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="type" :label="$t('globals.fields.type')" header-class="cy-type" sortable
-        width="15%">
-        <div class="tags">
-          <b-tag :class="props.row.type" :data-cy="`type-${props.row.type}`">
-            {{ $t(`lists.types.${props.row.type}`) }}
-          </b-tag>
-          {{ ' ' }}
-
-          <b-tag :class="props.row.optin" :data-cy="`optin-${props.row.optin}`">
-            <b-icon :icon="props.row.optin === 'double' ? 'account-check-outline' : 'account-off-outline'"
-              size="is-small" />
-            {{ ' ' }}
-            {{ $t(`lists.optins.${props.row.optin}`) }}
-          </b-tag>{{ ' ' }}
-
-          <a v-if="props.row.optin === 'double'" class="is-size-7 send-optin" href="#"
-            @click="$utils.confirm(null, () => createOptinCampaign(props.row))" data-cy="btn-send-optin-campaign">
-            <b-tooltip :label="$t('lists.sendOptinCampaign')" type="is-dark">
-              <b-icon icon="rocket-launch-outline" size="is-small" />
-              {{ $t('lists.sendOptinCampaign') }}
-            </b-tooltip>
-          </a>
-        </div>
+      <b-table-column v-slot="props" field="id" label="ID" header-class="cy-id" sortable width="8%">
+        #{{ props.row.id }}
       </b-table-column>
 
-      <b-table-column v-slot="props" field="subscriber_count" :label="$t('globals.terms.subscribers')"
+      <b-table-column v-slot="props" field="type" label="Folder" header-class="cy-type" sortable width="12%">
+        {{ $t(`lists.types.${props.row.type}`) }}
+      </b-table-column>
+
+      <b-table-column v-slot="props" field="subscriber_count" label="Contacts"
         header-class="cy-subscribers" numeric sortable centered>
         <template v-if="$can('subscribers:get_all', 'subscribers:get')">
           <router-link :to="`/contacts/lists/${props.row.id}`">
             {{ $utils.formatNumber(props.row.subscriberCount) }}
-            <span class="is-size-7 view">{{ $t('globals.buttons.view') }}</span>
           </router-link>
         </template>
         <template v-else>
@@ -114,56 +92,83 @@
         </template>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="subscriber_counts" header-class="cy-subscribers" width="10%">
-        <div class="fields stats">
-          <p v-for="(count, status) in filterStatuses(props.row)" :key="status">
-            <label for="#">{{ $tc(`subscribers.status.${status}`, count) }}</label>
-            <router-link :to="`/contacts/lists/${props.row.id}?subscription_status=${status}`" :class="status">
-              {{ $utils.formatNumber(count) }}
-            </router-link>
-          </p>
-        </div>
-      </b-table-column>
-
-      <b-table-column v-slot="props" field="created_at" :label="$t('globals.fields.createdAt')"
+      <b-table-column v-slot="props" field="created_at" label="Creation date"
         header-class="cy-created_at" sortable>
-        {{ $utils.niceDate(props.row.createdAt) }}
-      </b-table-column>
-      <b-table-column v-slot="props" field="updated_at" :label="$t('globals.fields.updatedAt')"
-        header-class="cy-updated_at" sortable>
-        {{ $utils.niceDate(props.row.updatedAt) }}
+        {{ $utils.niceDate(props.row.createdAt, true) }}
       </b-table-column>
 
-      <b-table-column v-slot="props" cell-class="actions" align="right">
-        <div>
-          <router-link v-if="$can('campaigns:manage')" :to="`/campaigns/new?list_id=${props.row.id}`"
-            data-cy="btn-campaign">
-            <b-tooltip :label="$t('lists.sendCampaign')" type="is-dark">
-              <b-icon icon="rocket-launch-outline" size="is-small" />
-            </b-tooltip>
-          </router-link>
-
-          <a v-if="$can('lists:manage') || $canList(props.row.id, 'list:manage')" href="#"
-            @click.prevent="showEditForm(props.row)" data-cy="btn-edit" :aria-label="$t('globals.buttons.edit')">
-            <b-tooltip :label="$t('globals.buttons.edit')" type="is-dark">
-              <b-icon icon="pencil-outline" size="is-small" />
-            </b-tooltip>
-          </a>
-
-          <router-link v-if="$can('subscribers:import')" :to="{ name: 'import', query: { list_id: props.row.id } }"
-            data-cy="btn-import">
-            <b-tooltip :label="$t('import.title')" type="is-dark">
-              <b-icon icon="file-upload-outline" size="is-small" />
-            </b-tooltip>
-          </router-link>
-
-          <a v-if="$can('lists:manage') || $canList(props.row.id, 'list:manage')" href="#"
-            @click.prevent="deleteList(props.row)" data-cy="btn-delete" :aria-label="$t('globals.buttons.delete')">
-            <b-tooltip :label="$t('globals.buttons.delete')" type="is-dark">
-              <b-icon icon="trash-can-outline" size="is-small" />
-            </b-tooltip>
-          </a>
-        </div>
+      <b-table-column v-slot="props" label="Actions" cell-class="actions" align="right">
+        <b-dropdown position="is-bottom-left" class="campaign-actions-menu">
+          <template #trigger>
+            <button type="button" class="campaign-actions-trigger" aria-label="Actions">
+              <span class="campaign-kebab" aria-hidden="true"><span /><span /><span /></span>
+            </button>
+          </template>
+          <div class="campaign-actions-panel">
+            <router-link
+              v-if="$can('subscribers:get_all', 'subscribers:get')"
+              :to="`/contacts/lists/${props.row.id}`"
+              class="campaign-action"
+              aria-label="View contacts"
+            >
+              <b-tooltip label="View contacts" type="is-dark" position="is-left">
+                <b-icon icon="account-multiple" />
+              </b-tooltip>
+            </router-link>
+            <router-link
+              v-if="$can('subscribers:manage')"
+              :to="{ path: `/contacts/lists/${props.row.id}`, query: { add: '1' } }"
+              class="campaign-action"
+              aria-label="Add contact"
+            >
+              <b-tooltip label="Add a contact" type="is-dark" position="is-left">
+                <b-icon icon="plus" />
+              </b-tooltip>
+            </router-link>
+            <router-link
+              v-if="$can('subscribers:import')"
+              :to="{ name: 'import', query: { list_id: props.row.id } }"
+              class="campaign-action"
+              aria-label="Import contacts"
+            >
+              <b-tooltip label="Import contacts" type="is-dark" position="is-left">
+                <b-icon icon="file-upload-outline" />
+              </b-tooltip>
+            </router-link>
+            <a
+              v-if="$can('lists:manage') || $canList(props.row.id, 'list:manage')"
+              href="#"
+              class="campaign-action"
+              aria-label="Edit"
+              @click.prevent="showEditForm(props.row)"
+            >
+              <b-tooltip :label="$t('globals.buttons.edit')" type="is-dark" position="is-left">
+                <b-icon icon="pencil-outline" />
+              </b-tooltip>
+            </a>
+            <router-link
+              v-if="$can('campaigns:manage')"
+              :to="`/campaigns/new?list_id=${props.row.id}`"
+              class="campaign-action"
+              aria-label="Campaign"
+            >
+              <b-tooltip :label="$t('lists.sendCampaign')" type="is-dark" position="is-left">
+                <b-icon icon="rocket-launch-outline" />
+              </b-tooltip>
+            </router-link>
+            <a
+              v-if="$can('lists:manage') || $canList(props.row.id, 'list:manage')"
+              href="#"
+              class="campaign-action"
+              aria-label="Delete"
+              @click.prevent="deleteList(props.row)"
+            >
+              <b-tooltip :label="$t('globals.buttons.delete')" type="is-dark" position="is-left">
+                <b-icon icon="trash-can-outline" />
+              </b-tooltip>
+            </a>
+          </div>
+        </b-dropdown>
       </b-table-column>
 
       <template #empty v-if="!loading.listsFull">

@@ -388,6 +388,8 @@ export default Vue.extend({
         company: this.$utils.subscriberAttrib(attribs, 'company'),
         strAttribs: JSON.stringify(this.$utils.subscriberAttribsForEditor(attribs), null, 4),
       };
+    } else if (this.$props.data && Array.isArray(this.$props.data.lists) && this.$props.data.lists.length) {
+      this.form.lists = [...this.$props.data.lists];
     }
 
     if (this.form.id) {

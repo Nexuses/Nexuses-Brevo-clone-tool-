@@ -1,83 +1,124 @@
 <template>
-  <section class="subscribers">
+  <section class="subscribers contacts-brevo">
     <crm-subnav />
 
-    <header class="columns page-header">
-      <div class="column is-10">
+    <header class="columns page-header contacts-brevo__header">
+      <div class="column is-7">
         <h1 class="title is-4">
-          {{ $t('menu.contacts') }}
-          <span v-if="!isNaN(subscribers.total)">
-            (<span data-cy="count">{{ subscribers.total }}</span>)
-          </span>
-          <span v-if="currentList">
-            &raquo; {{ currentList.name }}
-            <span v-if="queryParams.subStatus" class="has-text-grey has-text-weight-normal is-capitalized">({{
-              queryParams.subStatus }})</span>
+          <template v-if="currentList">{{ currentList.name }}</template>
+          <template v-else>Contacts</template>
+          <span v-if="!isNaN(subscribers.total)" class="contacts-brevo__count">
+            {{ $utils.formatNumber(subscribers.total) }}
           </span>
         </h1>
+        <p v-if="currentList" class="crm-page__lead mt-1">
+          Add contacts to this list or import them from a file.
+        </p>
       </div>
-      <div class="column has-text-right">
-        <b-field v-if="$can('subscribers:manage')" expanded>
-          <b-button expanded type="is-primary" icon-left="plus" @click="showNewForm" data-cy="btn-new" class="btn-new">
-            {{ $t('globals.buttons.new') }}
-          </b-button>
-        </b-field>
+      <div class="column has-text-right contacts-brevo__actions">
+        <b-button
+          v-if="$can('subscribers:manage')"
+          type="is-light"
+          outlined
+          @click="showNewForm"
+          data-cy="btn-new"
+        >
+          {{ currentList ? 'Add a contact' : 'Create a contact' }}
+        </b-button>
+        <b-button
+          v-if="$can('subscribers:import')"
+          type="is-dark"
+          tag="router-link"
+          :to="importRoute"
+        >
+          Import contacts
+        </b-button>
       </div>
     </header>
 
-    <section class="subscribers-controls">
-      <div class="columns">
-        <div class="column is-8">
-          <form @submit.prevent="onSubmit">
-            <div>
-              <b-field addons>
-                <b-input @input="onSimpleQueryInput" v-model="queryInput" expanded
-                  :placeholder="$t('subscribers.queryPlaceholder')" icon="magnify" ref="query"
-                  :disabled="isSearchAdvanced" data-cy="search" />
-                <p class="controls">
-                  <b-button native-type="submit" type="is-primary" icon-left="magnify" :disabled="isSearchAdvanced"
-                    data-cy="btn-search" />
-                </p>
-              </b-field>
+    <div class="contacts-brevo__views">
+      <router-link
+        :to="{ name: 'subscribers' }"
+        class="contacts-brevo__view-tab"
+        :class="{ 'is-active': !currentList }"
+      >
+        All contacts
+      </router-link>
+      <button
+        v-if="currentList"
+        type="button"
+        class="contacts-brevo__view-tab is-active"
+      >
+        {{ currentList.name }}
+      </button>
+    </div>
 
-              <div v-if="isSearchAdvanced">
-                <b-input v-model="queryParams.queryExp" @keydown.native.enter="onAdvancedQueryEnter" type="textarea"
-                  ref="queryExp" placeholder="subscribers.name LIKE '%user%' or subscribers.status='blocklisted'"
-                  data-cy="query" />
-                <span class="is-size-6 has-text-grey">
-                  {{ $t('subscribers.advancedQueryHelp') }}.{{ ' ' }}
-                  <a href="https://listmonk.app/docs/querying-and-segmentation" target="_blank"
-                    rel="noopener noreferrer">
-                    {{ $t('globals.buttons.learnMore') }}.
-                  </a>
-                </span>
-                <div class="buttons">
-                  <b-button native-type="submit" type="is-primary" icon-left="magnify" data-cy="btn-query">
-                    {{
-                      $t('subscribers.query') }}
-                  </b-button>
-                  <b-button @click.prevent="toggleAdvancedSearch" icon-left="cancel" data-cy="btn-query-reset">
-                    {{ $t('subscribers.reset') }}
-                  </b-button>
-                </div>
-              </div><!-- advanced query -->
-            </div>
-          </form>
-          <div v-if="!isSearchAdvanced" class="toggle-advanced">
-            <a href="#" @click.prevent="toggleAdvancedSearch" data-cy="btn-advanced-search">
-              <b-icon icon="cog-outline" size="is-small" />
-              {{ $t('subscribers.advancedQuery') }}
-            </a>
-          </div>
-        </div><!-- search -->
+    <div class="contacts-brevo__filter-bar">
+      <b-dropdown>
+        <template #trigger>
+          <button type="button" class="contacts-brevo__chip">
+            Load a list or a segment
+            <b-icon icon="arrow-down" size="is-small" />
+          </button>
+        </template>
+        <b-dropdown-item
+          v-for="l in availableLists"
+          :key="l.id"
+          tag="router-link"
+          :to="`/contacts/lists/${l.id}`"
+        >
+          {{ l.name }}
+        </b-dropdown-item>
+        <b-dropdown-item v-if="!availableLists.length" disabled>
+          No lists available
+        </b-dropdown-item>
+      </b-dropdown>
+
+      <button type="button" class="contacts-brevo__chip" @click.prevent="toggleAdvancedSearch">
+        <b-icon icon="plus" size="is-small" />
+        Add filter
+      </button>
+    </div>
+
+    <div class="contacts-brevo__meta">
+      <span class="contacts-brevo__meta-count">
+        {{ $utils.formatNumber(subscribers.total || 0) }} contacts
+      </span>
+      <form class="contacts-brevo__search" @submit.prevent="onSubmit">
+        <b-field>
+          <b-input
+            @input="onSimpleQueryInput"
+            v-model="queryInput"
+            expanded
+            :placeholder="$t('subscribers.queryPlaceholder')"
+            icon="magnify"
+            ref="query"
+            :disabled="isSearchAdvanced"
+            data-cy="search"
+          />
+        </b-field>
+      </form>
+    </div>
+
+    <div v-if="isSearchAdvanced" class="mb-4">
+      <b-input v-model="queryParams.queryExp" @keydown.native.enter="onAdvancedQueryEnter" type="textarea"
+        ref="queryExp" placeholder="subscribers.name LIKE '%user%' or subscribers.status='blocklisted'"
+        data-cy="query" />
+      <div class="buttons mt-2">
+        <b-button type="is-primary" icon-left="magnify" @click="onSubmit" data-cy="btn-query">
+          {{ $t('subscribers.query') }}
+        </b-button>
+        <b-button @click.prevent="toggleAdvancedSearch" icon-left="cancel" data-cy="btn-query-reset">
+          {{ $t('subscribers.reset') }}
+        </b-button>
       </div>
-    </section><!-- control -->
+    </div>
 
-    <br />
     <b-table :data="subscribers.results ?? []" :loading="loading.subscribers" @check-all="onTableCheck"
       @check="onTableCheck" :checked-rows.sync="bulk.checked" paginated backend-pagination pagination-position="both"
       @page-change="onPageChange" :current-page="queryParams.page" :per-page="subscribers.perPage"
-      :total="subscribers.total" hoverable checkable backend-sorting @sort="onSort">
+      :total="subscribers.total" hoverable checkable backend-sorting @sort="onSort"
+      class="contacts-brevo__table">
       <template #top-left>
         <div class="actions">
           <a class="a" href="#" @click.prevent="exportSubscribers" data-cy="btn-export-subscribers">
@@ -96,47 +137,36 @@
             </a>
             <span class="a">
               {{ $t('globals.messages.numSelected', { num: numSelectedSubscribers }) }}
-              <span v-if="!bulk.all && subscribers.total > subscribers.perPage">
-                &mdash;
-                <a href="#" @click.prevent="selectAllSubscribers">
-                  {{ $t('globals.messages.selectAll', { num: subscribers.total }) }}
-                </a>
-              </span>
             </span>
           </template>
         </div>
       </template>
 
-      <b-table-column v-slot="props" field="email" :label="$t('subscribers.email')" header-class="cy-email" sortable
+      <b-table-column v-slot="props" field="email" label="Contact" header-class="cy-email" sortable
         :td-attrs="$utils.tdID">
         <a :href="`/contacts/${props.row.id}`" @click.prevent="showEditForm(props.row)"
+          class="contacts-brevo__name"
           :class="{ 'blocklisted': props.row.status === 'blocklisted' }">
-          {{ props.row.email }}
-          <copy-text :text="`${props.row.email}`" hide-text />
+          {{ contactDisplayName(props.row) }}
         </a>
-        <b-tag v-if="props.row.status !== 'enabled'" :class="props.row.status" data-cy="blocklisted">
-          {{ $t(`subscribers.status.${props.row.status}`) }}
-        </b-tag>
-        <b-taglist>
-          <template v-for="l in props.row.lists">
-            <router-link :to="`/contacts/lists/${l.id}`" :key="l.id" style="padding-right:0.5em;">
-              <b-tag :class="l.subscriptionStatus" size="is-small" :key="l.id">
-                {{ l.name }}
-                <sup v-if="l.optin === 'double' || l.subscriptionStatus == 'unsubscribed'">
-                  {{ $t(`subscribers.status.${l.subscriptionStatus}`) }}
-                </sup>
-              </b-tag>
-            </router-link>
-          </template>
-        </b-taglist>
+        <div class="is-size-7 has-text-grey">{{ props.row.email }}</div>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="firstname" :label="$t('subscribers.firstName')" header-class="cy-firstname">
-        <span class="has-text-grey-dark">{{ $utils.subscriberAttrib(props.row.attribs, 'firstname') || '—' }}</span>
+      <b-table-column v-slot="props" field="status" label="Subscribed" header-class="cy-status">
+        <span class="contacts-brevo__sub-pill">
+          <b-icon icon="email-outline" size="is-small" /> Email
+        </span>
+        <b-tag v-if="props.row.status !== 'enabled'" :class="props.row.status" class="ml-1 is-small">
+          {{ $t(`subscribers.status.${props.row.status}`) }}
+        </b-tag>
       </b-table-column>
 
       <b-table-column v-slot="props" field="lastname" :label="$t('subscribers.lastName')" header-class="cy-lastname">
         <span class="has-text-grey-dark">{{ $utils.subscriberAttrib(props.row.attribs, 'lastname') || '—' }}</span>
+      </b-table-column>
+
+      <b-table-column v-slot="props" field="firstname" :label="$t('subscribers.firstName')" header-class="cy-firstname">
+        <span class="has-text-grey-dark">{{ $utils.subscriberAttrib(props.row.attribs, 'firstname') || '—' }}</span>
       </b-table-column>
 
       <b-table-column v-slot="props" field="company" :label="$t('subscribers.company')" header-class="cy-company">
@@ -175,12 +205,10 @@
       </template>
     </b-table>
 
-    <!-- Manage list modal -->
     <b-modal scroll="keep" :aria-modal="true" :active.sync="isBulkListFormVisible" :width="500" class="has-overflow">
       <subscriber-bulk-list :num-subscribers="this.numSelectedSubscribers" @finished="bulkChangeLists" />
     </b-modal>
 
-    <!-- Add / edit form modal -->
     <b-modal scroll="keep" :aria-modal="true" :active.sync="isFormVisible" :width="850" @close="onFormClose">
       <subscriber-form :data="curItem" :is-editing="isEditing" @finished="querySubscribers" />
     </b-modal>
@@ -195,13 +223,11 @@ import CrmSubnav from '../components/CrmSubnav.vue';
 import { uris } from '../constants';
 import SubscriberBulkList from './SubscriberBulkList.vue';
 import SubscriberForm from './SubscriberForm.vue';
-import CopyText from '../components/CopyText.vue';
 
 export default Vue.extend({
   components: {
     SubscriberForm,
     SubscriberBulkList,
-    CopyText,
     EmptyPlaceholder,
     CrmSubnav,
   },
@@ -243,6 +269,15 @@ export default Vue.extend({
     // Count the lists from which a subscriber has not unsubscribed.
     listCount(lists) {
       return lists.reduce((defVal, item) => (defVal + (item.subscriptionStatus !== 'unsubscribed' ? 1 : 0)), 0);
+    },
+
+    contactDisplayName(row) {
+      const first = this.$utils.subscriberAttrib(row.attribs, 'firstname');
+      const last = this.$utils.subscriberAttrib(row.attribs, 'lastname');
+      const name = [first, last].filter(Boolean).join(' ').trim();
+      if (name) return name;
+      if (row.name) return row.name;
+      return (row.email || '').split('@')[0] || 'Contact';
     },
 
     toggleAdvancedSearch() {
@@ -294,11 +329,30 @@ export default Vue.extend({
       this.isEditing = true;
     },
 
-    // Show the new list form.
+    // Show the new contact form (pre-select current list when filtering by list).
     showNewForm() {
-      this.curItem = {};
+      let lists = [];
+      if (this.currentList) {
+        lists = [this.currentList];
+      } else if (this.queryParams.listID) {
+        const found = this.availableLists.find((l) => l.id === this.queryParams.listID);
+        lists = found ? [found] : [{ id: this.queryParams.listID }];
+      }
+      this.curItem = lists.length ? { lists } : {};
       this.isFormVisible = true;
       this.isEditing = false;
+    },
+
+    openAddIfRequested() {
+      if (this.$route.query.add !== '1' || !this.$can('subscribers:manage')) {
+        return;
+      }
+      this.$nextTick(() => {
+        this.showNewForm();
+        const q = { ...this.$route.query };
+        delete q.add;
+        this.$router.replace({ path: this.$route.path, query: q });
+      });
     },
 
     showBulkListForm() {
@@ -521,6 +575,34 @@ export default Vue.extend({
 
       return this.lists.results.find((l) => l.id === this.queryParams.listID);
     },
+
+    availableLists() {
+      return (this.lists && this.lists.results) || [];
+    },
+
+    importRoute() {
+      if (this.currentList) {
+        return { name: 'import', query: { list_id: this.currentList.id } };
+      }
+      return { name: 'import' };
+    },
+  },
+
+  watch: {
+    $route(to, from) {
+      if (to.name !== 'subscribers' && to.name !== 'subscribers_list' && to.name !== 'subscriber') {
+        return;
+      }
+      const listID = to.params.listID ? parseInt(to.params.listID, 10) : null;
+      const prevListID = from && from.params.listID ? parseInt(from.params.listID, 10) : null;
+      if (listID !== prevListID || listID !== this.queryParams.listID) {
+        this.queryParams.listID = listID;
+        if (!to.params.id) {
+          this.querySubscribers({ page: 1 });
+        }
+      }
+      this.openAddIfRequested();
+    },
   },
 
   created() {
@@ -544,8 +626,8 @@ export default Vue.extend({
         this.showEditForm(data);
       });
     } else {
-      // Get subscribers on load.
       this.querySubscribers();
+      this.openAddIfRequested();
     }
   },
 });
