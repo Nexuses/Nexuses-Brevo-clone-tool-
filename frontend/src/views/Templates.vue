@@ -36,7 +36,7 @@
         />
       </b-field>
       <span class="tpl-toolbar__meta">
-        {{ filteredTemplates.length }} of {{ templates.length }}
+        {{ filteredTemplates.length }} of {{ templateList.length }}
       </span>
     </div>
 
@@ -168,10 +168,14 @@ export default Vue.extend({
   computed: {
     ...mapState(['templates', 'loading']),
 
+    templateList() {
+      return Array.isArray(this.templates) ? this.templates : [];
+    },
+
     filteredTemplates() {
       const q = this.query.trim().toLowerCase();
-      if (!q) return this.templates || [];
-      return (this.templates || []).filter((t) => (
+      if (!q) return this.templateList;
+      return this.templateList.filter((t) => (
         (t.name || '').toLowerCase().includes(q)
         || String(t.id).includes(q)
       ));

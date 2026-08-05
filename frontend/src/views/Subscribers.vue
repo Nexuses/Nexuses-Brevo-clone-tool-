@@ -36,6 +36,26 @@
       </div>
     </header>
 
+    <div v-if="currentList" class="contacts-brevo__list-actions">
+      <button
+        v-if="$can('subscribers:manage')"
+        type="button"
+        class="contacts-brevo__chip"
+        @click="showNewForm"
+      >
+        <b-icon icon="plus" size="is-small" />
+        Add user to this list
+      </button>
+      <router-link
+        v-if="$can('subscribers:import')"
+        :to="importRoute"
+        class="contacts-brevo__chip"
+      >
+        <b-icon icon="file-upload-outline" size="is-small" />
+        Import users to this list
+      </router-link>
+    </div>
+
     <div class="contacts-brevo__views">
       <router-link
         :to="{ name: 'subscribers' }"
@@ -54,18 +74,20 @@
     </div>
 
     <div class="contacts-brevo__filter-bar">
-      <b-dropdown>
+      <b-dropdown @change="onFilterListSelect">
         <template #trigger>
           <button type="button" class="contacts-brevo__chip">
             Load a list or a segment
             <b-icon icon="arrow-down" size="is-small" />
           </button>
         </template>
+        <b-dropdown-item v-if="currentList" :value="null">
+          All contacts
+        </b-dropdown-item>
         <b-dropdown-item
           v-for="l in availableLists"
           :key="l.id"
-          tag="router-link"
-          :to="`/contacts/lists/${l.id}`"
+          :value="l.id"
         >
           {{ l.name }}
         </b-dropdown-item>
@@ -393,6 +415,21 @@ export default Vue.extend({
       this.querySubscribers({ page: 1 });
     },
 
+    onFilterListSelect(listID) {
+      const normalizedID = listID ? parseInt(listID, 10) : null;
+      this.queryParams.listID = normalizedID;
+      this.querySubscribers({ page: 1 });
+      if (normalizedID) {
+        this.$router.replace({ name: 'subscribers_list', params: { listID: normalizedID } });
+      } else {
+        this.$router.replace({ name: 'subscribers' });
+      }
+    },
+
+    fetchFilterLists() {
+      this.$api.getLists({ minimal: true, per_page: 'all', status: 'active' }).catch(() => {});
+    },
+
     // Search / query subscribers.
     querySubscribers(params) {
       this.queryParams = { ...this.queryParams, ...params };
@@ -410,7 +447,7 @@ export default Vue.extend({
       if (this.queryParams.queryExp) {
         delete qp.search;
       } else {
-        delete qp.queryExp;
+        delete qp.query;
       }
 
       this.$nextTick(() => {
@@ -614,6 +651,8 @@ export default Vue.extend({
   },
 
   mounted() {
+    this.fetchFilterLists();
+
     if (this.$route.params.listID) {
       this.queryParams.listID = parseInt(this.$route.params.listID, 10);
     }

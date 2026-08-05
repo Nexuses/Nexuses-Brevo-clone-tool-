@@ -1,5 +1,7 @@
 <template>
   <section class="bounces">
+    <crm-subnav />
+
     <header class="page-header columns">
       <div class="column is-two-thirds">
         <h1 class="title is-4">
@@ -88,7 +90,7 @@
         <pre class="is-size-7">{{ props.row.meta }}</pre>
       </template>
 
-      <template #empty v-if="!loading.templates">
+      <template #empty v-if="!loading.bounces">
         <empty-placeholder />
       </template>
     </b-table>
@@ -98,10 +100,12 @@
 <script>
 import Vue from 'vue';
 import { mapState } from 'vuex';
+import CrmSubnav from '../components/CrmSubnav.vue';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
 
 export default Vue.extend({
   components: {
+    CrmSubnav,
     EmptyPlaceholder,
   },
 
@@ -120,8 +124,9 @@ export default Vue.extend({
         page: 1,
         orderBy: 'created_at',
         order: 'desc',
-        campaignID: 0,
+        campaign_id: null,
         source: '',
+        type: '',
       },
     };
   },
@@ -158,6 +163,7 @@ export default Vue.extend({
         order: this.queryParams.order,
         campaign_id: this.queryParams.campaign_id,
         source: this.queryParams.source,
+        type: this.queryParams.type,
       }).then((data) => {
         this.bounces = data;
       });
@@ -204,12 +210,27 @@ export default Vue.extend({
   },
 
   computed: {
-    ...mapState(['templates', 'loading']),
+    ...mapState(['loading']),
     numSelectedBounces() {
       if (this.bulk.all) {
         return this.bounces.total;
       }
       return this.bulk.checked.length;
+    },
+  },
+
+  watch: {
+    '$route.query': {
+      handler() {
+        this.queryParams.page = 1;
+        this.queryParams.campaign_id = this.$route.query.campaign_id
+          ? parseInt(this.$route.query.campaign_id, 10)
+          : null;
+        this.queryParams.source = this.$route.query.source || '';
+        this.queryParams.type = this.$route.query.type || '';
+        this.getBounces();
+      },
+      immediate: true,
     },
   },
 
@@ -221,16 +242,6 @@ export default Vue.extend({
     this.$root.$off('page.refresh', this.getBounces);
   },
 
-  mounted() {
-    if (this.$route.query.campaign_id) {
-      this.queryParams.campaign_id = parseInt(this.$route.query.campaign_id, 10);
-    }
-
-    if (this.$route.query.source) {
-      this.queryParams.source = this.$route.query.source;
-    }
-
-    this.getBounces();
-  },
+  mounted() {},
 });
 </script>

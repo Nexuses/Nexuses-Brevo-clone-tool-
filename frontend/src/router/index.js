@@ -25,15 +25,11 @@ const routes = [
   },
   {
     path: '/lists/forms',
-    name: 'forms',
-    meta: { title: 'forms.title', group: 'marketing' },
-    component: () => import('../views/Forms.vue'),
+    redirect: { name: 'forms' },
   },
   {
     path: '/lists/:id',
-    name: 'list',
-    meta: { title: 'globals.terms.lists', group: 'crm' },
-    component: () => import('../views/Lists.vue'),
+    redirect: (to) => `/contacts/lists/${to.params.id}`,
   },
   {
     path: '/contacts',
@@ -118,21 +114,35 @@ const routes = [
   },
   {
     path: '/campaigns/templates',
-    name: 'templates',
-    meta: { title: 'menu.templates', group: 'marketing' },
-    component: () => import('../views/Templates.vue'),
+    redirect: { name: 'templates' },
   },
   {
     path: '/campaigns/templates/:id',
-    name: 'template',
-    meta: { title: 'menu.templates', group: 'marketing' },
-    component: () => import('../views/Template.vue'),
+    redirect: (to) => ({ name: 'template', params: { id: to.params.id } }),
+  },
+  {
+    path: '/marketing/forms',
+    name: 'forms',
+    meta: { title: 'forms.title', group: 'marketing' },
+    component: () => import('../views/Forms.vue'),
   },
   {
     path: '/marketing/statistics',
     name: 'statistics',
     meta: { title: 'menu.statistics', group: 'marketing' },
     component: () => import('../views/Statistics.vue'),
+  },
+  {
+    path: '/marketing/templates',
+    name: 'templates',
+    meta: { title: 'menu.templates', group: 'marketing' },
+    component: () => import('../views/Templates.vue'),
+  },
+  {
+    path: '/marketing/templates/:id',
+    name: 'template',
+    meta: { title: 'menu.templates', group: 'marketing' },
+    component: () => import('../views/Template.vue'),
   },
   {
     path: '/campaigns/analytics',

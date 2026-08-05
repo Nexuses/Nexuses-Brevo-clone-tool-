@@ -46,6 +46,7 @@
           ref="query"
           data-cy="query"
           @keyup.native.enter="getLists"
+          @input="onSearchInput"
         />
       </b-field>
     </div>
@@ -67,9 +68,9 @@
 
       <b-table-column v-slot="props" field="name" label="Lists" header-class="cy-name" sortable
         width="28%" :td-attrs="$utils.tdID">
-        <router-link class="crm-link" :to="`/contacts/lists/${props.row.id}`">
+        <a href="#" class="crm-link" @click.prevent.stop="openListContacts(props.row.id)">
           {{ props.row.name }}
-        </router-link>
+        </a>
       </b-table-column>
 
       <b-table-column v-slot="props" field="id" label="ID" header-class="cy-id" sortable width="8%">
@@ -83,9 +84,9 @@
       <b-table-column v-slot="props" field="subscriber_count" label="Contacts"
         header-class="cy-subscribers" numeric sortable centered>
         <template v-if="$can('subscribers:get_all', 'subscribers:get')">
-          <router-link :to="`/contacts/lists/${props.row.id}`">
+          <a href="#" @click.prevent.stop="openListContacts(props.row.id)">
             {{ $utils.formatNumber(props.row.subscriberCount) }}
-          </router-link>
+          </a>
         </template>
         <template v-else>
           {{ $utils.formatNumber(props.row.subscriberCount) }}
@@ -225,6 +226,8 @@ export default Vue.extend({
         checked: [],
         all: false,
       },
+
+      searchDebounce: null,
     };
   },
 
@@ -238,6 +241,23 @@ export default Vue.extend({
       this.queryParams.orderBy = field;
       this.queryParams.order = direction;
       this.getLists();
+    },
+
+    onSearchInput() {
+      clearTimeout(this.searchDebounce);
+      if (!this.queryParams.query || this.queryParams.query.trim() === '') {
+        this.queryParams.page = 1;
+        this.getLists();
+        return;
+      }
+      this.searchDebounce = setTimeout(() => {
+        this.queryParams.page = 1;
+        this.getLists();
+      }, 250);
+    },
+
+    openListContacts(listID) {
+      this.$router.push({ name: 'subscribers_list', params: { listID } });
     },
 
     // Show the edit list form.
@@ -274,13 +294,18 @@ export default Vue.extend({
     },
 
     getLists() {
-      this.$api.queryLists({
+      const cleanedQuery = (this.queryParams.query || '').replace(/[^\p{L}\p{N}\s]/gu, ' ').trim();
+      const params = {
         page: this.queryParams.page,
-        query: this.queryParams.query.replace(/[^\p{L}\p{N}\s]/gu, ' '),
         order_by: this.queryParams.orderBy,
         order: this.queryParams.order,
         status: this.queryParams.status,
-      }).then((resp) => {
+      };
+      if (cleanedQuery) {
+        params.query = cleanedQuery;
+      }
+
+      this.$api.queryLists(params).then((resp) => {
         this.lists = resp;
       });
 
@@ -377,17 +402,12 @@ export default Vue.extend({
   },
 
   destroyed() {
+    clearTimeout(this.searchDebounce);
     this.$root.$off('page.refresh', this.getLists);
   },
 
   mounted() {
-    if (this.$route.params.id) {
-      this.$api.getList(parseInt(this.$route.params.id, 10)).then((data) => {
-        this.showEditForm(data);
-      });
-    } else {
-      this.getLists();
-    }
+    this.getLists();
   },
 });
 </script>

@@ -451,20 +451,35 @@ export default Vue.extend({
       return `${prefix} ${d.format('MMM D, YYYY')} at ${d.format('h:mm A')}`;
     },
 
+    metricVal(obj, keys) {
+      for (let i = 0; i < keys.length; i += 1) {
+        const v = obj && obj[keys[i]];
+        if (v !== undefined && v !== null && v !== '') {
+          const n = Number(v);
+          if (!Number.isNaN(n)) {
+            return n;
+          }
+        }
+      }
+      return 0;
+    },
+
     rate(num, den) {
-      if (!den || den <= 0) return '—';
+      if (!den || den <= 0) return '0.00%';
       const pct = (num / den) * 100;
       return `${pct.toFixed(2)}%`;
     },
 
     openRate(c) {
-      const sent = c.sent || c.toSend || 0;
-      return this.rate(c.views || 0, sent);
+      const sent = this.metricVal(c, ['sent', 'toSend', 'to_send']);
+      const opens = this.metricVal(c, ['views', 'opens', 'openCount']);
+      return this.rate(opens, sent);
     },
 
     clickRate(c) {
-      const sent = c.sent || c.toSend || 0;
-      return this.rate(c.clicks || 0, sent);
+      const sent = this.metricVal(c, ['sent', 'toSend', 'to_send']);
+      const clicks = this.metricVal(c, ['clicks', 'clickCount']);
+      return this.rate(clicks, sent);
     },
   },
 

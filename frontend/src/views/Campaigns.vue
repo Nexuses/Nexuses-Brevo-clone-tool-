@@ -94,13 +94,13 @@
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Opens</span>
-              <strong class="bv-metric__val">{{ $utils.formatNumber(props.row.views || 0) }}</strong>
-              <span class="bv-metric__pct">{{ pctLabel(props.row.views || 0, stats.sent || 0) }}</span>
+              <strong class="bv-metric__val">{{ $utils.formatNumber(metricVal(stats, ['views', 'opens'])) }}</strong>
+              <span class="bv-metric__pct">{{ pctLabel(metricVal(stats, ['views', 'opens']), sentCount(stats)) }}</span>
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Clicks</span>
-              <strong class="bv-metric__val">{{ $utils.formatNumber(props.row.clicks || 0) }}</strong>
-              <span class="bv-metric__pct">{{ pctLabel(props.row.clicks || 0, stats.sent || 0) }}</span>
+              <strong class="bv-metric__val">{{ $utils.formatNumber(metricVal(stats, ['clicks'])) }}</strong>
+              <span class="bv-metric__pct">{{ pctLabel(metricVal(stats, ['clicks']), sentCount(stats)) }}</span>
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Unsubscribed</span>
@@ -352,7 +352,24 @@ export default Vue.extend({
     },
 
     recipientsCount(stats) {
-      return stats.toSend || stats.sent || 0;
+      return this.metricVal(stats, ['toSend', 'to_send', 'sent']);
+    },
+
+    sentCount(stats) {
+      return this.metricVal(stats, ['sent', 'toSend', 'to_send']);
+    },
+
+    metricVal(obj, keys) {
+      for (let i = 0; i < keys.length; i += 1) {
+        const v = obj && obj[keys[i]];
+        if (v !== undefined && v !== null && v !== '') {
+          const n = Number(v);
+          if (!Number.isNaN(n)) {
+            return n;
+          }
+        }
+      }
+      return 0;
     },
 
     pctLabel(num, den) {

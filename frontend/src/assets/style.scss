@@ -1981,7 +1981,15 @@ section.import {
     border: 1px solid $bv-grey-200;
     border-radius: 14px;
     box-shadow: 0 2px 8px rgba(17, 24, 39, 0.04);
-    overflow: hidden;
+    overflow: visible;
+
+    thead th:first-child {
+      border-top-left-radius: 14px;
+    }
+
+    thead th:last-child {
+      border-top-right-radius: 14px;
+    }
 
     table.table {
       background: transparent;
@@ -2538,6 +2546,14 @@ section.lists {
     margin: 0.15rem 0 1rem;
   }
 
+  &__list-actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.65rem;
+    margin-bottom: 0.75rem;
+  }
+
   &__view-tab {
     appearance: none;
     background: none;
@@ -2695,6 +2711,122 @@ section.lists {
   appearance: none;
 }
 
+/* Shared row action kebab (Campaigns + CRM tables) */
+.campaign-actions-trigger {
+  appearance: none;
+  background: $white;
+  border: 1px solid $bv-grey-200;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: $bv-grey-700;
+  padding: 0;
+  flex-shrink: 0;
+
+  &:hover {
+    background: $bv-grey-100;
+    border-color: $bv-grey-300;
+    color: $bv-grey-900;
+  }
+}
+
+.campaign-kebab {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  width: 14px;
+  height: 16px;
+
+  span {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: $bv-grey-700;
+  }
+}
+
+.crm-inline-actions {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.4rem;
+
+  &__btn {
+    appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: $white;
+    border: 1px solid $bv-grey-200;
+    border-radius: 8px;
+    padding: 0.35rem 0.7rem;
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: $bv-grey-700;
+    cursor: pointer;
+    line-height: 1.2;
+
+    .icon {
+      color: $bv-primary;
+    }
+
+    &:hover {
+      background: $bv-grey-100;
+      border-color: $bv-grey-300;
+      color: $bv-grey-900;
+    }
+
+    &.is-danger {
+      .icon {
+        color: #c0392b;
+      }
+
+      &:hover {
+        background: #fdecea;
+        border-color: #f5c6c2;
+        color: #922b21;
+      }
+    }
+  }
+}
+
+.crm-row-actions {
+  .dropdown-content {
+    min-width: 160px;
+    border-radius: 10px;
+    border: 1px solid $bv-grey-200;
+    box-shadow: 0 8px 24px rgba(17, 24, 39, 0.12);
+    padding: 0.35rem 0;
+  }
+
+  .dropdown-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: $bv-grey-700;
+    padding: 0.55rem 0.9rem;
+
+    .icon {
+      color: $bv-primary;
+    }
+
+    &:hover {
+      background: $bv-grey-100;
+      color: $bv-grey-900;
+    }
+  }
+}
+
 /* Campaigns page — Brevo-style card list */
 section.campaigns {
   .campaign-actions-menu {
@@ -2717,46 +2849,6 @@ section.campaigns {
       box-shadow: 0 8px 24px rgba(17, 24, 39, 0.12);
       border: 1px solid $bv-grey-200;
       overflow: visible;
-    }
-  }
-
-  .campaign-actions-trigger {
-    appearance: none;
-    background: $white;
-    border: 1px solid $bv-grey-200;
-    border-radius: 8px;
-    width: 36px;
-    height: 36px;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    cursor: pointer;
-    color: $bv-grey-700;
-    padding: 0;
-    flex-shrink: 0;
-
-    &:hover {
-      background: $bv-grey-100;
-      border-color: $bv-grey-300;
-      color: $bv-grey-900;
-    }
-  }
-
-  .campaign-kebab {
-    display: inline-flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 3px;
-    width: 14px;
-    height: 16px;
-
-    span {
-      display: block;
-      width: 4px;
-      height: 4px;
-      border-radius: 50%;
-      background: $bv-grey-700;
     }
   }
 

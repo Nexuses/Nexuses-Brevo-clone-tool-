@@ -25,7 +25,7 @@
           </li>
         </ul>
 
-        <template v-if="serverConfig.public_subscription.enabled">
+        <template v-if="publicSubEnabled">
           <hr />
           <h4>{{ $t('forms.publicSubPage') }}</h4>
           <p>
@@ -94,14 +94,15 @@ export default Vue.extend({
       });
 
       // Captcha?
-      if (this.serverConfig.public_subscription.captcha_enabled) {
-        if (this.serverConfig.public_subscription.captcha_provider === 'altcha') {
+      const pubSub = this.serverConfig && this.serverConfig.public_subscription;
+      if (pubSub && pubSub.captcha_enabled) {
+        if (pubSub.captcha_provider === 'altcha') {
           h += '\n'
             + `    <altcha-widget challengeurl="${this.serverConfig.root_url}/api/public/captcha/altcha"></altcha-widget>\n`
             + `    <${'script'} type="module" src="${this.serverConfig.root_url}/public/static/altcha.umd.js" async defer></${'script'}>\n`;
-        } else if (this.serverConfig.public_subscription.captcha_provider === 'hcaptcha') {
+        } else if (pubSub.captcha_provider === 'hcaptcha') {
           h += '\n'
-            + `    <div class="h-captcha" data-sitekey="${this.serverConfig.public_subscription.captcha_key}"></div>\n`
+            + `    <div class="h-captcha" data-sitekey="${pubSub.captcha_key}"></div>\n`
             + `    <${'script'} src="https://js.hcaptcha.com/1/api.js" async defer></${'script'}>\n`;
         }
       }
@@ -119,10 +120,15 @@ export default Vue.extend({
     ...mapState(['loading', 'lists', 'serverConfig']),
 
     publicLists() {
-      if (!this.lists.results) {
+      if (!this.lists || !this.lists.results) {
         return [];
       }
       return this.lists.results.filter((l) => l.type === 'public');
+    },
+
+    publicSubEnabled() {
+      return !!(this.serverConfig && this.serverConfig.public_subscription
+        && this.serverConfig.public_subscription.enabled);
     },
   },
 
@@ -130,6 +136,10 @@ export default Vue.extend({
     checked() {
       this.renderHTML();
     },
+  },
+
+  mounted() {
+    this.$api.getLists({ minimal: true, per_page: 'all', status: 'active' });
   },
 });
 </script>

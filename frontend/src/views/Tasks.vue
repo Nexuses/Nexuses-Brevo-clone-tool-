@@ -52,30 +52,26 @@
             </td>
             <td class="is-capitalized">{{ t.status || 'open' }}</td>
             <td class="has-text-right">
-              <b-dropdown position="is-bottom-left" class="campaign-actions-menu">
-                <template #trigger>
-                  <button type="button" class="campaign-actions-trigger" aria-label="Actions">
-                    <span class="campaign-kebab" aria-hidden="true"><span /><span /><span /></span>
-                  </button>
-                </template>
-                <div class="campaign-actions-panel">
-                  <a href="#" class="campaign-action" aria-label="Edit" @click.prevent="openEdit(t)">
-                    <b-tooltip label="Edit" type="is-dark" position="is-left">
-                      <b-icon icon="pencil-outline" />
-                    </b-tooltip>
-                  </a>
-                  <a href="#" class="campaign-action" aria-label="Complete" @click.prevent="completeTask(t)">
-                    <b-tooltip label="Complete" type="is-dark" position="is-left">
-                      <b-icon icon="check-circle-outline" />
-                    </b-tooltip>
-                  </a>
-                  <a href="#" class="campaign-action" aria-label="Delete" @click.prevent="deleteTask(t)">
-                    <b-tooltip label="Delete" type="is-dark" position="is-left">
-                      <b-icon icon="trash-can-outline" />
-                    </b-tooltip>
-                  </a>
-                </div>
-              </b-dropdown>
+              <div class="crm-inline-actions">
+                <button type="button" class="crm-inline-actions__btn" @click="openEdit(t)" aria-label="Edit">
+                  <b-icon icon="pencil-outline" size="is-small" />
+                  <span>Edit</span>
+                </button>
+                <button
+                  v-if="t.status !== 'done'"
+                  type="button"
+                  class="crm-inline-actions__btn"
+                  @click="completeTask(t)"
+                  aria-label="Complete"
+                >
+                  <b-icon icon="check-circle-outline" size="is-small" />
+                  <span>Complete</span>
+                </button>
+                <button type="button" class="crm-inline-actions__btn is-danger" @click="deleteTask(t)" aria-label="Delete">
+                  <b-icon icon="trash-can-outline" size="is-small" />
+                  <span>Delete</span>
+                </button>
+              </div>
             </td>
           </tr>
           <tr v-if="filteredTasks.length === 0">
@@ -152,6 +148,7 @@ export default {
     },
 
     onFinished() {
+      this.isFormVisible = false;
       this.refresh();
     },
 

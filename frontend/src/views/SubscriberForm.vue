@@ -93,7 +93,7 @@
               <b-table :data="data.lists" hoverable default-sort="createdAt" class="subscriptions">
                 <b-table-column v-slot="props" field="name" :label="$tc('globals.terms.list', 1)">
                   <div>
-                    <router-link v-if="!props.row.restricted" :to="`/lists/${props.row.id}`">
+                    <router-link v-if="!props.row.restricted" :to="`/contacts/lists/${props.row.id}`">
                       {{ props.row.name }}
                     </router-link>
                     <span v-else class="has-text-grey-light is-italic">{{ props.row.name }}</span>

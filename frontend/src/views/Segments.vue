@@ -54,25 +54,16 @@
             <td>{{ $utils.formatNumber(s.contacts) }}</td>
             <td>{{ formatDate(s.updatedAt) }}</td>
             <td class="has-text-right">
-              <b-dropdown position="is-bottom-left" class="campaign-actions-menu">
-                <template #trigger>
-                  <button type="button" class="campaign-actions-trigger" aria-label="Actions">
-                    <span class="campaign-kebab" aria-hidden="true"><span /><span /><span /></span>
-                  </button>
-                </template>
-                <div class="campaign-actions-panel">
-                  <a href="#" class="campaign-action" aria-label="Edit" @click.prevent="editSegment(s)">
-                    <b-tooltip label="Edit" type="is-dark" position="is-left">
-                      <b-icon icon="pencil-outline" />
-                    </b-tooltip>
-                  </a>
-                  <a href="#" class="campaign-action" aria-label="Delete" @click.prevent="deleteSegment(s)">
-                    <b-tooltip label="Delete" type="is-dark" position="is-left">
-                      <b-icon icon="trash-can-outline" />
-                    </b-tooltip>
-                  </a>
-                </div>
-              </b-dropdown>
+              <div class="crm-inline-actions">
+                <button type="button" class="crm-inline-actions__btn" @click="editSegment(s)" aria-label="Edit">
+                  <b-icon icon="pencil-outline" size="is-small" />
+                  <span>Edit</span>
+                </button>
+                <button type="button" class="crm-inline-actions__btn is-danger" @click="deleteSegment(s)" aria-label="Delete">
+                  <b-icon icon="trash-can-outline" size="is-small" />
+                  <span>Delete</span>
+                </button>
+              </div>
             </td>
           </tr>
           <tr v-if="filteredSegments.length === 0">
