@@ -5,15 +5,45 @@
     <header class="campaigns-brevo__header">
       <div class="campaigns-brevo__title-row">
         <h1 class="campaigns-brevo__title">Campaigns</h1>
-        <router-link
-          v-if="$can('campaigns:manage')"
-          :to="{ name: 'campaign', params: { id: 'new' } }"
-          class="campaigns-brevo__create"
-          data-cy="btn-new"
-        >
-          <span class="campaigns-brevo__create-plus" aria-hidden="true">+</span>
-          Create a campaign
-        </router-link>
+        <div class="campaigns-brevo__actions">
+          <button type="button" class="campaigns-brevo__btn campaigns-brevo__btn--outline">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M2.5 4.5h4l1.2 1.5H13.5v6.5a1 1 0 01-1 1h-10a1 1 0 01-1-1V5.5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
+            </svg>
+            Create folder
+          </button>
+          <button type="button" class="campaigns-brevo__btn campaigns-brevo__btn--ai">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path
+                d="M8 2.5l.7 2.1L10.8 5.3 8.7 6.4 8 8.5l-.7-2.1L5.2 5.3l2.1-.7L8 2.5z"
+                fill="currentColor"
+              />
+              <path
+                d="M12.5 8.5l.45 1.35 1.35.45-1.35.45-.45 1.35-.45-1.35L10.7 10.3l1.35-.45.45-1.35z"
+                fill="currentColor"
+              />
+              <path
+                d="M4.2 9.8l.35 1.05L5.6 11.2l-1.05.35-.35 1.05-.35-1.05L2.8 11.2l1.05-.35.35-1.05z"
+                fill="currentColor"
+              />
+            </svg>
+            Generate campaign with AI
+          </button>
+          <router-link
+            v-if="$can('campaigns:manage')"
+            :to="{ name: 'campaign', params: { id: 'new' } }"
+            class="campaigns-brevo__btn campaigns-brevo__btn--primary"
+            data-cy="btn-new"
+          >
+            Create campaign
+          </router-link>
+        </div>
+      </div>
+
+      <div class="campaigns-brevo__channel-tabs" role="tablist" aria-label="Campaign type">
+        <button type="button" class="campaigns-brevo__channel is-active" role="tab" aria-selected="true">
+          Email
+        </button>
       </div>
     </header>
 
@@ -45,7 +75,17 @@
           </svg>
         </button>
       </div>
+    </div>
 
+    <div class="campaigns-brevo__meta" v-if="campaigns.total > 0 || bulk.checked.length > 0">
+      <div class="actions campaigns-brevo__bulk" v-if="bulk.checked.length > 0">
+        <a class="a" href="#" @click.prevent="deleteCampaigns" data-cy="btn-delete-campaigns">
+          <b-icon icon="trash-can-outline" size="is-small" /> Delete
+        </a>
+        <span class="a">
+          {{ $tc('globals.messages.numSelected', numSelectedCampaigns, { num: numSelectedCampaigns }) }}
+        </span>
+      </div>
       <div class="campaigns-brevo__pager" v-if="campaigns.total > 0">
         <span class="campaigns-brevo__pager-range">{{ pageRangeLabel }}</span>
         <span class="campaigns-brevo__pager-pages">
@@ -75,15 +115,6 @@
           </svg>
         </button>
       </div>
-    </div>
-
-    <div class="actions campaigns-brevo__bulk" v-if="bulk.checked.length > 0">
-      <a class="a" href="#" @click.prevent="deleteCampaigns" data-cy="btn-delete-campaigns">
-        <b-icon icon="trash-can-outline" size="is-small" /> Delete
-      </a>
-      <span class="a">
-        {{ $tc('globals.messages.numSelected', numSelectedCampaigns, { num: numSelectedCampaigns }) }}
-      </span>
     </div>
 
     <b-table

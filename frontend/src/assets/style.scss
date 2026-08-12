@@ -4181,7 +4181,7 @@ section.lists {
   color: $c-text;
 
   &__header {
-    margin-bottom: 0.85rem;
+    margin-bottom: 0;
   }
 
   &__title-row {
@@ -4189,77 +4189,126 @@ section.lists {
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
+    margin-bottom: 0.85rem;
   }
 
   &__title {
     margin: 0;
-    font-size: 22px !important;
+    font-size: 28px !important;
     font-weight: 700;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.025em;
     color: #111;
-    line-height: 1.2;
+    line-height: 1.15;
   }
 
-  &__create {
+  &__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.5rem;
+  }
+
+  &__btn {
     appearance: none;
     display: inline-flex;
     align-items: center;
+    justify-content: center;
     gap: 0.4rem;
-    background: #111;
-    color: #fff !important;
-    border: 0;
-    border-radius: 8px;
-    padding: 0.5rem 1rem 0.5rem 0.6rem;
-    font-size: 14px !important;
+    border-radius: 6px;
+    padding: 0.45rem 0.9rem;
+    font-size: 13px !important;
     font-weight: 600;
     font-family: inherit;
     text-decoration: none !important;
     white-space: nowrap;
-    min-height: 38px;
+    min-height: 36px;
     line-height: 1.2;
+    cursor: pointer;
 
-    &:hover {
-      background: #000;
+    &--outline {
+      background: #fff;
+      color: #111;
+      border: 1px solid #111;
+
+      &:hover {
+        background: #F9FAFB;
+      }
+    }
+
+    &--ai {
+      background: #fff;
+      color: #111;
+      border: 1.5px solid #635BFF;
+
+      svg {
+        color: #635BFF;
+      }
+
+      &:hover {
+        background: rgba(99, 91, 255, 0.04);
+      }
+    }
+
+    &--primary {
+      background: #111;
       color: #fff !important;
+      border: 1px solid #111;
+
+      &:hover {
+        background: #000;
+        color: #fff !important;
+      }
     }
   }
 
-  &__create-plus {
-    width: 18px;
-    height: 18px;
-    border-radius: 50%;
-    border: 1.5px solid #fff;
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    line-height: 1;
-    font-weight: 500;
+  &__channel-tabs {
+    display: flex;
+    align-items: flex-end;
+    gap: 1.25rem;
+    border-bottom: 1px solid $c-border;
+    margin-bottom: 0.85rem;
+  }
+
+  &__channel {
+    appearance: none;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -1px;
+    padding: 0.55rem 0.1rem 0.7rem;
+    font-size: 14px !important;
+    font-weight: 600;
+    font-family: inherit;
+    color: $c-muted;
+    cursor: pointer;
+
+    &.is-active {
+      color: $c-purple;
+      border-bottom-color: $c-purple;
+    }
   }
 
   &__controls {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    justify-content: space-between;
-    gap: 0.75rem 1rem;
-    margin-bottom: 0.85rem;
-    padding-top: 0.65rem;
-    border-top: 2px solid $c-purple;
+    gap: 0.65rem 0.75rem;
+    margin-bottom: 0.55rem;
   }
 
   &__toolbar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 0.55rem 0.65rem;
+    gap: 0.5rem 0.6rem;
     flex: 1 1 auto;
     min-width: 0;
   }
 
   &__search {
-    flex: 1 1 260px;
-    max-width: 360px;
+    flex: 1 1 280px;
+    max-width: 420px;
     min-width: 200px;
 
     .field {
@@ -4309,11 +4358,22 @@ section.lists {
     }
   }
 
+  &__meta {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.75rem 1rem;
+    margin-bottom: 0.65rem;
+    min-height: 28px;
+  }
+
   &__pager {
     display: inline-flex;
     align-items: center;
-    gap: 0.55rem;
+    gap: 0.5rem;
     flex-shrink: 0;
+    margin-left: auto;
     font-size: 13px !important;
     color: $c-muted;
     font-weight: 500;
@@ -4371,7 +4431,8 @@ section.lists {
   }
 
   &__bulk {
-    margin-bottom: 0.65rem;
+    margin-right: auto;
+    margin-bottom: 0;
   }
 
   &__tabs {
@@ -4380,7 +4441,7 @@ section.lists {
 }
 
 .main:has(.campaigns-brevo) {
-  background: #fff !important;
+  background: #F7F8FA !important;
 }
 
 .home-brevo__campaign-row.is-task {
@@ -4610,7 +4671,7 @@ section.campaigns {
 
           td.checkbox-cell {
             width: 40px;
-            padding: 0.85rem 0.15rem 0.85rem 0.85rem;
+            padding: 0.75rem 0.1rem 0.75rem 0.75rem;
             vertical-align: top;
             background: #fff;
             border-radius: 8px 0 0 8px;
@@ -4627,7 +4688,7 @@ section.campaigns {
             border-bottom: 1px solid #E5E7EB;
             border-right: 1px solid #E5E7EB;
             box-shadow: none;
-            padding: 0.85rem 0.9rem 0.85rem 0.25rem;
+            padding: 0.75rem 0.85rem 0.75rem 0.2rem;
             overflow: visible;
           }
 
@@ -4651,22 +4712,22 @@ section.campaigns {
     .bv-campaign-card {
       display: flex;
       align-items: flex-start;
-      gap: 1rem 1.35rem;
+      gap: 1rem 1.5rem;
       width: 100%;
       overflow: visible;
-      min-height: 72px;
+      min-height: 68px;
     }
 
     .bv-campaign-card__main {
-      flex: 0 1 280px;
-      min-width: 200px;
-      max-width: 340px;
+      flex: 0 1 300px;
+      min-width: 220px;
+      max-width: 360px;
     }
 
     .bv-campaign-card__title {
       display: block;
       font-weight: 700;
-      font-size: 15px !important;
+      font-size: 14px !important;
       color: #111 !important;
       text-decoration: none;
       line-height: 1.3;
@@ -4684,8 +4745,8 @@ section.campaigns {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: 0.3rem 0.4rem;
-      margin-top: 0.28rem;
+      gap: 0.25rem 0.35rem;
+      margin-top: 0.25rem;
       font-size: 12px !important;
       color: #6B7280;
       font-weight: 500;
@@ -4750,7 +4811,7 @@ section.campaigns {
     }
 
     .bv-campaign-card__id {
-      margin-top: 0.15rem;
+      margin-top: 0.12rem;
       font-size: 12px !important;
       color: #9CA3AF;
       font-weight: 500;
@@ -4758,12 +4819,12 @@ section.campaigns {
 
     .bv-campaign-card__metrics {
       display: grid;
-      grid-template-columns: repeat(5, minmax(68px, 1fr));
-      gap: 0.35rem 1rem;
+      grid-template-columns: repeat(5, minmax(70px, 1fr));
+      gap: 0.25rem 1.15rem;
       flex: 1 1 auto;
       min-width: 0;
       text-align: left;
-      padding-top: 0.1rem;
+      padding-top: 0.05rem;
     }
 
     .bv-metric__lbl {
@@ -4771,14 +4832,14 @@ section.campaigns {
       font-size: 11px !important;
       color: #9CA3AF;
       font-weight: 500;
-      margin-bottom: 0.15rem;
+      margin-bottom: 0.12rem;
       letter-spacing: 0;
       text-transform: none;
     }
 
     .bv-metric__val {
       display: block;
-      font-size: 15px !important;
+      font-size: 14px !important;
       font-weight: 700;
       color: #111;
       line-height: 1.2;
@@ -4788,7 +4849,7 @@ section.campaigns {
       display: block;
       font-size: 12px !important;
       color: #6B7280;
-      margin-top: 0.08rem;
+      margin-top: 0.06rem;
       font-weight: 400;
     }
 
@@ -6530,11 +6591,11 @@ section.campaign.bv-page {
     font-size: 14px !important;
 
     .campaigns-brevo__title {
-      font-size: 22px !important;
+      font-size: 28px !important;
     }
 
     .bv-campaign-card__title {
-      font-size: 15px !important;
+      font-size: 14px !important;
     }
 
     .bv-metric__lbl {
@@ -6542,7 +6603,7 @@ section.campaign.bv-page {
     }
 
     .bv-metric__val {
-      font-size: 15px !important;
+      font-size: 14px !important;
     }
 
     .bv-metric__pct,
@@ -6552,11 +6613,11 @@ section.campaign.bv-page {
     }
 
     .b-table table.table tbody td.checkbox-cell {
-      padding: 0.85rem 0.15rem 0.85rem 0.85rem !important;
+      padding: 0.75rem 0.1rem 0.75rem 0.75rem !important;
     }
 
     .b-table table.table tbody td.bv-campaign-cell {
-      padding: 0.85rem 0.9rem 0.85rem 0.25rem !important;
+      padding: 0.75rem 0.85rem 0.75rem 0.2rem !important;
     }
   }
 
@@ -6595,7 +6656,7 @@ section.campaign.bv-page {
 }
 
 .bv-campaign-card__title {
-  font-size: 15px !important;
+  font-size: 14px !important;
 }
 
 .bv-metric__lbl {
@@ -6603,7 +6664,7 @@ section.campaign.bv-page {
 }
 
 .bv-metric__val {
-  font-size: 15px !important;
+  font-size: 14px !important;
 }
 
 .modal-card-head h4,
