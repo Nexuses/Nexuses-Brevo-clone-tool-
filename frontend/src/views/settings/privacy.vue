@@ -41,7 +41,7 @@
 
     <hr />
 
-    <b-tabs v-model="tab" type="is-boxed" :animated="false">
+    <b-tabs v-model="tab" :animated="false">
       <b-tab-item :label="`${$t('settings.privacy.domainBlocklist')} (${numBlocked})`">
         <b-field :message="$t('settings.privacy.domainBlocklistHelp')">
           <b-input type="textarea" v-model="data['privacy.domain_blocklist']" name="privacy.domain_blocklist" />

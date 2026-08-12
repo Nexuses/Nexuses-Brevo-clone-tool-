@@ -464,7 +464,7 @@ func (a *App) doLogin(c echo.Context) error {
 	if !strHasLen(username, 3, stdInputMaxLen) {
 		return echo.NewHTTPError(http.StatusBadRequest, a.i18n.Ts("globals.messages.invalidFields", "name", "username"))
 	}
-	if !strHasLen(password, 8, stdInputMaxLen) {
+	if !strHasLen(password, 6, stdInputMaxLen) {
 		return echo.NewHTTPError(http.StatusBadRequest, a.i18n.Ts("globals.messages.invalidFields", "name", "password"))
 	}
 

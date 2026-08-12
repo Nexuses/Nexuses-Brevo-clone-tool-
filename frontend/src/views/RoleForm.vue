@@ -34,7 +34,7 @@
                 </b-select>
               </div>
               <div class="column">
-                <b-button @click="onAddListPerm" :disabled="!form.curList" class="is-primary" expanded>
+                <b-button @click="onAddListPerm" :disabled="!form.curList" type="is-dark" class="btn-new" expanded>
                   {{ $t('globals.buttons.add') }}
                 </b-button>
               </div>
@@ -114,7 +114,7 @@
         <b-button @click="$parent.close()">
           {{ $t('globals.buttons.close') }}
         </b-button>
-        <b-button v-if="!disabled" native-type="submit" type="is-primary" :loading="loading.roles" data-cy="btn-save">
+        <b-button v-if="!disabled" native-type="submit" type="is-dark" class="btn-new" :loading="loading.roles" data-cy="btn-save">
           {{ $t('globals.buttons.save') }}
         </b-button>
       </footer>

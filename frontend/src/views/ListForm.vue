@@ -63,7 +63,7 @@
           {{ $t('globals.buttons.close') }}
         </b-button>
         <b-button v-if="$can('lists:manage_all') || $canList(data.id, 'list:manage')" native-type="submit"
-          type="is-primary" :loading="loading.lists" data-cy="btn-save">
+          type="is-dark" class="btn-new" :loading="loading.lists" data-cy="btn-save">
           {{ $t('globals.buttons.save') }}
         </b-button>
       </footer>

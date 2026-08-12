@@ -1,19 +1,18 @@
 <template>
-  <section class="crm-page tasks-page">
+  <section class="crm-page tasks-page tasks-brevo">
     <crm-subnav />
 
-    <header class="columns page-header">
-      <div class="column is-8">
-        <h1 class="title is-4">Tasks</h1>
-        <p class="crm-page__lead">
+    <header class="tasks-brevo__header">
+      <div class="tasks-brevo__header-main">
+        <h1 class="tasks-brevo__title">Tasks</h1>
+        <p class="tasks-brevo__lead">
           Create and manage tasks for follow-ups, calls, and to-dos across your CRM.
         </p>
       </div>
-      <div class="column has-text-right">
-        <b-button type="is-dark" icon-left="plus" class="btn-new" @click="openCreate">
-          Create a task
-        </b-button>
-      </div>
+      <button type="button" class="tasks-brevo__create" @click="openCreate">
+        <span class="tasks-brevo__create-plus" aria-hidden="true">+</span>
+        Create a task
+      </button>
     </header>
 
     <div class="crm-toolbar">
@@ -52,26 +51,27 @@
             </td>
             <td class="is-capitalized">{{ t.status || 'open' }}</td>
             <td class="has-text-right">
-              <div class="crm-inline-actions">
-                <button type="button" class="crm-inline-actions__btn" @click="openEdit(t)" aria-label="Edit">
-                  <b-icon icon="pencil-outline" size="is-small" />
-                  <span>Edit</span>
-                </button>
-                <button
+              <b-dropdown position="is-bottom-left">
+                <template #trigger>
+                  <button type="button" class="crm-kebab" aria-label="Actions">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <circle cx="8" cy="3.5" r="1.4" fill="currentColor" />
+                      <circle cx="8" cy="8" r="1.4" fill="currentColor" />
+                      <circle cx="8" cy="12.5" r="1.4" fill="currentColor" />
+                    </svg>
+                  </button>
+                </template>
+                <b-dropdown-item @click="openEdit(t)">Edit</b-dropdown-item>
+                <b-dropdown-item
                   v-if="t.status !== 'done'"
-                  type="button"
-                  class="crm-inline-actions__btn"
                   @click="completeTask(t)"
-                  aria-label="Complete"
                 >
-                  <b-icon icon="check-circle-outline" size="is-small" />
-                  <span>Complete</span>
-                </button>
-                <button type="button" class="crm-inline-actions__btn is-danger" @click="deleteTask(t)" aria-label="Delete">
-                  <b-icon icon="trash-can-outline" size="is-small" />
-                  <span>Delete</span>
-                </button>
-              </div>
+                  Complete
+                </b-dropdown-item>
+                <b-dropdown-item class="has-text-danger" @click="deleteTask(t)">
+                  Delete
+                </b-dropdown-item>
+              </b-dropdown>
             </td>
           </tr>
           <tr v-if="filteredTasks.length === 0">
@@ -133,8 +133,8 @@ export default {
     },
 
     formatDue(t) {
-      if (!t.dueDate) return '—';
-      return `${dayjs(t.dueDate).format('MMM D, YYYY')} · ${t.time || ''}`.trim();
+      if (!t.dueDate) return 'â€”';
+      return `${dayjs(t.dueDate).format('MMM D, YYYY')} Â· ${t.time || ''}`.trim();
     },
 
     openCreate() {

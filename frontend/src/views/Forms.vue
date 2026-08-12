@@ -1,20 +1,26 @@
 <template>
-  <section class="forms content relative">
+  <section class="forms forms-brevo bv-page content relative">
     <marketing-subnav />
 
-    <h1 class="title is-4">
-      {{ $t('forms.title') }}
-    </h1>
-    <hr />
+    <header class="forms-brevo__header">
+      <div>
+        <h1 class="forms-brevo__title">
+          {{ $t('forms.title') }}
+        </h1>
+        <p class="forms-brevo__lead">
+          Build embeddable subscription forms for your public lists.
+        </p>
+      </div>
+    </header>
 
     <b-loading v-if="loading.lists" :active="loading.lists" :is-full-page="false" />
-    <p v-else-if="publicLists.length === 0">
+    <p v-else-if="publicLists.length === 0" class="bv-page__card">
       {{ $t('forms.noPublicLists') }}
     </p>
     <div class="columns" v-else-if="publicLists.length > 0">
       <div class="column is-4">
         <h4>{{ $t('forms.publicLists') }}</h4>
-        <p>{{ $t('forms.selectHelp') }}</p>
+        <p class="has-text-grey">{{ $t('forms.selectHelp') }}</p>
 
         <b-loading :active="loading.lists" :is-full-page="false" />
         <ul class="no" data-cy="lists">
@@ -30,7 +36,7 @@
           <h4>{{ $t('forms.publicSubPage') }}</h4>
           <p>
             <a :href="`${serverConfig.root_url}/subscription/form`" target="_blank" rel="noopener noreferer"
-              data-cy="url">
+              data-cy="url" class="bv-link">
               {{ serverConfig.root_url }}/subscription/form
             </a>
           </p>

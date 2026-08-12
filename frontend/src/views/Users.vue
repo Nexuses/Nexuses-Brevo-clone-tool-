@@ -1,33 +1,38 @@
 <template>
-  <section class="users">
-    <header class="columns page-header">
-      <div class="column is-10">
-        <h1 class="title is-4">
+  <section class="users users-brevo bv-page">
+    <header class="users-brevo__header">
+      <div class="users-brevo__header-main">
+        <h1 class="users-brevo__title">
           {{ $t('globals.terms.users') }}
-          <span v-if="!isNaN(users.length)">({{ users.length }})</span>
+          <span v-if="!isNaN(users.length)" class="has-text-grey-light">({{ users.length }})</span>
         </h1>
+        <p class="users-brevo__lead">Manage admin users and API tokens for your account.</p>
       </div>
-      <div class="column has-text-right">
-        <b-field v-if="$can('users:manage')" expanded>
-          <b-button expanded type="is-primary" icon-left="plus" class="btn-new" @click="showNewForm" data-cy="btn-new">
-            {{ $t('globals.buttons.new') }}
-          </b-button>
-        </b-field>
-      </div>
+      <button
+        v-if="$can('users:manage')"
+        type="button"
+        class="users-brevo__create"
+        data-cy="btn-new"
+        @click="showNewForm"
+      >
+        <span class="users-brevo__create-plus" aria-hidden="true">+</span>
+        {{ $t('globals.buttons.new') }}
+      </button>
     </header>
 
     <b-table :data="users" :loading="loading.users" hoverable checkable :checked-rows.sync="checked"
-      default-sort="createdAt" backend-sorting @sort="onSort" @check-all="onTableCheck" @check="onTableCheck">
+      default-sort="createdAt" backend-sorting @sort="onSort" @check-all="onTableCheck" @check="onTableCheck"
+      class="users-brevo__table">
       <template #top-left>
         <div class="columns">
           <div class="column is-6">
-            <form @submit.prevent="getUsers">
+            <form @submit.prevent="getUsers" class="users-brevo__search">
               <div>
                 <b-field>
                   <b-input v-model="queryParams.query" name="query" expanded icon="magnify" ref="query"
-                    data-cy="query" />
+                    data-cy="query" placeholder="Search users" />
                   <p class="controls">
-                    <b-button native-type="submit" type="is-primary" icon-left="magnify" data-cy="btn-query" />
+                    <b-button native-type="submit" type="is-dark" icon-left="magnify" data-cy="btn-query" />
                   </p>
                 </b-field>
               </div>
@@ -39,6 +44,7 @@
       <b-table-column v-slot="props" field="username" :label="$t('users.username')" header-class="cy-username" sortable
         :td-attrs="$utils.tdID">
         <a :href="`/users/${props.row.id}`" @click.prevent="showEditForm(props.row)"
+          class="bv-link"
           :class="{ 'has-text-grey': props.row.status === 'disabled' }">
           {{ props.row.username }}
         </a>

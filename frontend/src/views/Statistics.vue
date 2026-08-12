@@ -1,9 +1,14 @@
 <template>
-  <section class="crm-page statistics-page">
+  <section class="crm-page statistics-page statistics-brevo">
     <marketing-subnav />
 
-    <header class="page-header">
-      <h1 class="title is-4">Statistics</h1>
+    <header class="statistics-brevo__header">
+      <div>
+        <h1 class="statistics-brevo__title">Statistics</h1>
+        <p class="statistics-brevo__lead">
+          Overview of sends, opens, clicks, and bounce performance.
+        </p>
+      </div>
       <div class="stats-date-range">
         <b-datepicker
           v-model="dateRange"

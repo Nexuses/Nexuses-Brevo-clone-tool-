@@ -1,18 +1,22 @@
 <template>
-  <section class="crm-page companies-page">
+  <section class="crm-page companies-page companies-brevo">
     <crm-subnav />
 
-    <header class="columns page-header">
-      <div class="column is-8">
-        <h1 class="title is-4">Companies</h1>
+    <header class="companies-brevo__header">
+      <div class="companies-brevo__header-main">
+        <h1 class="companies-brevo__title">Companies</h1>
+        <p class="companies-brevo__lead">
+          Store company records linked to your contacts for account-based outreach.
+        </p>
       </div>
-      <div class="column has-text-right crm-page__actions">
-        <b-button type="is-light" outlined @click="importHint" data-cy="btn-import-companies">
+      <div class="companies-brevo__actions">
+        <button type="button" class="bv-btn-outline" data-cy="btn-import-companies" @click="importHint">
           Import companies
-        </b-button>
-        <b-button type="is-dark" icon-left="plus" class="btn-new" @click="createCompany" data-cy="btn-new-company">
+        </button>
+        <button type="button" class="companies-brevo__create" data-cy="btn-new-company" @click="createCompany">
+          <span class="companies-brevo__create-plus" aria-hidden="true">+</span>
           Create company
-        </b-button>
+        </button>
       </div>
     </header>
 
@@ -77,16 +81,21 @@
             <td>{{ c.owner || '--' }}</td>
             <td>{{ c.phone || '--' }}</td>
             <td class="has-text-right">
-              <div class="crm-inline-actions">
-                <button type="button" class="crm-inline-actions__btn" @click="editCompany(c)" aria-label="Edit">
-                  <b-icon icon="pencil-outline" size="is-small" />
-                  <span>Edit</span>
-                </button>
-                <button type="button" class="crm-inline-actions__btn is-danger" @click="deleteCompany(c)" aria-label="Delete">
-                  <b-icon icon="trash-can-outline" size="is-small" />
-                  <span>Delete</span>
-                </button>
-              </div>
+              <b-dropdown position="is-bottom-left">
+                <template #trigger>
+                  <button type="button" class="crm-kebab" aria-label="Actions">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <circle cx="8" cy="3.5" r="1.4" fill="currentColor" />
+                      <circle cx="8" cy="8" r="1.4" fill="currentColor" />
+                      <circle cx="8" cy="12.5" r="1.4" fill="currentColor" />
+                    </svg>
+                  </button>
+                </template>
+                <b-dropdown-item @click="editCompany(c)">Edit</b-dropdown-item>
+                <b-dropdown-item class="has-text-danger" @click="deleteCompany(c)">
+                  Delete
+                </b-dropdown-item>
+              </b-dropdown>
             </td>
           </tr>
           <tr v-if="filteredCompanies.length === 0">

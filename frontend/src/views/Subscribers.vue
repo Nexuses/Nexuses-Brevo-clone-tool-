@@ -1,38 +1,27 @@
 <template>
   <section class="subscribers contacts-brevo">
-    <crm-subnav />
-
-    <header class="columns page-header contacts-brevo__header">
-      <div class="column is-7">
-        <h1 class="title is-4">
-          <template v-if="currentList">{{ currentList.name }}</template>
-          <template v-else>Contacts</template>
-          <span v-if="!isNaN(subscribers.total)" class="contacts-brevo__count">
-            {{ $utils.formatNumber(subscribers.total) }}
-          </span>
-        </h1>
-        <p v-if="currentList" class="crm-page__lead mt-1">
-          Add contacts to this list or import them from a file.
-        </p>
-      </div>
-      <div class="column has-text-right contacts-brevo__actions">
-        <b-button
+    <header class="contacts-brevo__header">
+      <h1 class="contacts-brevo__title">
+        <template v-if="currentList">{{ currentList.name }}</template>
+        <template v-else>Contacts</template>
+      </h1>
+      <div class="contacts-brevo__actions">
+        <button
           v-if="$can('subscribers:manage')"
-          type="is-light"
-          outlined
+          type="button"
+          class="contacts-brevo__btn contacts-brevo__btn--outline"
           @click="showNewForm"
           data-cy="btn-new"
         >
           {{ currentList ? 'Add a contact' : 'Create a contact' }}
-        </b-button>
-        <b-button
+        </button>
+        <router-link
           v-if="$can('subscribers:import')"
-          type="is-dark"
-          tag="router-link"
           :to="importRoute"
+          class="contacts-brevo__btn contacts-brevo__btn--dark"
         >
           Import contacts
-        </b-button>
+        </router-link>
       </div>
     </header>
 
@@ -71,58 +60,87 @@
       >
         {{ currentList.name }}
       </button>
+      <button
+        v-if="$can('subscribers:manage')"
+        type="button"
+        class="contacts-brevo__view-add"
+        aria-label="Create a contact"
+        @click="showNewForm"
+      >
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M7 2v10M2 7h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+        </svg>
+      </button>
     </div>
 
     <div class="contacts-brevo__filter-bar">
-      <b-dropdown @change="onFilterListSelect">
-        <template #trigger>
-          <button type="button" class="contacts-brevo__chip">
-            Load a list or a segment
-            <b-icon icon="arrow-down" size="is-small" />
-          </button>
-        </template>
-        <b-dropdown-item v-if="currentList" :value="null">
-          All contacts
-        </b-dropdown-item>
-        <b-dropdown-item
-          v-for="l in availableLists"
-          :key="l.id"
-          :value="l.id"
-        >
-          {{ l.name }}
-        </b-dropdown-item>
-        <b-dropdown-item v-if="!availableLists.length" disabled>
-          No lists available
-        </b-dropdown-item>
-      </b-dropdown>
+      <div class="contacts-brevo__filter-left">
+        <b-dropdown @change="onFilterListSelect">
+          <template #trigger>
+            <button type="button" class="contacts-brevo__chip">
+              Load a list or a segment
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+          </template>
+          <b-dropdown-item v-if="currentList" :value="null">
+            All contacts
+          </b-dropdown-item>
+          <b-dropdown-item
+            v-for="l in availableLists"
+            :key="l.id"
+            :value="l.id"
+          >
+            {{ l.name }}
+          </b-dropdown-item>
+          <b-dropdown-item v-if="!availableLists.length" disabled>
+            No lists available
+          </b-dropdown-item>
+        </b-dropdown>
 
-      <button type="button" class="contacts-brevo__chip" @click.prevent="toggleAdvancedSearch">
-        <b-icon icon="plus" size="is-small" />
-        Add filter
+        <button type="button" class="contacts-brevo__chip" @click.prevent="toggleAdvancedSearch">
+          Add filter
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+      <button type="button" class="contacts-brevo__gear" aria-label="Settings">
+        <b-icon icon="cog-outline" size="is-small" />
       </button>
     </div>
 
     <div class="contacts-brevo__meta">
       <span class="contacts-brevo__meta-count">
         {{ $utils.formatNumber(subscribers.total || 0) }} contacts
+        <span class="contacts-brevo__info" title="Total contacts matching this view">i</span>
       </span>
-      <form class="contacts-brevo__search" @submit.prevent="onSubmit">
-        <b-field>
-          <b-input
-            @input="onSimpleQueryInput"
-            v-model="queryInput"
-            expanded
-            :placeholder="$t('subscribers.queryPlaceholder')"
-            icon="magnify"
-            ref="query"
-            :disabled="isSearchAdvanced"
-            data-cy="search"
-          />
-        </b-field>
-      </form>
+      <div class="contacts-brevo__meta-right">
+        <button type="button" class="contacts-brevo__customize" @click="openColumnsDrawer">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 5h4v14H4V5zM10 5h4v14h-4V5zM16 5h4v14h-4V5z" stroke="currentColor" stroke-width="1.8" />
+          </svg>
+          Customize columns
+        </button>
+        <form class="contacts-brevo__search" @submit.prevent="onSubmit">
+          <b-field>
+            <b-input
+              @input="onSimpleQueryInput"
+              v-model="queryInput"
+              expanded
+              placeholder="Search"
+              icon="magnify"
+              ref="query"
+              :disabled="isSearchAdvanced"
+              data-cy="search"
+            />
+          </b-field>
+        </form>
+      </div>
     </div>
 
-    <div v-if="isSearchAdvanced" class="mb-4">
+    <div v-if="isSearchAdvanced" class="contacts-brevo__advanced mb-4">
       <b-input v-model="queryParams.queryExp" @keydown.native.enter="onAdvancedQueryEnter" type="textarea"
         ref="queryExp" placeholder="subscribers.name LIKE '%user%' or subscribers.status='blocklisted'"
         data-cy="query" />
@@ -137,7 +155,7 @@
     </div>
 
     <b-table :data="subscribers.results ?? []" :loading="loading.subscribers" @check-all="onTableCheck"
-      @check="onTableCheck" :checked-rows.sync="bulk.checked" paginated backend-pagination pagination-position="both"
+      @check="onTableCheck" :checked-rows.sync="bulk.checked" paginated backend-pagination pagination-position="bottom"
       @page-change="onPageChange" :current-page="queryParams.page" :per-page="subscribers.perPage"
       :total="subscribers.total" hoverable checkable backend-sorting @sort="onSort"
       class="contacts-brevo__table">
@@ -164,60 +182,58 @@
         </div>
       </template>
 
-      <b-table-column v-slot="props" field="email" label="Contact" header-class="cy-email" sortable
+      <b-table-column v-slot="props" field="name" label="CONTACT" header-class="cy-email" sortable
         :td-attrs="$utils.tdID">
         <a :href="`/contacts/${props.row.id}`" @click.prevent="showEditForm(props.row)"
           class="contacts-brevo__name"
           :class="{ 'blocklisted': props.row.status === 'blocklisted' }">
           {{ contactDisplayName(props.row) }}
         </a>
-        <div class="is-size-7 has-text-grey">{{ props.row.email }}</div>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="status" label="Subscribed" header-class="cy-status">
-        <span class="contacts-brevo__sub-pill">
-          <b-icon icon="email-outline" size="is-small" /> Email
+      <b-table-column v-if="isColumnVisible('subscribed')" v-slot="props" field="status" label="SUBSCRIBED"
+        header-class="cy-status">
+        <span
+          class="contacts-brevo__sub-pill"
+          :class="{ 'is-blocklisted': props.row.status === 'blocklisted' }"
+        >
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <path d="M4 6h16v12H4V6z" stroke="currentColor" stroke-width="1.8" />
+            <path d="M4 7l8 6 8-6" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round" />
+          </svg>
+          Email
         </span>
-        <b-tag v-if="props.row.status !== 'enabled'" :class="props.row.status" class="ml-1 is-small">
-          {{ $t(`subscribers.status.${props.row.status}`) }}
-        </b-tag>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="lastname" :label="$t('subscribers.lastName')" header-class="cy-lastname">
-        <span class="has-text-grey-dark">{{ $utils.subscriberAttrib(props.row.attribs, 'lastname') || '—' }}</span>
+      <b-table-column v-if="isColumnVisible('email')" v-slot="props" field="email" label="EMAIL"
+        header-class="cy-email-col" sortable>
+        <span class="contacts-brevo__email" :title="props.row.email">{{ props.row.email }}</span>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="firstname" :label="$t('subscribers.firstName')" header-class="cy-firstname">
-        <span class="has-text-grey-dark">{{ $utils.subscriberAttrib(props.row.attribs, 'firstname') || '—' }}</span>
+      <b-table-column v-if="isColumnVisible('landline')" v-slot="props" field="phone" label="LANDLINE_PHONE"
+        header-class="cy-phone">
+        <span class="contacts-brevo__cell">{{ contactPhone(props.row) }}</span>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="company" :label="$t('subscribers.company')" header-class="cy-company">
-        <span class="has-text-grey-dark">{{ $utils.subscriberAttrib(props.row.attribs, 'company') || '—' }}</span>
+      <b-table-column v-if="isColumnVisible('lastChanged')" v-slot="props" field="updated_at" label="LAST CHANGED"
+        header-class="cy-updated" sortable>
+        <span class="contacts-brevo__cell">{{ formatBrevoDate(props.row.updatedAt) }}</span>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="lists" :label="$t('globals.terms.lists')" header-class="cy-lists" centered>
-        {{ listCount(props.row.lists) }}
+      <b-table-column v-if="isColumnVisible('created')" v-slot="props" field="created_at" label="CREATED"
+        header-class="cy-created" sortable>
+        <span class="contacts-brevo__cell">{{ formatBrevoDate(props.row.createdAt) }}</span>
       </b-table-column>
 
-      <b-table-column v-slot="props" cell-class="actions" align="right">
-        <div>
-          <a :href="`/api/subscribers/${props.row.id}/export`" data-cy="btn-download"
-            :aria-label="$t('subscribers.downloadData')">
-            <b-tooltip :label="$t('subscribers.downloadData')" type="is-dark">
-              <b-icon icon="cloud-download-outline" size="is-small" />
-            </b-tooltip>
-          </a>
+      <b-table-column v-slot="props" cell-class="actions" align="right" width="90">
+        <div class="contacts-brevo__row-actions">
           <a v-if="$can('subscribers:manage')" :href="`/contacts/${props.row.id}`"
             @click.prevent="showEditForm(props.row)" data-cy="btn-edit" :aria-label="$t('globals.buttons.edit')">
-            <b-tooltip :label="$t('globals.buttons.edit')" type="is-dark">
-              <b-icon icon="pencil-outline" size="is-small" />
-            </b-tooltip>
+            <b-icon icon="pencil-outline" size="is-small" />
           </a>
           <a v-if="$can('subscribers:manage')" href="#" @click.prevent="deleteSubscriber(props.row)"
             data-cy="btn-delete" :aria-label="$t('globals.buttons.delete')">
-            <b-tooltip :label="$t('globals.buttons.delete')" type="is-dark">
-              <b-icon icon="trash-can-outline" size="is-small" />
-            </b-tooltip>
+            <b-icon icon="trash-can-outline" size="is-small" />
           </a>
         </div>
       </b-table-column>
@@ -231,17 +247,144 @@
       <subscriber-bulk-list :num-subscribers="this.numSelectedSubscribers" @finished="bulkChangeLists" />
     </b-modal>
 
-    <b-modal scroll="keep" :aria-modal="true" :active.sync="isFormVisible" :width="850" @close="onFormClose">
-      <subscriber-form :data="curItem" :is-editing="isEditing" @finished="querySubscribers" />
+    <!-- Edit contact keeps the full modal -->
+    <b-modal
+      v-if="isEditing"
+      scroll="keep"
+      :aria-modal="true"
+      :active.sync="isFormVisible"
+      :width="850"
+      @close="onFormClose"
+    >
+      <subscriber-form :data="curItem" :is-editing="true" @finished="querySubscribers" />
     </b-modal>
+
+    <!-- Create contact — Brevo side drawer -->
+    <div
+      class="contacts-drawer"
+      :class="{ 'is-open': isCreateDrawerOpen }"
+      :aria-hidden="isCreateDrawerOpen ? 'false' : 'true'"
+    >
+      <button type="button" class="contacts-drawer__backdrop" aria-label="Close" @click="closeCreateDrawer" />
+      <aside class="contacts-drawer__panel" role="dialog" aria-modal="true" aria-label="Create a contact">
+        <header class="contacts-drawer__head">
+          <h2>Create a contact</h2>
+          <button type="button" class="contacts-drawer__close" aria-label="Close" @click="closeCreateDrawer">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M3 3l8 8M11 3L3 11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
+        <form class="contacts-drawer__body" @submit.prevent="createContactFromDrawer">
+          <label class="contacts-drawer__field">
+            <span>FIRSTNAME</span>
+            <input v-model="createForm.firstname" type="text" placeholder="Enter the FIRSTNAME" maxlength="200" />
+          </label>
+          <label class="contacts-drawer__field">
+            <span>LASTNAME</span>
+            <input v-model="createForm.lastname" type="text" placeholder="Enter the LASTNAME" maxlength="200" />
+          </label>
+          <label class="contacts-drawer__field">
+            <span>EMAIL</span>
+            <input
+              v-model="createForm.email"
+              type="email"
+              placeholder="Enter the email address"
+              maxlength="200"
+              required
+            />
+          </label>
+          <label class="contacts-drawer__field">
+            <span>SMS</span>
+            <input v-model="createForm.sms" type="text" placeholder="+91" maxlength="40" />
+          </label>
+          <label class="contacts-drawer__field">
+            <span>WHATSAPP</span>
+            <input v-model="createForm.whatsapp" type="text" placeholder="+91" maxlength="40" />
+          </label>
+          <label class="contacts-drawer__field">
+            <span>LANDLINE_NUMBER</span>
+            <input v-model="createForm.landline" type="text" placeholder="+91" maxlength="40" />
+          </label>
+          <footer class="contacts-drawer__foot">
+            <button type="button" class="contacts-drawer__cancel" @click="closeCreateDrawer">Cancel</button>
+            <button type="submit" class="contacts-drawer__save" :disabled="isCreating">Create</button>
+          </footer>
+        </form>
+      </aside>
+    </div>
+
+    <!-- Customize columns — Brevo side drawer -->
+    <div
+      class="contacts-drawer"
+      :class="{ 'is-open': isColumnsDrawerOpen }"
+      :aria-hidden="isColumnsDrawerOpen ? 'false' : 'true'"
+    >
+      <button type="button" class="contacts-drawer__backdrop" aria-label="Close" @click="closeColumnsDrawer" />
+      <aside class="contacts-drawer__panel" role="dialog" aria-modal="true" aria-label="Attributes visible as columns">
+        <header class="contacts-drawer__head">
+          <h2>Attributes visible as columns</h2>
+          <button type="button" class="contacts-drawer__close" aria-label="Close" @click="closeColumnsDrawer">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M3 3l8 8M11 3L3 11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
+        <div class="contacts-drawer__body">
+          <p class="contacts-drawer__help">
+            Customize the Contact page, and choose the attributes you want to see as columns.
+          </p>
+          <ul class="contacts-columns-list">
+            <li v-for="col in columnOptions" :key="col.key" class="contacts-columns-list__item">
+              <span class="contacts-columns-list__drag" aria-hidden="true">⋮⋮</span>
+              <span class="contacts-columns-list__label">{{ col.label }}</span>
+              <button
+                type="button"
+                class="contacts-columns-list__remove"
+                :aria-label="`Remove ${col.label}`"
+                @click="toggleColumnDraft(col.key)"
+              >
+                ×
+              </button>
+            </li>
+          </ul>
+          <div class="contacts-columns-add">
+            <b-dropdown>
+              <template #trigger>
+                <button type="button" class="contacts-columns-add__btn">
+                  <span aria-hidden="true">+</span> Select attributes
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+              </template>
+              <b-dropdown-item
+                v-for="col in allColumnDefs"
+                :key="col.key"
+                @click="addColumnDraft(col.key)"
+              >
+                <span :class="{ 'has-text-grey': draftColumns.includes(col.key) }">
+                  {{ col.label }}
+                  <template v-if="draftColumns.includes(col.key)"> ✓</template>
+                </span>
+              </b-dropdown-item>
+            </b-dropdown>
+          </div>
+          <footer class="contacts-drawer__foot">
+            <button type="button" class="contacts-drawer__cancel" @click="closeColumnsDrawer">Cancel</button>
+            <button type="button" class="contacts-drawer__save" @click="saveColumns">Save</button>
+          </footer>
+        </div>
+      </aside>
+    </div>
   </section>
 </template>
 
 <script>
 import Vue from 'vue';
 import { mapState } from 'vuex';
+import dayjs from 'dayjs';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
-import CrmSubnav from '../components/CrmSubnav.vue';
 import { uris } from '../constants';
 import SubscriberBulkList from './SubscriberBulkList.vue';
 import SubscriberForm from './SubscriberForm.vue';
@@ -251,7 +394,6 @@ export default Vue.extend({
     SubscriberForm,
     SubscriberBulkList,
     EmptyPlaceholder,
-    CrmSubnav,
   },
 
   data() {
@@ -262,6 +404,28 @@ export default Vue.extend({
       isEditing: false,
       isFormVisible: false,
       isBulkListFormVisible: false,
+      isCreateDrawerOpen: false,
+      isColumnsDrawerOpen: false,
+      isCreating: false,
+
+      createForm: {
+        firstname: '',
+        lastname: '',
+        email: '',
+        sms: '',
+        whatsapp: '',
+        landline: '',
+      },
+
+      allColumnDefs: [
+        { key: 'subscribed', label: 'SUBSCRIBED' },
+        { key: 'email', label: 'EMAIL' },
+        { key: 'landline', label: 'LANDLINE_PHONE' },
+        { key: 'lastChanged', label: 'LAST CHANGED' },
+        { key: 'created', label: 'CREATION DATE' },
+      ],
+      visibleColumns: ['subscribed', 'email', 'landline', 'lastChanged', 'created'],
+      draftColumns: [],
 
       // Table bulk row selection states.
       bulk: {
@@ -300,6 +464,22 @@ export default Vue.extend({
       if (name) return name;
       if (row.name) return row.name;
       return (row.email || '').split('@')[0] || 'Contact';
+    },
+
+    contactPhone(row) {
+      const keys = ['landline_phone', 'landline', 'phone', 'mobile', 'SMS'];
+      for (let i = 0; i < keys.length; i += 1) {
+        const v = this.$utils.subscriberAttrib(row.attribs, keys[i]);
+        if (v) return v;
+      }
+      return '—';
+    },
+
+    formatBrevoDate(raw) {
+      if (!raw) return '—';
+      const d = dayjs(raw);
+      if (!d.isValid()) return '—';
+      return d.format('DD/MM/YYYY');
     },
 
     toggleAdvancedSearch() {
@@ -346,12 +526,13 @@ export default Vue.extend({
 
     // Show the edit list form.
     showEditForm(sub) {
+      this.closeCreateDrawer();
       this.curItem = sub;
-      this.isFormVisible = true;
       this.isEditing = true;
+      this.isFormVisible = true;
     },
 
-    // Show the new contact form (pre-select current list when filtering by list).
+    // Show the new contact form (Brevo side drawer).
     showNewForm() {
       let lists = [];
       if (this.currentList) {
@@ -361,8 +542,107 @@ export default Vue.extend({
         lists = found ? [found] : [{ id: this.queryParams.listID }];
       }
       this.curItem = lists.length ? { lists } : {};
-      this.isFormVisible = true;
       this.isEditing = false;
+      this.isFormVisible = false;
+      this.createForm = {
+        firstname: '',
+        lastname: '',
+        email: '',
+        sms: '',
+        whatsapp: '',
+        landline: '',
+      };
+      this.isCreateDrawerOpen = true;
+    },
+
+    closeCreateDrawer() {
+      this.isCreateDrawerOpen = false;
+    },
+
+    createContactFromDrawer() {
+      const email = (this.createForm.email || '').trim();
+      if (!email) {
+        return;
+      }
+      const first = (this.createForm.firstname || '').trim();
+      const last = (this.createForm.lastname || '').trim();
+      const name = [first, last].filter(Boolean).join(' ') || email.split('@')[0];
+      const attribs = this.$utils.mergeSubscriberAttribs({}, {
+        firstname: first,
+        lastname: last,
+        company: '',
+      });
+      if (this.createForm.sms) attribs.SMS = this.createForm.sms.trim();
+      if (this.createForm.whatsapp) attribs.whatsapp = this.createForm.whatsapp.trim();
+      if (this.createForm.landline) attribs.landline_phone = this.createForm.landline.trim();
+
+      const lists = (this.curItem && this.curItem.lists)
+        ? this.curItem.lists.map((l) => l.id)
+        : [];
+
+      this.isCreating = true;
+      this.$api.createSubscriber({
+        email,
+        name,
+        status: 'enabled',
+        attribs,
+        lists,
+        preconfirm_subscriptions: false,
+      }).then((d) => {
+        this.closeCreateDrawer();
+        this.querySubscribers();
+        this.$utils.toast(this.$t('globals.messages.created', { name: d.name || email }));
+      }).finally(() => {
+        this.isCreating = false;
+      });
+    },
+
+    openColumnsDrawer() {
+      this.draftColumns = [...this.visibleColumns];
+      this.isColumnsDrawerOpen = true;
+    },
+
+    closeColumnsDrawer() {
+      this.isColumnsDrawerOpen = false;
+    },
+
+    isColumnVisible(key) {
+      return this.visibleColumns.includes(key);
+    },
+
+    toggleColumnDraft(key) {
+      this.draftColumns = this.draftColumns.filter((k) => k !== key);
+    },
+
+    addColumnDraft(key) {
+      if (!this.draftColumns.includes(key)) {
+        this.draftColumns = [...this.draftColumns, key];
+      }
+    },
+
+    saveColumns() {
+      this.visibleColumns = this.draftColumns.length
+        ? [...this.draftColumns]
+        : ['email'];
+      try {
+        localStorage.setItem('nexuses.contacts.columns', JSON.stringify(this.visibleColumns));
+      } catch (e) {
+        // ignore
+      }
+      this.closeColumnsDrawer();
+    },
+
+    loadSavedColumns() {
+      try {
+        const raw = localStorage.getItem('nexuses.contacts.columns');
+        if (!raw) return;
+        const parsed = JSON.parse(raw);
+        if (Array.isArray(parsed) && parsed.length) {
+          this.visibleColumns = parsed;
+        }
+      } catch (e) {
+        // ignore
+      }
     },
 
     openAddIfRequested() {
@@ -382,6 +662,7 @@ export default Vue.extend({
     },
 
     onFormClose() {
+      this.isFormVisible = false;
       if (this.$route.params.id) {
         this.$router.push({ name: 'subscribers' });
       }
@@ -623,6 +904,10 @@ export default Vue.extend({
       }
       return { name: 'import' };
     },
+
+    columnOptions() {
+      return this.allColumnDefs.filter((c) => this.draftColumns.includes(c.key));
+    },
   },
 
   watch: {
@@ -651,6 +936,7 @@ export default Vue.extend({
   },
 
   mounted() {
+    this.loadSavedColumns();
     this.fetchFilterLists();
 
     if (this.$route.params.listID) {

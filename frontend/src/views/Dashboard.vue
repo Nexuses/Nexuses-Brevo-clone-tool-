@@ -6,15 +6,20 @@
       <h1 class="home-brevo__greeting">Hello {{ displayName }}</h1>
     </header>
 
+    <!-- Planner: calendar + planned for day -->
     <section class="home-brevo__planner">
       <div class="home-brevo__calendar">
         <div class="home-brevo__cal-head">
           <button type="button" class="home-brevo__cal-nav" @click="shiftMonth(-1)" aria-label="Previous month">
-            <b-icon icon="chevron-left" size="is-small" />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
           </button>
           <span>{{ calendarLabel }}</span>
           <button type="button" class="home-brevo__cal-nav" @click="shiftMonth(1)" aria-label="Next month">
-            <b-icon icon="chevron-right" size="is-small" />
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+              <path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.75" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
           </button>
         </div>
         <div class="home-brevo__cal-weekdays">
@@ -43,23 +48,13 @@
       <div class="home-brevo__planned">
         <div class="home-brevo__planned-head">
           <h2>Planned for {{ plannedLabel }}</h2>
-          <b-dropdown position="is-bottom-left">
-            <template #trigger>
-              <button type="button" class="home-brevo__btn-dark">
-                + Create
-                <b-icon icon="arrow-down" size="is-small" />
-              </button>
-            </template>
-            <b-dropdown-item
-              v-if="$can('campaigns:manage')"
-              @click.native="goCreateCampaign"
-            >
-              Campaign
-            </b-dropdown-item>
-            <b-dropdown-item @click.native="openTaskForm()">
-              Task
-            </b-dropdown-item>
-          </b-dropdown>
+          <router-link
+            v-if="$can('campaigns:manage')"
+            :to="{ name: 'campaign', params: { id: 'new' } }"
+            class="home-brevo__btn-dark"
+          >
+            Create campaign
+          </router-link>
         </div>
 
         <div v-if="plannedItems.length === 0" class="home-brevo__empty">
@@ -76,7 +71,7 @@
             <div class="home-brevo__campaign-main">
               <div class="home-brevo__campaign-title">{{ task.name }}</div>
               <div class="home-brevo__campaign-meta">
-                #{{ task.id }} · {{ task.time || '' }}
+                <span>#{{ task.id }} · {{ task.time || '' }}</span>
                 <span class="home-brevo__status" :class="task.highPriority ? 'is-paused' : 'is-scheduled'">
                   <span class="dot" /> {{ task.highPriority ? 'High priority' : 'Task' }}
                 </span>
@@ -93,7 +88,7 @@
             <div class="home-brevo__campaign-main">
               <div class="home-brevo__campaign-title">{{ c.name }}</div>
               <div class="home-brevo__campaign-meta">
-                #{{ c.id }} · {{ campaignSentLabel(c) }}
+                <span>#{{ c.id }} · {{ campaignSentLabel(c) }}</span>
                 <span class="home-brevo__status" :class="`is-${c.status}`">
                   <span class="dot" /> {{ statusLabel(c.status) }}
                 </span>
@@ -116,12 +111,72 @@
             </div>
           </router-link>
         </div>
-        <div class="home-brevo__plant" aria-hidden="true">🌿</div>
+
+        <div class="home-brevo__plant" aria-hidden="true">
+          <svg width="120" height="90" viewBox="0 0 120 90" fill="none">
+            <path d="M78 88c-2-22 8-38 22-48" stroke="#9BC9B0" stroke-width="2.2" stroke-linecap="round" />
+            <path d="M72 88c1-18-6-34-18-44" stroke="#7BB89A" stroke-width="2.2" stroke-linecap="round" />
+            <path d="M70 88c-4-16-18-28-32-32" stroke="#A8D4BC" stroke-width="2" stroke-linecap="round" />
+            <ellipse cx="102" cy="38" rx="14" ry="9" transform="rotate(-28 102 38)" fill="#C8E6D4" opacity="0.9" />
+            <ellipse cx="52" cy="42" rx="13" ry="8" transform="rotate(24 52 42)" fill="#D6EFE2" opacity="0.95" />
+            <ellipse cx="36" cy="54" rx="11" ry="7" transform="rotate(-18 36 54)" fill="#BFE0CE" />
+            <circle cx="88" cy="52" r="4.5" fill="#F4A7B9" />
+            <path d="M70 88V52" stroke="#8FBFAB" stroke-width="2" stroke-linecap="round" />
+          </svg>
+        </div>
       </div>
     </section>
 
-    <section class="home-brevo__grid">
-      <article class="home-brevo__card">
+    <!-- Bottom cards: 2-col Brevo grid (contacts top-left; campaigns | automation bottom) -->
+    <section class="home-brevo__lower">
+      <article class="home-brevo__card home-brevo__contacts">
+        <header class="home-brevo__card-head">
+          <h2>Your contacts</h2>
+          <router-link
+            v-if="$can('subscribers:get_all', 'subscribers:get')"
+            :to="{ name: 'subscribers' }"
+            class="home-brevo__link"
+          >
+            Add contact
+          </router-link>
+        </header>
+
+        <div class="home-brevo__metric-box">
+          <div>
+            <div class="home-brevo__big-num">{{ formatCount(totalContacts) }}</div>
+            <div class="home-brevo__muted">Total contacts</div>
+          </div>
+          <div class="home-brevo__icon-badge is-gray" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="1.7" />
+              <path d="M4 20c0-3.3 3.6-6 8-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+              <path d="M17 14v6M14 17h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+          </div>
+        </div>
+
+        <div class="home-brevo__metric-box">
+          <div>
+            <div class="home-brevo__big-num">{{ formatCount(newContacts) }}</div>
+            <div class="home-brevo__muted">New contacts over the last 30 days</div>
+          </div>
+          <div class="home-brevo__icon-badge is-mint" aria-hidden="true">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+              <path d="M12 12a4 4 0 100-8 4 4 0 000 8z" stroke="currentColor" stroke-width="1.7" />
+              <path d="M4 20c0-3.3 3.6-6 8-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+              <path d="M17 14v6M14 17h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+          </div>
+        </div>
+
+        <footer class="home-brevo__card-foot">
+          <router-link :to="{ name: 'subscribers' }" class="home-brevo__link">
+            Go to Contacts
+          </router-link>
+        </footer>
+      </article>
+
+      <article class="home-brevo__card home-brevo__last-campaigns">
         <header class="home-brevo__card-head">
           <h2>Your last campaigns</h2>
           <router-link
@@ -145,7 +200,9 @@
             <div class="home-brevo__campaign-main">
               <div class="home-brevo__campaign-title">{{ c.name }}</div>
               <div class="home-brevo__campaign-meta">
-                #{{ c.id }} · {{ campaignSentLabel(c) }}
+                <span>#{{ c.id }} · {{ campaignSentLabel(c) }}</span>
+              </div>
+              <div class="home-brevo__campaign-meta">
                 <span class="home-brevo__status" :class="`is-${c.status}`">
                   <span class="dot" /> {{ statusLabel(c.status) }}
                 </span>
@@ -168,71 +225,37 @@
             </div>
           </router-link>
         </div>
-        <footer class="home-brevo__card-foot">
-          <router-link :to="{ name: 'campaigns' }" class="home-brevo__link">
-            Go to Campaigns
-          </router-link>
-        </footer>
       </article>
 
-      <div class="home-brevo__stack">
-        <article class="home-brevo__card home-brevo__contacts">
-          <header class="home-brevo__card-head">
-            <h2>Your contacts</h2>
-            <router-link
-              v-if="$can('subscribers:get_all', 'subscribers:get')"
-              :to="{ name: 'subscribers' }"
-              class="home-brevo__link"
-            >
-              Add contact
-            </router-link>
-          </header>
-          <div class="home-brevo__contacts-body">
-            <div>
-              <div class="home-brevo__big-num">{{ $utils.niceNumber(totalContacts) }}</div>
-              <div class="home-brevo__muted">Total contacts</div>
-            </div>
-            <div class="home-brevo__icon-badge" aria-hidden="true">
-              <b-icon icon="account-plus-outline" />
-            </div>
-          </div>
-          <footer class="home-brevo__card-foot">
-            <router-link :to="{ name: 'subscribers' }" class="home-brevo__link">
-              Go to Contacts
-            </router-link>
-          </footer>
-        </article>
-
-        <article class="home-brevo__card home-brevo__contacts is-secondary">
-          <div class="home-brevo__contacts-body">
-            <div>
-              <div class="home-brevo__big-num">{{ $utils.niceNumber(newContacts) }}</div>
-              <div class="home-brevo__muted">New contacts over the last 30 days</div>
-            </div>
-            <div class="home-brevo__icon-badge is-mint" aria-hidden="true">
-              <b-icon icon="account-plus" />
-            </div>
-          </div>
-        </article>
-      </div>
-    </section>
-
-    <section class="home-brevo__cta">
-      <div class="home-brevo__cta-art" aria-hidden="true">✉️</div>
-      <div class="home-brevo__cta-body">
-        <h2>Deliver the right message at the right time</h2>
-        <p>
-          Strengthen connections with timely and tailored messages, from welcome
-          emails to follow-ups and order confirmation campaigns.
-        </p>
-        <router-link
-          v-if="$can('campaigns:manage')"
-          :to="{ name: 'campaign', params: { id: 'new' } }"
-          class="home-brevo__btn-dark"
-        >
-          Create campaign
-        </router-link>
-      </div>
+      <article class="home-brevo__card home-brevo__cta">
+        <div class="home-brevo__cta-art" aria-hidden="true">
+          <svg width="120" height="100" viewBox="0 0 140 120" fill="none">
+            <circle cx="28" cy="30" r="10" fill="#C8EBD8" />
+            <circle cx="118" cy="24" r="7" fill="#D6F0E2" />
+            <circle cx="108" cy="88" r="12" fill="#BFE6D0" />
+            <path d="M34 78c8-18 28-28 48-22" stroke="#9BC9B0" stroke-width="2" stroke-linecap="round" />
+            <rect x="42" y="34" width="56" height="40" rx="4" fill="#E8F7EC" stroke="#7BC9A6" stroke-width="2" />
+            <path d="M42 38l28 18 28-18" stroke="#7BC9A6" stroke-width="2" stroke-linejoin="round" />
+            <rect x="54" y="48" width="40" height="28" rx="3" fill="#fff" stroke="#A8D4BC" stroke-width="1.5" />
+            <path d="M62 58h24M62 64h16" stroke="#C5D5CC" stroke-width="2" stroke-linecap="round" />
+            <path d="M96 28l4-8M100 28l-4-8M98 20v-6" stroke="#7BC9A6" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
+        </div>
+        <div class="home-brevo__cta-body">
+          <h2>Deliver the right message at the right time</h2>
+          <p>
+            Strengthen connections with timely and tailored messages, from welcome
+            SMS to abandoned cart and order confirmation emails.
+          </p>
+          <router-link
+            v-if="$can('campaigns:manage')"
+            :to="{ name: 'campaign', params: { id: 'new' } }"
+            class="home-brevo__btn-dark"
+          >
+            Create automation
+          </router-link>
+        </div>
+      </article>
     </section>
 
     <b-modal :active.sync="isTaskFormVisible" :width="560" scroll="keep" class="task-form-modal">
@@ -354,6 +377,10 @@ export default Vue.extend({
   },
 
   methods: {
+    formatCount(n) {
+      return Number(n || 0).toLocaleString('en-US');
+    },
+
     typeLabel(type) {
       const map = {
         todo: 'To do', call: 'Call', email: 'Email', meeting: 'Meeting',
@@ -364,10 +391,6 @@ export default Vue.extend({
     openTaskForm(task) {
       this.editingTask = task && task.id ? { ...task } : null;
       this.isTaskFormVisible = true;
-    },
-
-    goCreateCampaign() {
-      this.$router.push({ name: 'campaign', params: { id: 'new' } });
     },
 
     onTaskFinished() {
@@ -471,14 +494,20 @@ export default Vue.extend({
     },
 
     openRate(c) {
-      const sent = this.metricVal(c, ['sent', 'toSend', 'to_send']);
-      const opens = this.metricVal(c, ['views', 'opens', 'openCount']);
+      const sent = Math.max(
+        this.metricVal(c, ['sent']),
+        this.metricVal(c, ['toSend', 'to_send']),
+      );
+      const opens = this.metricVal(c, ['views', 'opens', 'openCount', 'uniqueOpens', 'unique_opens']);
       return this.rate(opens, sent);
     },
 
     clickRate(c) {
-      const sent = this.metricVal(c, ['sent', 'toSend', 'to_send']);
-      const clicks = this.metricVal(c, ['clicks', 'clickCount']);
+      const sent = Math.max(
+        this.metricVal(c, ['sent']),
+        this.metricVal(c, ['toSend', 'to_send']),
+      );
+      const clicks = this.metricVal(c, ['clicks', 'clickCount', 'uniqueClicks', 'unique_clicks']);
       return this.rate(clicks, sent);
     },
   },

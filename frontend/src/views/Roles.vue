@@ -1,24 +1,27 @@
 <template>
-  <section class="roles">
-    <header class="columns page-header">
-      <div class="column is-10">
-        <h1 class="title is-4">
+  <section class="roles roles-brevo bv-page">
+    <header class="roles-brevo__header">
+      <div class="roles-brevo__header-main">
+        <h1 class="roles-brevo__title">
           {{ $t(isUser ? 'users.userRoles' : 'users.listRoles') }}
-          <span v-if="!isNaN(roles.length)">({{ roles.length }})</span>
+          <span v-if="!isNaN(roles.length)" class="has-text-grey-light">({{ roles.length }})</span>
         </h1>
+        <p class="roles-brevo__lead">Configure permissions for user and list roles.</p>
       </div>
-      <div class="column has-text-right">
-        <b-field v-if="$can('users:manage')" expanded>
-          <b-button expanded type="is-primary" icon-left="plus" class="btn-new" @click="showNewForm('user')"
-            data-cy="btn-new">
-            {{ $t('globals.buttons.new') }}
-          </b-button>
-        </b-field>
-      </div>
+      <button
+        v-if="$can('users:manage')"
+        type="button"
+        class="roles-brevo__create"
+        data-cy="btn-new"
+        @click="showNewForm('user')"
+      >
+        <span class="roles-brevo__create-plus" aria-hidden="true">+</span>
+        {{ $t('globals.buttons.new') }}
+      </button>
     </header>
-    <b-table :data="roles" :loading="isLoading()" hoverable>
+    <b-table :data="roles" :loading="isLoading()" hoverable class="roles-brevo__table">
       <b-table-column v-slot="props" field="role" :label="$tc('users.role')" sortable>
-        <a href="#" @click.prevent="showEditForm(props.row, 'user')">
+        <a href="#" class="bv-link" @click.prevent="showEditForm(props.row, 'user')">
           <b-tag v-if="props.row.id === 1" class="enabled">
             {{ props.row.name }}
           </b-tag>

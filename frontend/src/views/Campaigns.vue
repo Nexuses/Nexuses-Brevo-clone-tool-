@@ -2,23 +2,89 @@
   <section class="campaigns campaigns-brevo">
     <marketing-subnav />
 
-    <header class="columns page-header">
-      <div class="column is-8">
-        <h1 class="title is-4">Campaigns</h1>
-      </div>
-      <div class="column has-text-right">
-        <b-button
+    <header class="campaigns-brevo__header">
+      <div class="campaigns-brevo__title-row">
+        <h1 class="campaigns-brevo__title">Campaigns</h1>
+        <router-link
           v-if="$can('campaigns:manage')"
           :to="{ name: 'campaign', params: { id: 'new' } }"
-          tag="router-link"
-          type="is-dark"
-          class="btn-new"
+          class="campaigns-brevo__create"
           data-cy="btn-new"
         >
-          Create campaign
-        </b-button>
+          <span class="campaigns-brevo__create-plus" aria-hidden="true">+</span>
+          Create a campaign
+        </router-link>
       </div>
     </header>
+
+    <div class="campaigns-brevo__controls">
+      <div class="campaigns-brevo__toolbar">
+        <form @submit.prevent="getCampaigns" class="campaigns-brevo__search">
+          <b-field>
+            <b-input
+              v-model="queryParams.query"
+              name="query"
+              expanded
+              placeholder="Search for a campaign"
+              icon="magnify"
+              ref="query"
+              @input="onSearchInput"
+            />
+          </b-field>
+        </form>
+        <button type="button" class="campaigns-brevo__chip">
+          All statuses
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <button type="button" class="campaigns-brevo__chip">
+          Select tags
+          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+
+      <div class="campaigns-brevo__pager" v-if="campaigns.total > 0">
+        <span class="campaigns-brevo__pager-range">{{ pageRangeLabel }}</span>
+        <span class="campaigns-brevo__pager-pages">
+          <span class="campaigns-brevo__pager-current">{{ queryParams.page }}</span>
+          of {{ totalPages }} pages
+        </span>
+        <button
+          type="button"
+          class="campaigns-brevo__pager-btn"
+          :disabled="queryParams.page <= 1"
+          aria-label="Previous page"
+          @click="onPageChange(queryParams.page - 1)"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M8.5 3.5L5 7l3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+        <button
+          type="button"
+          class="campaigns-brevo__pager-btn"
+          :disabled="queryParams.page >= totalPages"
+          aria-label="Next page"
+          @click="onPageChange(queryParams.page + 1)"
+        >
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M5.5 3.5L9 7l-3.5 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <div class="actions campaigns-brevo__bulk" v-if="bulk.checked.length > 0">
+      <a class="a" href="#" @click.prevent="deleteCampaigns" data-cy="btn-delete-campaigns">
+        <b-icon icon="trash-can-outline" size="is-small" /> Delete
+      </a>
+      <span class="a">
+        {{ $tc('globals.messages.numSelected', numSelectedCampaigns, { num: numSelectedCampaigns }) }}
+      </span>
+    </div>
 
     <b-table
       class="bv-campaigns-table"
@@ -31,7 +97,7 @@
       :checked-rows.sync="bulk.checked"
       paginated
       backend-pagination
-      pagination-position="both"
+      pagination-position="bottom"
       @page-change="onPageChange"
       :current-page="queryParams.page"
       :per-page="campaigns.perPage"
@@ -40,33 +106,6 @@
       backend-sorting
       @sort="onSort"
     >
-      <template #top-left>
-        <div class="campaigns-brevo__toolbar">
-          <form @submit.prevent="getCampaigns" class="campaigns-brevo__search">
-            <b-field>
-              <b-input
-                v-model="queryParams.query"
-                name="query"
-                expanded
-                placeholder="Search for a campaign"
-                icon="magnify"
-                ref="query"
-              />
-            </b-field>
-          </form>
-          <div class="crm-toolbar__folder">All statuses</div>
-        </div>
-
-        <div class="actions" v-if="bulk.checked.length > 0">
-          <a class="a" href="#" @click.prevent="deleteCampaigns" data-cy="btn-delete-campaigns">
-            <b-icon icon="trash-can-outline" size="is-small" /> Delete
-          </a>
-          <span class="a">
-            {{ $tc('globals.messages.numSelected', numSelectedCampaigns, { num: numSelectedCampaigns }) }}
-          </span>
-        </div>
-      </template>
-
       <b-table-column v-slot="props" cell-class="bv-campaign-cell">
         <div class="bv-campaign-card" :set="stats = getCampaignStats(props.row)">
           <div class="bv-campaign-card__main">
@@ -78,7 +117,8 @@
             </router-link>
             <div class="bv-campaign-card__status" :class="`is-${props.row.status}`">
               <span class="dot" />
-              <span>{{ campaignStatusLine(props.row, stats) }}</span>
+              <span class="bv-campaign-card__status-label">{{ statusLabel(props.row) }}</span>
+              <span class="bv-campaign-card__status-when">{{ statusWhen(props.row, stats) }}</span>
               <span class="spinner is-tiny" v-if="isRunning(props.row.id)">
                 <b-loading :is-full-page="false" active />
               </span>
@@ -94,8 +134,8 @@
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Opens</span>
-              <strong class="bv-metric__val">{{ $utils.formatNumber(metricVal(stats, ['views', 'opens'])) }}</strong>
-              <span class="bv-metric__pct">{{ pctLabel(metricVal(stats, ['views', 'opens']), sentCount(stats)) }}</span>
+              <strong class="bv-metric__val">{{ $utils.formatNumber(metricVal(stats, ['views', 'opens', 'uniqueOpens', 'unique_opens'])) }}</strong>
+              <span class="bv-metric__pct">{{ pctLabel(metricVal(stats, ['views', 'opens', 'uniqueOpens', 'unique_opens']), sentCount(stats)) }}</span>
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Clicks</span>
@@ -115,7 +155,19 @@
           </div>
 
           <div class="bv-campaign-card__actions">
-            <b-dropdown class="campaign-actions-menu" position="is-top-left">
+            <router-link
+              class="bv-campaign-card__report"
+              :to="{ name: 'campaign', params: { id: props.row.id }, query: { view: 'report' } }"
+              data-cy="btn-campaign-view-report"
+              aria-label="Report"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <path d="M3.5 12.5V9.5M7.5 12.5V6.5M11.5 12.5V8M14.5 12.5V4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
+                <path d="M3 14.5h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+              </svg>
+            </router-link>
+
+            <b-dropdown class="campaign-actions-menu" position="is-bottom-left">
               <template #trigger>
                 <button
                   type="button"
@@ -231,17 +283,6 @@
                   </b-tooltip>
                 </a>
 
-                <router-link
-                  class="campaign-action"
-                  :to="{ name: 'campaign', params: { id: props.row.id }, query: { view: 'report' } }"
-                  data-cy="btn-campaign-view-report"
-                  aria-label="Report"
-                >
-                  <b-tooltip label="Report" type="is-dark" position="is-left">
-                    <b-icon icon="chart-bar" />
-                  </b-tooltip>
-                </router-link>
-
                 <a
                   v-if="$can('campaigns:manage')"
                   href="#"
@@ -301,6 +342,7 @@ export default Vue.extend({
       },
       pollID: null,
       campaignStatsData: {},
+      searchDebounce: null,
 
       // Table bulk row selection states.
       bulk: {
@@ -356,7 +398,9 @@ export default Vue.extend({
     },
 
     sentCount(stats) {
-      return this.metricVal(stats, ['sent', 'toSend', 'to_send']);
+      const sent = this.metricVal(stats, ['sent']);
+      const toSend = this.metricVal(stats, ['toSend', 'to_send']);
+      return Math.max(sent, toSend);
     },
 
     metricVal(obj, keys) {
@@ -383,34 +427,50 @@ export default Vue.extend({
       return `${pct.toFixed(2)}%`;
     },
 
-    campaignStatusLine(c, stats) {
+    statusLabel(c) {
+      if (c.status === 'finished') return 'Sent';
+      if (c.status === 'running') return 'Sending';
+      if (c.status === 'scheduled') return 'Scheduled';
+      if (c.status === 'paused') return 'Paused';
+      if (c.status === 'cancelled') return 'Cancelled';
+      return 'Draft';
+    },
+
+    statusWhen(c, stats) {
       const raw = (stats && (stats.startedAt || stats.updatedAt))
         || c.startedAt
         || c.sendAt
         || c.updatedAt
         || c.createdAt;
       const d = raw ? dayjs(raw) : null;
-      const when = d ? d.format('MMM D, YYYY h:mm A') : '';
+      if (!d || !d.isValid()) return '';
+      const when = d.format('MMM D, YYYY h:mm A');
 
       if (c.status === 'finished') {
-        return when ? `Sent on ${when}` : 'Sent';
-      }
-      if (c.status === 'running') {
-        return when ? `Sending · ${when}` : 'Sending';
+        return `Sent on ${when}`;
       }
       if (c.status === 'scheduled' && c.sendAt) {
         return `Scheduled for ${dayjs(c.sendAt).format('MMM D, YYYY h:mm A')}`;
       }
-      if (c.status === 'paused') {
-        return when ? `Paused · ${when}` : 'Paused';
+      if (c.status === 'running') {
+        return when;
       }
-      if (c.status === 'cancelled') {
-        return when ? `Cancelled · ${when}` : 'Cancelled';
+      if (c.status === 'paused' || c.status === 'cancelled' || c.status === 'draft') {
+        return when;
       }
-      return when ? `Draft · ${when}` : 'Draft';
+      return when;
+    },
+
+    onSearchInput() {
+      clearTimeout(this.searchDebounce);
+      this.searchDebounce = setTimeout(() => {
+        this.queryParams.page = 1;
+        this.getCampaigns();
+      }, 250);
     },
 
     onPageChange(p) {
+      if (p < 1 || p > this.totalPages) return;
       this.queryParams.page = p;
       this.getCampaigns();
     },
@@ -593,6 +653,21 @@ export default Vue.extend({
     numSelectedCampaigns() {
       return this.bulk.all ? this.campaigns.total : this.bulk.checked.length;
     },
+
+    totalPages() {
+      const per = this.campaigns.perPage || 20;
+      const total = this.campaigns.total || 0;
+      return Math.max(1, Math.ceil(total / per));
+    },
+
+    pageRangeLabel() {
+      const per = this.campaigns.perPage || 20;
+      const total = this.campaigns.total || 0;
+      if (!total) return '0 of 0';
+      const start = ((this.queryParams.page - 1) * per) + 1;
+      const end = Math.min(this.queryParams.page * per, total);
+      return `${start}-${end} of ${total}`;
+    },
   },
 
   created() {
@@ -606,6 +681,7 @@ export default Vue.extend({
 
   destroyed() {
     clearInterval(this.pollID);
+    clearTimeout(this.searchDebounce);
     this.$root.$off('page.refresh', this.getCampaigns);
   },
 });

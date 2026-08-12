@@ -83,18 +83,6 @@ const routes = [
     redirect: (to) => `/contacts/${to.params.id}`,
   },
   {
-    path: '/segments',
-    name: 'segments',
-    meta: { title: 'menu.segments', group: 'crm' },
-    component: () => import('../views/Segments.vue'),
-  },
-  {
-    path: '/companies',
-    name: 'companies',
-    meta: { title: 'menu.companies', group: 'crm' },
-    component: () => import('../views/Companies.vue'),
-  },
-  {
     path: '/tasks',
     name: 'tasks',
     meta: { title: 'menu.tasks', group: 'crm' },

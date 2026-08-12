@@ -1,13 +1,13 @@
 <template>
-  <section class="maintenance wrap">
-    <h1 class="title is-4">
-      {{ $t('maintenance.title') }}
-    </h1>
-    <hr />
-    <p class="has-text-grey">
-      {{ $t('maintenance.help') }}
-    </p>
-    <br />
+  <section class="maintenance maintenance-brevo wrap bv-page">
+    <header class="maintenance-brevo__header">
+      <h1 class="maintenance-brevo__title">
+        {{ $t('maintenance.title') }}
+      </h1>
+      <p class="maintenance-brevo__lead">
+        {{ $t('maintenance.help') }}
+      </p>
+    </header>
 
     <div class="box">
       <h4 class="is-size-4">
@@ -30,7 +30,7 @@
         <div class="column">
           <br />
           <b-field>
-            <b-button class="is-primary" :loading="loading.maintenance" @click="deleteSubscribers" expanded>
+            <b-button type="is-dark" class="btn-new" :loading="loading.maintenance" @click="deleteSubscribers" expanded>
               {{ $t('globals.buttons.delete') }}
             </b-button>
           </b-field>
@@ -62,7 +62,7 @@
         <div class="column">
           <br />
           <b-field>
-            <b-button class="is-primary" :loading="loading.maintenance" @click="deleteSubscriptions" expanded>
+            <b-button type="is-dark" class="btn-new" :loading="loading.maintenance" @click="deleteSubscriptions" expanded>
               {{ $t('globals.buttons.delete') }}
             </b-button>
           </b-field>
@@ -100,7 +100,7 @@
         <div class="column">
           <br />
           <b-field>
-            <b-button expanded class="is-primary" :loading="loading.maintenance" @click="deleteAnalytics">
+            <b-button expanded type="is-dark" class="btn-new" :loading="loading.maintenance" @click="deleteAnalytics">
               {{ $t('globals.buttons.delete') }}
             </b-button>
           </b-field>
@@ -135,7 +135,7 @@
         <div class="column">
           <br />
           <b-field>
-            <b-button expanded class="is-primary" tag="a" icon-left="download"
+            <b-button expanded type="is-dark" class="btn-new" tag="a" icon-left="download"
               :href="exportURL">
               {{ $t('subscribers.export') }}
             </b-button>
@@ -168,7 +168,7 @@
         <div class="column is-3" />
         <div class="column is-3">
           <br />
-          <b-button type="is-primary" native-type="submit" :loading="loading.settings" expanded>
+          <b-button type="is-dark" class="btn-new" native-type="submit" :loading="loading.settings" expanded>
             {{ $t('globals.buttons.save') }}
           </b-button>
         </div>

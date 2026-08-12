@@ -1,8 +1,17 @@
 <template>
-  <section class="import">
-    <h1 class="title is-4">
-      {{ $t('import.title') }}
-    </h1>
+  <section class="import import-brevo bv-page">
+    <crm-subnav />
+
+    <header class="import-brevo__header">
+      <div>
+        <h1 class="import-brevo__title">
+          {{ $t('import.title') }}
+        </h1>
+        <p class="import-brevo__lead">
+          Import contacts from CSV or text files into your lists.
+        </p>
+      </div>
+    </header>
     <b-loading :active="isLoading" />
 
     <section v-if="isFree()" class="wrap">
@@ -90,7 +99,7 @@
             </b-tag>
           </div>
           <div class="buttons">
-            <b-button native-type="submit" type="is-primary"
+            <b-button native-type="submit" type="is-dark" class="btn-new"
               :disabled="!form.file || (form.mode === 'subscribe' && form.lists.length === 0)" :loading="isProcessing">
               {{ $t('import.upload') }}
             </b-button>
@@ -137,7 +146,7 @@
       <br />
 
       <p>
-        <b-button @click="stopImport" :loading="isProcessing" icon-left="file-upload-outline" type="is-primary">
+        <b-button @click="stopImport" :loading="isProcessing" icon-left="file-upload-outline" type="is-dark" class="btn-new">
           {{ isDone() ? $t('import.importDone') : $t('import.stopImport') }}
         </b-button>
       </p>
@@ -155,11 +164,13 @@ import Vue from 'vue';
 import { mapState } from 'vuex';
 import ListSelector from '../components/ListSelector.vue';
 import LogView from '../components/LogView.vue';
+import CrmSubnav from '../components/CrmSubnav.vue';
 
 export default Vue.extend({
   components: {
     ListSelector,
     LogView,
+    CrmSubnav,
   },
 
   props: {

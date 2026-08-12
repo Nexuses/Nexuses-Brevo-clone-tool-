@@ -1,5 +1,5 @@
 <template>
-  <section class="campaign">
+  <section class="campaign bv-page">
     <marketing-subnav />
 
     <campaign-report
@@ -13,7 +13,7 @@
       <div class="column is-6">
         <p v-if="isEditing && canViewReport">
           <router-link
-            class="campaign-report__back-inline"
+            class="campaign-report__back-inline bv-link"
             :to="{ name: 'campaign', params: { id: data.id }, query: { view: 'report' } }"
           >
             <b-icon icon="chart-box-outline" size="is-small" /> View report
@@ -37,32 +37,33 @@
         <h4 v-else class="title is-4">
           {{ $t('campaigns.newCampaign') }}
         </h4>
+        <p v-if="!isEditing" class="bv-page__lead">Create a new email campaign for your lists.</p>
       </div>
 
       <div class="column is-6">
         <div v-if="canManage || canSend" class="buttons">
           <b-field grouped v-if="isEditing && canEdit">
             <b-field v-if="canManage" expanded>
-              <b-button expanded @click="() => onSubmit('update')" :loading="loading.campaigns" type="is-primary"
-                icon-left="content-save-outline" data-cy="btn-save" aria-keyshortcuts="ctrl+s">
+              <b-button expanded @click="() => onSubmit('update')" :loading="loading.campaigns" type="is-dark"
+                icon-left="content-save-outline" data-cy="btn-save" aria-keyshortcuts="ctrl+s" class="btn-new">
                 <span class="has-kbd">{{ $t('globals.buttons.saveChanges') }} <span class="kbd">Ctrl+S</span></span>
               </b-button>
             </b-field>
             <b-field expanded v-if="canSend && canStart">
-              <b-button expanded @click="startCampaign" :loading="loading.campaigns" type="is-primary"
-                icon-left="rocket-launch-outline" data-cy="btn-start">
+              <b-button expanded @click="startCampaign" :loading="loading.campaigns" type="is-dark"
+                icon-left="rocket-launch-outline" data-cy="btn-start" class="btn-new">
                 {{ $t('campaigns.start') }}
               </b-button>
             </b-field>
             <b-field expanded v-if="canSend && canSchedule">
-              <b-button expanded @click="startCampaign" :loading="loading.campaigns" type="is-primary"
-                icon-left="clock-start" data-cy="btn-schedule">
+              <b-button expanded @click="startCampaign" :loading="loading.campaigns" type="is-dark"
+                icon-left="clock-start" data-cy="btn-schedule" class="btn-new">
                 {{ $t('campaigns.schedule') }}
               </b-button>
             </b-field>
             <b-field expanded v-if="canSend && canUnSchedule">
               <b-button expanded @click="$utils.confirm(null, unscheduleCampaign)" :loading="loading.campaigns"
-                type="is-primary" icon-left="clock-start" data-cy="btn-unschedule">
+                type="is-dark" icon-left="clock-start" data-cy="btn-unschedule" class="btn-new">
                 {{ $t('campaigns.unSchedule') }}
               </b-button>
             </b-field>
@@ -80,7 +81,7 @@
 
     <b-loading :active="loading.campaigns" />
 
-    <b-tabs type="is-boxed" :animated="false" v-model="activeTab" @input="onTab">
+    <b-tabs :animated="false" v-model="activeTab" @input="onTab">
       <b-tab-item :label="$tc('globals.terms.campaign')" label-position="on-border" value="campaign"
         icon="rocket-launch-outline">
         <section class="wrap">

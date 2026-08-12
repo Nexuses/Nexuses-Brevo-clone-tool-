@@ -1,28 +1,61 @@
 <template>
-  <section class="media-files">
-    <h1 class="title is-4">
-      {{ $t('media.title') }}
-      <span v-if="media.results && media.results.length > 0">({{ media.results.length }})</span>
-      <span class="has-text-grey-light"> / {{ serverConfig.media_provider }}</span>
-    </h1>
+  <section class="media-files media-brevo bv-page">
+    <marketing-subnav v-if="!isModal" />
+
+    <header class="media-brevo__header" v-if="!isModal">
+      <div class="media-brevo__header-main">
+        <h1 class="media-brevo__title">
+          {{ $t('media.title') }}
+          <span v-if="media.results && media.results.length > 0" class="has-text-grey-light">
+            ({{ media.results.length }})
+          </span>
+        </h1>
+        <p class="media-brevo__lead">
+          Upload and manage images used in your campaigns and templates.
+          <span class="has-text-grey">Provider: {{ serverConfig.media_provider }}</span>
+        </p>
+      </div>
+      <button
+        v-if="$can('media:manage')"
+        type="button"
+        class="media-brevo__create"
+        data-cy="btn-toggle-upload"
+        @click="onToggleForm"
+      >
+        {{ $t('media.upload') }}
+      </button>
+    </header>
+    <header class="columns page-header" v-else>
+      <div class="column is-8">
+        <h1 class="title is-4">
+          {{ $t('media.title') }}
+        </h1>
+      </div>
+      <div v-if="$can('media:manage')" class="column has-text-right">
+        <b-button type="is-dark" icon-left="file-upload-outline" class="btn-new" @click="onToggleForm" data-cy="btn-toggle-upload">
+          {{ $t('media.upload') }}
+        </b-button>
+      </div>
+    </header>
 
     <b-loading :active="isProcessing || loading.media" />
 
-    <section class="wrap gallery mt-6">
+    <section class="wrap gallery mt-4">
       <div class="columns mb-4">
         <div class="column">
-          <form @submit.prevent="onQueryMedia" class="search">
+          <form @submit.prevent="onQueryMedia" class="search media-brevo__search">
             <div>
               <b-field>
-                <b-input v-model="queryParams.query" name="query" expanded icon="magnify" ref="query" data-cy="query" />
+                <b-input v-model="queryParams.query" name="query" expanded icon="magnify" ref="query" data-cy="query"
+                  placeholder="Search media" />
                 <p class="controls">
-                  <b-button native-type="submit" type="is-primary" icon-left="magnify" data-cy="btn-query" />
+                  <b-button native-type="submit" type="is-dark" icon-left="magnify" data-cy="btn-query" />
                 </p>
               </b-field>
             </div>
           </form>
         </div>
-        <div v-if="$can('media:manage')" class="column is-narrow">
+        <div v-if="$can('media:manage') && isModal" class="column is-narrow">
           <b-button @click="onToggleForm" icon-left="file-upload-outline" data-cy="btn-toggle-upload">
             {{ $t('media.upload') }}
           </b-button>
@@ -48,8 +81,8 @@
               </b-tag>
             </div>
             <div class="buttons">
-              <b-button native-type="submit" type="is-primary" icon-left="file-upload-outline"
-                :disabled="form.files.length === 0" :loading="isProcessing">
+              <b-button native-type="submit" type="is-dark" icon-left="file-upload-outline"
+                :disabled="form.files.length === 0" :loading="isProcessing" class="btn-new">
                 {{ $tc('media.upload') }}
               </b-button>
             </div>
@@ -112,10 +145,12 @@
 import Vue from 'vue';
 import { mapState } from 'vuex';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
+import MarketingSubnav from '../components/MarketingSubnav.vue';
 
 export default Vue.extend({
   components: {
     EmptyPlaceholder,
+    MarketingSubnav,
   },
 
   name: 'Media',

@@ -1,10 +1,14 @@
 <template>
-  <section class="logs content relative">
-    <h1 class="title is-4">
-      {{ $t('logs.title') }}
-    </h1>
-    <hr />
-    <log-view :loading="loading.logs" :lines="lines" />
+  <section class="logs logs-brevo content relative bv-page">
+    <header class="logs-brevo__header">
+      <h1 class="logs-brevo__title">
+        {{ $t('logs.title') }}
+      </h1>
+      <p class="logs-brevo__lead">Live application logs from the server.</p>
+    </header>
+    <div class="bv-page__card">
+      <log-view :loading="loading.logs" :lines="lines" />
+    </div>
   </section>
 </template>
 

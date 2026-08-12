@@ -1,8 +1,15 @@
 <template>
-  <section class="analytics content relative">
-    <h1 class="title is-4">
-      {{ $t('analytics.title') }}
-    </h1>
+  <section class="analytics content relative bv-page analytics-brevo">
+    <marketing-subnav />
+
+    <header class="analytics-brevo__header">
+      <div>
+        <h1 class="analytics-brevo__title">
+          {{ $t('analytics.title') }}
+        </h1>
+        <p class="analytics-brevo__lead">Track opens, clicks, and performance across your campaigns.</p>
+      </div>
+    </header>
     <div v-if="serverConfig.privacy.disable_tracking"
       class="notification is-info">
       {{ $t('analytics.trackingDisabled') }}
@@ -14,9 +21,8 @@
     <div v-if="trackingNotes" class="notification is-light">
       <strong>{{ $t('analytics.trackingNotes') }}:</strong> {{ trackingNotes }}
     </div>
-    <hr />
 
-    <form @submit.prevent="onSubmit">
+    <form @submit.prevent="onSubmit" class="bv-page__card mb-4">
       <div class="columns">
         <div class="column is-6">
           <b-field :label="$t('globals.terms.campaigns')" label-position="on-border">
@@ -45,7 +51,7 @@
         </div>
 
         <div class="column is-1">
-          <b-button native-type="submit" type="is-primary" icon-left="magnify" :disabled="form.campaigns.length === 0"
+          <b-button native-type="submit" type="is-dark" icon-left="magnify" :disabled="form.campaigns.length === 0"
             data-cy="btn-search" />
         </div>
         <div class="column is-1" v-if="reportURL">
@@ -120,6 +126,7 @@ import { mapState } from 'vuex';
 import { colors } from '../constants';
 import Chart from '../components/Chart.vue';
 import AnalyticsRecordsTable from '../components/AnalyticsRecordsTable.vue';
+import MarketingSubnav from '../components/MarketingSubnav.vue';
 
 const chartColorRed = '#ee7d5b';
 const chartColors = [
@@ -137,6 +144,7 @@ export default Vue.extend({
   components: {
     Chart,
     AnalyticsRecordsTable,
+    MarketingSubnav,
   },
 
   data() {

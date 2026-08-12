@@ -1,23 +1,30 @@
 <template>
-  <section class="crm-page segments-page">
+  <section class="crm-page segments-page segments-brevo">
     <crm-subnav />
 
-    <header class="columns page-header">
-      <div class="column is-8">
-        <h1 class="title is-4">Segments</h1>
-        <p class="crm-page__lead">
+    <header class="segments-brevo__header">
+      <div class="segments-brevo__header-main">
+        <h1 class="segments-brevo__title">Segments</h1>
+        <p class="segments-brevo__lead">
           This is where you organize your segments. Create, modify, and manage segments for targeted
           interactions, and keep them in folders for easy navigation.
         </p>
       </div>
-      <div class="column has-text-right">
-        <b-button type="is-dark" icon-left="plus" class="btn-new" @click="createSegment" data-cy="btn-new-segment">
-          Create a segment
-        </b-button>
-      </div>
+      <button
+        type="button"
+        class="segments-brevo__create"
+        data-cy="btn-new-segment"
+        @click="createSegment"
+      >
+        <span class="segments-brevo__create-plus" aria-hidden="true">+</span>
+        Create a segment
+      </button>
     </header>
 
     <div class="crm-toolbar">
+      <div class="crm-toolbar__folder">
+        All folders ({{ filteredSegments.length }} segments)
+      </div>
       <b-field>
         <b-input
           v-model="query"
@@ -27,9 +34,6 @@
           data-cy="segment-search"
         />
       </b-field>
-      <div class="crm-toolbar__folder">
-        All folders ({{ filteredSegments.length }} segments)
-      </div>
     </div>
 
     <div class="crm-card-table">
@@ -54,16 +58,21 @@
             <td>{{ $utils.formatNumber(s.contacts) }}</td>
             <td>{{ formatDate(s.updatedAt) }}</td>
             <td class="has-text-right">
-              <div class="crm-inline-actions">
-                <button type="button" class="crm-inline-actions__btn" @click="editSegment(s)" aria-label="Edit">
-                  <b-icon icon="pencil-outline" size="is-small" />
-                  <span>Edit</span>
-                </button>
-                <button type="button" class="crm-inline-actions__btn is-danger" @click="deleteSegment(s)" aria-label="Delete">
-                  <b-icon icon="trash-can-outline" size="is-small" />
-                  <span>Delete</span>
-                </button>
-              </div>
+              <b-dropdown position="is-bottom-left">
+                <template #trigger>
+                  <button type="button" class="crm-kebab" aria-label="Actions">
+                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                      <circle cx="8" cy="3.5" r="1.4" fill="currentColor" />
+                      <circle cx="8" cy="8" r="1.4" fill="currentColor" />
+                      <circle cx="8" cy="12.5" r="1.4" fill="currentColor" />
+                    </svg>
+                  </button>
+                </template>
+                <b-dropdown-item @click="editSegment(s)">Edit</b-dropdown-item>
+                <b-dropdown-item class="has-text-danger" @click="deleteSegment(s)">
+                  Delete
+                </b-dropdown-item>
+              </b-dropdown>
             </td>
           </tr>
           <tr v-if="filteredSegments.length === 0">
@@ -126,7 +135,7 @@ export default {
 
   methods: {
     formatDate(iso) {
-      return dayjs(iso).format('MMM D, YYYY, h:mm A');
+      return dayjs(iso).format('DD/MM/YYYY');
     },
 
     load() {

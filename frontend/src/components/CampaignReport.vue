@@ -283,7 +283,9 @@ export default Vue.extend({
     },
 
     delivered() {
-      return this.campaign.sent || 0;
+      const sent = Number(this.campaign.sent) || 0;
+      const toSend = Number(this.campaign.toSend) || 0;
+      return Math.max(sent, toSend);
     },
 
     toSend() {
@@ -291,11 +293,11 @@ export default Vue.extend({
     },
 
     opens() {
-      return this.campaign.views || 0;
+      return Number(this.campaign.views) || Number(this.campaign.uniqueOpens) || 0;
     },
 
     clicks() {
-      return this.campaign.clicks || 0;
+      return Number(this.campaign.clicks) || Number(this.campaign.uniqueClicks) || 0;
     },
 
     bounces() {

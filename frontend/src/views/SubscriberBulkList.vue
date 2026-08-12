@@ -36,7 +36,7 @@
         <b-button @click="$parent.close()">
           {{ $t('globals.buttons.close') }}
         </b-button>
-        <b-button native-type="submit" type="is-primary" :disabled="form.lists.length === 0">
+        <b-button native-type="submit" type="is-dark" class="btn-new" :disabled="form.lists.length === 0">
           {{ $t('globals.buttons.save') }}
         </b-button>
       </footer>

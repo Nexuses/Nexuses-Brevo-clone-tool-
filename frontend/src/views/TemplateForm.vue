@@ -3,7 +3,7 @@
     <form @submit.prevent="onSubmit">
       <div :class="asPage ? 'template-page-card content' : 'modal-card content template-modal-content'" style="width: auto">
         <header :class="asPage ? 'template-page-card__head' : 'modal-card-head'">
-          <b-button @click="onTogglePreview" class="is-pulled-right" type="is-primary" icon-left="file-find-outline">
+          <b-button @click="onTogglePreview" class="is-pulled-right" type="is-dark" icon-left="file-find-outline">
             {{ $t('templates.preview') }} (F9)
           </b-button>
 
@@ -86,7 +86,7 @@
           <b-button @click="onClose">
             {{ $t('globals.buttons.close') }}
           </b-button>
-          <b-button v-if="$can('templates:manage')" native-type="submit" type="is-primary" :loading="loading.templates">
+          <b-button v-if="$can('templates:manage')" native-type="submit" type="is-dark" class="btn-new" :loading="loading.templates">
             {{ $t('globals.buttons.save') }}
           </b-button>
         </footer>

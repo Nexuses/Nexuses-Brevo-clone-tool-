@@ -67,7 +67,7 @@
           </div>
         </div>
 
-        <b-tabs type="is-boxed" :animated="false">
+        <b-tabs :animated="false">
           <b-tab-item :label="$t('globals.terms.lists')" label-position="on-border">
             <list-selector :label="$t('subscribers.lists')" :placeholder="$t('subscribers.listsPlaceholder')"
               :message="$t('subscribers.listsHelp')" v-model="form.lists" :selected="form.lists" :all="lists.results" />
@@ -180,7 +180,7 @@
         <b-button @click="$parent.close()">
           {{ $t('globals.buttons.close') }}
         </b-button>
-        <b-button v-if="$can('subscribers:manage')" native-type="submit" type="is-primary"
+        <b-button v-if="$can('subscribers:manage')" native-type="submit" type="is-dark" class="btn-new"
           :loading="loading.subscribers">
           {{ $t('globals.buttons.save') }}
         </b-button>

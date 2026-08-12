@@ -1,14 +1,16 @@
 <template>
-  <section class="user-profile section-mini">
+  <section class="user-profile user-profile-brevo section-mini bv-page">
     <b-loading v-if="loading.users" :active="loading.users" :is-full-page="false" />
 
-    <h1 class="title">
-      @{{ data.username }}
-    </h1>
-    <b-tag v-if="data.userRole">{{ data.userRole.name }}</b-tag>
+    <header class="user-profile-brevo__header">
+      <h1 class="user-profile-brevo__title">
+        @{{ data.username }}
+      </h1>
+      <p class="user-profile-brevo__lead">Update your profile and password.</p>
+      <b-tag v-if="data.userRole">{{ data.userRole.name }}</b-tag>
+    </header>
 
-    <br /><br /><br />
-    <form @submit.prevent="onSubmit">
+    <form @submit.prevent="onSubmit" class="bv-page__card">
       <b-field v-if="data.type !== 'api'" :label="$t('subscribers.email')" label-position="on-border">
         <b-input :maxlength="200" v-model="form.email" name="email" :placeholder="$t('subscribers.email')"
           :disabled="!data.passwordLogin" required autofocus />
@@ -33,7 +35,7 @@
       </div>
 
       <b-field expanded>
-        <b-button type="is-primary" icon-left="content-save-outline" native-type="submit" data-cy="btn-save">
+        <b-button type="is-dark" icon-left="content-save-outline" native-type="submit" data-cy="btn-save" class="btn-new">
           {{ $t('globals.buttons.save') }}
         </b-button>
       </b-field>

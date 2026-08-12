@@ -1,13 +1,14 @@
 <template>
-  <section class="bounces">
+  <section class="bounces bounces-brevo bv-page">
     <crm-subnav />
 
-    <header class="page-header columns">
-      <div class="column is-two-thirds">
-        <h1 class="title is-4">
+    <header class="bounces-brevo__header">
+      <div>
+        <h1 class="bounces-brevo__title">
           {{ $t('globals.terms.bounces') }}
-          <span v-if="bounces.total > 0">({{ bounces.total }})</span>
+          <span v-if="bounces.total > 0" class="has-text-grey-light">({{ bounces.total }})</span>
         </h1>
+        <p class="bounces-brevo__lead">Review bounced emails and clean up invalid contacts.</p>
       </div>
     </header>
 

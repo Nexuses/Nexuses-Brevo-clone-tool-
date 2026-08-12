@@ -1,60 +1,123 @@
 <template>
-  <section class="lists">
-    <crm-subnav />
-
-    <header class="columns page-header lists-brevo__header">
-      <div class="column is-8">
-        <h1 class="title is-4 mb-2">Lists</h1>
-        <p class="crm-page__lead">
-          This is where you organize your lists. Create, modify, and manage custom lists for targeted
-          interactions, and keep them in folders for easy navigation.
-        </p>
-        <div class="is-size-7 mt-2">
-          <router-link v-if="queryParams.status !== 'archived'" :to="{ name: 'lists', query: { status: 'archived' } }">
-            {{ $t('globals.buttons.view') }} {{ $t('lists.archived').toLowerCase() }} &rarr;
-          </router-link>
-          <router-link v-else :to="{ name: 'lists' }">
-            {{ $t('globals.buttons.view') }} {{ $t('menu.allLists').toLowerCase() }} &rarr;
-          </router-link>
-        </div>
-      </div>
-      <div class="column has-text-right">
-        <b-button
+  <section class="lists lists-brevo">
+    <header class="lists-brevo__header">
+      <div class="lists-brevo__title-row">
+        <h1 class="lists-brevo__title">Lists</h1>
+        <button
           v-if="$can('lists:manage_all')"
-          type="is-dark"
-          icon-left="plus"
-          class="btn-new"
-          @click="showNewForm"
+          type="button"
+          class="lists-brevo__create"
           data-cy="btn-new"
+          @click="showNewForm"
         >
+          <span class="lists-brevo__create-plus" aria-hidden="true">+</span>
           Create a list
-        </b-button>
+        </button>
+      </div>
+      <p class="lists-brevo__lead">
+        This is where you organize your lists. Create, modify, and manage custom lists for targeted
+        interactions, and keep them in folders for easy navigation.
+      </p>
+      <div class="lists-brevo__meta-row">
+        <div class="lists-brevo__links">
+          <a
+            href="https://listmonk.app/docs/lists/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="lists-brevo__link lists-brevo__link--doc"
+          >
+            Get started with Lists and Folders
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path
+                d="M5 2.5H2.5A1 1 0 001.5 3.5v6A1 1 0 002.5 10.5h6a1 1 0 001-1V7M7 1.5h3.5V5M5.5 6.5L10.5 1.5"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+          <a
+            href="https://listmonk.app/docs/querying/#lists"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="lists-brevo__link lists-brevo__link--doc"
+          >
+            Lists vs Segments
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path
+                d="M5 2.5H2.5A1 1 0 001.5 3.5v6A1 1 0 002.5 10.5h6a1 1 0 001-1V7M7 1.5h3.5V5M5.5 6.5L10.5 1.5"
+                stroke="currentColor"
+                stroke-width="1.3"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+              />
+            </svg>
+          </a>
+        </div>
+        <button
+          v-if="queryParams.status !== 'archived'"
+          type="button"
+          class="lists-brevo__link lists-brevo__link--recalc"
+          @click="getLists"
+        >
+          Recalculate now
+        </button>
+        <router-link
+          v-else
+          :to="{ name: 'lists' }"
+          class="lists-brevo__link lists-brevo__link--recalc"
+        >
+          View all lists
+        </router-link>
       </div>
     </header>
 
-    <div class="crm-toolbar">
-      <div class="crm-toolbar__folder">
+    <div class="lists-brevo__toolbar">
+      <button type="button" class="lists-brevo__folder-chip">
         All folders ({{ lists.total || 0 }} lists)
-      </div>
-      <b-field>
-        <b-input
-          v-model="queryParams.query"
-          name="query"
-          expanded
-          icon="magnify"
-          placeholder="Search a list name or ID"
-          ref="query"
-          data-cy="query"
-          @keyup.native.enter="getLists"
-          @input="onSearchInput"
-        />
-      </b-field>
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+          <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+        </svg>
+      </button>
+      <form class="lists-brevo__search" @submit.prevent="getLists">
+        <b-field>
+          <b-input
+            v-model="queryParams.query"
+            name="query"
+            expanded
+            icon="magnify"
+            placeholder="Search a list name or ID"
+            ref="query"
+            data-cy="query"
+            @keyup.native.enter="getLists"
+            @input="onSearchInput"
+          />
+        </b-field>
+      </form>
     </div>
 
-    <b-table :data="lists.results" :loading="loading.listsFull" @check-all="onTableCheck" @check="onTableCheck"
-      :checked-rows.sync="bulk.checked" hoverable default-sort="createdAt" paginated backend-pagination
-      pagination-position="both" @page-change="onPageChange" :current-page="queryParams.page" :per-page="lists.perPage"
-      :total="lists.total" checkable backend-sorting @sort="onSort" class="lists-brevo__table">
+    <b-table
+      :data="lists.results"
+      :loading="loading.listsFull"
+      @check-all="onTableCheck"
+      @check="onTableCheck"
+      :checked-rows.sync="bulk.checked"
+      hoverable
+      :mobile-cards="false"
+      default-sort="createdAt"
+      default-sort-direction="desc"
+      paginated
+      backend-pagination
+      pagination-position="bottom"
+      @page-change="onPageChange"
+      :current-page="queryParams.page"
+      :per-page="lists.perPage"
+      :total="lists.total"
+      backend-sorting
+      @sort="onSort"
+      class="lists-brevo__table"
+    >
       <template #top-left>
         <div class="actions" v-if="bulk.checked.length > 0">
           <a class="a" href="#" @click.prevent="deleteLists" data-cy="btn-delete-lists">
@@ -66,76 +129,77 @@
         </div>
       </template>
 
-      <b-table-column v-slot="props" field="name" label="Lists" header-class="cy-name" sortable
-        width="28%" :td-attrs="$utils.tdID">
-        <a href="#" class="crm-link" @click.prevent.stop="openListContacts(props.row.id)">
+      <b-table-column
+        v-slot="props"
+        field="name"
+        label="Lists"
+        header-class="cy-name"
+        sortable
+        :td-attrs="$utils.tdID"
+      >
+        <a href="#" class="lists-brevo__name" @click.prevent.stop="openListContacts(props.row.id)">
           {{ props.row.name }}
         </a>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="id" label="ID" header-class="cy-id" sortable width="8%">
-        #{{ props.row.id }}
+      <b-table-column v-slot="props" field="id" label="ID" header-class="cy-id" sortable>
+        <span class="lists-brevo__id">#{{ props.row.id }}</span>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="type" label="Folder" header-class="cy-type" sortable width="12%">
-        {{ $t(`lists.types.${props.row.type}`) }}
+      <b-table-column v-slot="props" field="type" label="Folder" header-class="cy-type" sortable>
+        <span class="lists-brevo__folder">{{ folderLabel(props.row) }}</span>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="subscriber_count" label="Contacts"
-        header-class="cy-subscribers" numeric sortable centered>
-        <template v-if="$can('subscribers:get_all', 'subscribers:get')">
-          <a href="#" @click.prevent.stop="openListContacts(props.row.id)">
-            {{ $utils.formatNumber(props.row.subscriberCount) }}
-          </a>
-        </template>
-        <template v-else>
+      <b-table-column
+        v-slot="props"
+        field="subscriber_count"
+        label="Contacts"
+        header-class="cy-subscribers"
+        numeric
+        sortable
+      >
+        <a
+          v-if="$can('subscribers:get_all', 'subscribers:get')"
+          href="#"
+          class="lists-brevo__count"
+          @click.prevent.stop="openListContacts(props.row.id)"
+        >
           {{ $utils.formatNumber(props.row.subscriberCount) }}
-        </template>
+        </a>
+        <span v-else class="lists-brevo__count">
+          {{ $utils.formatNumber(props.row.subscriberCount) }}
+        </span>
       </b-table-column>
 
-      <b-table-column v-slot="props" field="created_at" label="Creation date"
-        header-class="cy-created_at" sortable>
-        {{ $utils.niceDate(props.row.createdAt, true) }}
+      <b-table-column
+        v-slot="props"
+        field="created_at"
+        label="Creation date"
+        header-class="cy-created_at"
+        sortable
+      >
+        <span class="lists-brevo__date">{{ formatCreated(props.row.createdAt) }}</span>
       </b-table-column>
 
-      <b-table-column v-slot="props" label="Actions" cell-class="actions" align="right">
+      <b-table-column v-slot="props" label="Actions" cell-class="actions" align="right" width="70">
         <b-dropdown position="is-bottom-left" class="campaign-actions-menu">
           <template #trigger>
-            <button type="button" class="campaign-actions-trigger" aria-label="Actions">
-              <span class="campaign-kebab" aria-hidden="true"><span /><span /><span /></span>
+            <button type="button" class="lists-brevo__kebab" aria-label="Actions">
+              <span aria-hidden="true" /><span aria-hidden="true" /><span aria-hidden="true" />
             </button>
           </template>
           <div class="campaign-actions-panel">
-            <router-link
+            <a
               v-if="$can('subscribers:get_all', 'subscribers:get')"
-              :to="`/contacts/lists/${props.row.id}`"
+              href="#"
               class="campaign-action"
               aria-label="View contacts"
+              @click.prevent="openListContacts(props.row.id)"
             >
               <b-tooltip label="View contacts" type="is-dark" position="is-left">
                 <b-icon icon="account-multiple" />
               </b-tooltip>
-            </router-link>
-            <router-link
-              v-if="$can('subscribers:manage')"
-              :to="{ path: `/contacts/lists/${props.row.id}`, query: { add: '1' } }"
-              class="campaign-action"
-              aria-label="Add contact"
-            >
-              <b-tooltip label="Add a contact" type="is-dark" position="is-left">
-                <b-icon icon="plus" />
-              </b-tooltip>
-            </router-link>
-            <router-link
-              v-if="$can('subscribers:import')"
-              :to="{ name: 'import', query: { list_id: props.row.id } }"
-              class="campaign-action"
-              aria-label="Import contacts"
-            >
-              <b-tooltip label="Import contacts" type="is-dark" position="is-left">
-                <b-icon icon="file-upload-outline" />
-              </b-tooltip>
-            </router-link>
+            </a>
             <a
               v-if="$can('lists:manage') || $canList(props.row.id, 'list:manage')"
               href="#"
@@ -151,7 +215,7 @@
               v-if="$can('campaigns:manage')"
               :to="`/campaigns/new?list_id=${props.row.id}`"
               class="campaign-action"
-              aria-label="Campaign"
+              aria-label="Send campaign"
             >
               <b-tooltip :label="$t('lists.sendCampaign')" type="is-dark" position="is-left">
                 <b-icon icon="rocket-launch-outline" />
@@ -177,61 +241,135 @@
       </template>
     </b-table>
 
-    <!-- Add / edit form modal -->
-    <b-modal scroll="keep" :aria-modal="true" :active.sync="isFormVisible" :width="600" @close="onFormClose">
-      <list-form :data="curItem" :is-editing="isEditing" @finished="formFinished" />
+    <!-- Edit list keeps modal -->
+    <b-modal
+      v-if="isEditing"
+      scroll="keep"
+      :aria-modal="true"
+      :active.sync="isFormVisible"
+      :width="600"
+      @close="onFormClose"
+    >
+      <list-form :data="curItem" :is-editing="true" @finished="formFinished" />
     </b-modal>
 
-    <p v-if="settings['app.cache_slow_queries']" class="has-text-grey">
-      *{{ $t('globals.messages.slowQueriesCached') }}
-      <a href="https://listmonk.app/docs/maintenance/performance/" target="_blank" rel="noopener noreferer"
-        class="has-text-grey">
-        <b-icon icon="link-variant" /> {{ $t('globals.buttons.learnMore') }}
-      </a>
-    </p>
+    <!-- Create a list — Brevo side drawer -->
+    <div
+      class="contacts-drawer lists-drawer"
+      :class="{ 'is-open': isCreateDrawerOpen }"
+      :aria-hidden="isCreateDrawerOpen ? 'false' : 'true'"
+    >
+      <button type="button" class="contacts-drawer__backdrop" aria-label="Close" @click="closeCreateDrawer" />
+      <aside class="contacts-drawer__panel" role="dialog" aria-modal="true" aria-label="Create a list">
+        <header class="contacts-drawer__head">
+          <h2>Create a list</h2>
+          <button type="button" class="contacts-drawer__close" aria-label="Close" @click="closeCreateDrawer">
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M3 3l8 8M11 3L3 11" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+          </button>
+        </header>
+        <form class="contacts-drawer__body lists-drawer__body" @submit.prevent="createListFromDrawer">
+          <label class="lists-drawer__field">
+            <span class="lists-drawer__label">
+              Name of the list <em aria-hidden="true">*</em>
+            </span>
+            <div class="lists-drawer__input-wrap">
+              <input
+                v-model="createForm.name"
+                type="text"
+                placeholder="Enter a list name"
+                maxlength="255"
+                required
+                ref="createName"
+              />
+              <span class="lists-drawer__counter">{{ createForm.name.length }}/255</span>
+            </div>
+          </label>
+
+          <label class="lists-drawer__field">
+            <span class="lists-drawer__label">
+              Folder <em aria-hidden="true">*</em>
+            </span>
+            <div class="lists-drawer__select-wrap">
+              <select v-model="createForm.type" required>
+                <option value="" disabled>Select a folder</option>
+                <option value="private">Private</option>
+                <option value="public">Public</option>
+              </select>
+            </div>
+          </label>
+
+          <footer class="contacts-drawer__foot">
+            <button type="button" class="contacts-drawer__cancel" @click="closeCreateDrawer">Cancel</button>
+            <button
+              type="submit"
+              class="contacts-drawer__save lists-drawer__save"
+              :disabled="isCreating || !createForm.name.trim() || !createForm.type"
+            >
+              Create list
+            </button>
+          </footer>
+        </form>
+      </aside>
+    </div>
   </section>
 </template>
 
 <script>
 import Vue from 'vue';
 import { mapState } from 'vuex';
+import dayjs from 'dayjs';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
-import CrmSubnav from '../components/CrmSubnav.vue';
 import ListForm from './ListForm.vue';
 
 export default Vue.extend({
   components: {
     ListForm,
     EmptyPlaceholder,
-    CrmSubnav,
   },
 
   data() {
     return {
-      // Current list item being edited.
       curItem: null,
       isEditing: false,
       isFormVisible: false,
-      lists: [],
+      isCreateDrawerOpen: false,
+      isCreating: false,
+      createForm: {
+        name: '',
+        type: '',
+      },
+      lists: { results: [], total: 0, perPage: 20 },
       queryParams: {
         page: 1,
         query: '',
-        orderBy: 'id',
-        order: 'asc',
+        orderBy: 'created_at',
+        order: 'desc',
         status: this.$route.query.status || 'active',
       },
-
-      // Table bulk row selection states.
       bulk: {
         checked: [],
         all: false,
       },
-
       searchDebounce: null,
     };
   },
 
   methods: {
+    folderLabel(row) {
+      if (row.type === 'public') return 'Public';
+      if (row.type === 'private') return 'Private';
+      return row.type || '—';
+    },
+
+    formatCreated(raw) {
+      if (!raw) return '—';
+      const d = dayjs(raw);
+      if (!d.isValid()) return '—';
+      return d.format('MMM D, YYYY HH:mm');
+    },
+
     onPageChange(p) {
       this.queryParams.page = p;
       this.getLists();
@@ -260,18 +398,46 @@ export default Vue.extend({
       this.$router.push({ name: 'subscribers_list', params: { listID } });
     },
 
-    // Show the edit list form.
     showEditForm(list) {
+      this.closeCreateDrawer();
       this.curItem = list;
-      this.isFormVisible = true;
       this.isEditing = true;
+      this.isFormVisible = true;
     },
 
-    // Show the new list form.
     showNewForm() {
-      this.curItem = {};
-      this.isFormVisible = true;
       this.isEditing = false;
+      this.isFormVisible = false;
+      this.createForm = { name: '', type: '' };
+      this.isCreateDrawerOpen = true;
+      this.$nextTick(() => {
+        if (this.$refs.createName) this.$refs.createName.focus();
+      });
+    },
+
+    closeCreateDrawer() {
+      this.isCreateDrawerOpen = false;
+    },
+
+    createListFromDrawer() {
+      const name = (this.createForm.name || '').trim();
+      const { type } = this.createForm;
+      if (!name || !type) return;
+
+      this.isCreating = true;
+      this.$api.createList({
+        name,
+        type,
+        optin: 'single',
+        status: 'active',
+        tags: [],
+      }).then((data) => {
+        this.closeCreateDrawer();
+        this.getLists();
+        this.$utils.toast(this.$t('globals.messages.created', { name: data.name }));
+      }).finally(() => {
+        this.isCreating = false;
+      });
     },
 
     formFinished() {
@@ -279,18 +445,10 @@ export default Vue.extend({
     },
 
     onFormClose() {
+      this.isFormVisible = false;
       if (this.$route.params.id) {
         this.$router.push({ name: 'lists' });
       }
-    },
-
-    filterStatuses(list) {
-      const out = { ...list.subscriberStatuses };
-      if (list.optin === 'single') {
-        delete out.unconfirmed;
-        delete out.confirmed;
-      }
-      return out;
     },
 
     getLists() {
@@ -309,8 +467,6 @@ export default Vue.extend({
         this.lists = resp;
       });
 
-      // Also fetch the minimal lists for the global store that appears
-      // in dropdown menus on other pages like import and campaigns.
       this.$api.getLists({ minimal: true, per_page: 'all', status: 'active' });
     },
 
@@ -320,35 +476,26 @@ export default Vue.extend({
         () => {
           this.$api.deleteList(list.id).then(() => {
             this.getLists();
-
             this.$utils.toast(this.$t('globals.messages.deleted', { name: list.name }));
           });
         },
       );
     },
 
-    // Mark all lists in the query as selected.
-    onSelectAll() {
-      this.bulk.all = true;
-    },
-
     onTableCheck() {
-      // Disable bulk.all selection if there are no rows checked in the table.
       if (this.bulk.checked.length !== this.lists.total) {
         this.bulk.all = false;
       }
     },
 
     deleteLists() {
-      const name = this.$tc('globals.terms.list', this.numSelectedCampaigns);
+      const name = this.$tc('globals.terms.list', this.numSelectedLists);
 
       const fn = () => {
         const params = {};
         if (!this.bulk.all && this.bulk.checked.length > 0) {
-          // If 'all' is not selected, delete lists by IDs.
           params.id = this.bulk.checked.map((l) => l.id);
         } else {
-          // 'All' is selected, delete by query.
           params.query = this.queryParams.query.replace(/[^\p{L}\p{N}\s]/gu, ' ');
           params.all = this.bulk.all;
         }
@@ -369,23 +516,6 @@ export default Vue.extend({
         this.numSelectedLists,
         { num: this.numSelectedLists, name: name.toLowerCase() },
       ), fn);
-    },
-
-    createOptinCampaign(list) {
-      const data = {
-        name: this.$t('lists.optinTo', { name: list.name }),
-        subject: this.$t('lists.confirmSub', { name: list.name }),
-        lists: [list.id],
-        from_email: this.settings['app.from_email'],
-        content_type: 'richtext',
-        messenger: 'email',
-        type: 'optin',
-      };
-
-      this.$api.createCampaign(data).then((d) => {
-        this.$router.push({ name: 'campaign', hash: '#content', params: { id: d.id } });
-      });
-      return false;
     },
   },
 

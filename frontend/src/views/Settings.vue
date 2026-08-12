@@ -1,27 +1,28 @@
 <template>
   <form @submit.prevent="onSubmit">
-    <section class="settings">
+  <section class="settings settings-brevo bv-page">
       <b-loading :is-full-page="true" v-if="loading.settings || isLoading" active />
-      <header class="columns page-header">
-        <div class="column is-half">
-          <h1 class="title is-4">
+      <header class="settings-brevo__header">
+        <div class="settings-brevo__header-main">
+          <h1 class="settings-brevo__title">
             {{ $t('settings.title') }}
             <span class="has-text-grey-light">({{ serverConfig.version }})</span>
           </h1>
+          <p class="settings-brevo__lead">Configure your installation, privacy, SMTP, and integrations.</p>
         </div>
-        <div class="column has-text-right">
-          <b-field v-if="$can('settings:manage')" expanded>
-            <b-button expanded :disabled="!hasFormChanged" type="is-primary" icon-left="content-save-outline"
-              native-type="submit" class="isSaveEnabled" data-cy="btn-save">
-              {{ $t('globals.buttons.save') }}
-            </b-button>
-          </b-field>
-        </div>
+        <button
+          v-if="$can('settings:manage')"
+          type="submit"
+          class="settings-brevo__save btn-new isSaveEnabled"
+          data-cy="btn-save"
+          :disabled="!hasFormChanged"
+        >
+          {{ $t('globals.buttons.save') }}
+        </button>
       </header>
-      <hr />
 
       <section class="wrap" v-if="form">
-        <b-tabs type="is-boxed" :animated="false" v-model="tab">
+        <b-tabs :animated="false" v-model="tab">
           <b-tab-item :label="$t('settings.general.name')" label-position="on-border">
             <general-settings :form="form" :key="key" />
           </b-tab-item><!-- general -->

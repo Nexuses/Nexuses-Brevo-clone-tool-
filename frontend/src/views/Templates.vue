@@ -1,185 +1,171 @@
 <template>
-  <section class="crm-page templates-page">
+  <section class="templates templates-brevo bv-page">
     <marketing-subnav />
 
-    <header class="columns page-header">
-      <div class="column is-8">
-        <h1 class="title is-4">Templates</h1>
+    <header class="templates-brevo__header">
+      <div class="templates-brevo__header-main">
+        <h1 class="templates-brevo__title">
+          Templates
+          <span v-if="templates.length > 0" class="has-text-grey-light">({{ templates.length }})</span>
+        </h1>
+        <p class="templates-brevo__lead">
+          Create and manage reusable email templates for your campaigns.
+        </p>
+        <div class="templates-brevo__links">
+          <a
+            href="https://listmonk.app/docs/templating/"
+            target="_blank"
+            rel="noopener noreferrer"
+            class="templates-brevo__link"
+          >
+            Get started with templates
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M3.5 3.5h5v5M8.5 3.5L3.5 8.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </a>
+        </div>
       </div>
-      <div class="column has-text-right">
-        <b-button
-          v-if="$can('templates:manage')"
-          type="is-dark"
-          icon-left="plus"
-          class="btn-new"
-          data-cy="btn-new"
-          @click="createTemplate"
-        >
-          Create Template
-        </b-button>
-      </div>
+      <button
+        v-if="$can('templates:manage')"
+        type="button"
+        class="templates-brevo__create"
+        data-cy="btn-new"
+        @click="showNewForm"
+      >
+        <span class="templates-brevo__create-plus" aria-hidden="true">+</span>
+        Create template
+      </button>
     </header>
 
-    <div class="tpl-tabs">
-      <button type="button" class="tpl-tabs__tab is-active">Email</button>
-      <button type="button" class="tpl-tabs__tab" disabled>WhatsApp</button>
-    </div>
+    <b-table
+      :data="templates"
+      :hoverable="true"
+      :loading="loading.templates"
+      default-sort="createdAt"
+      class="templates-brevo__table"
+    >
+      <b-table-column v-slot="props" field="name" label="Template" :td-attrs="$utils.tdID" sortable>
+        <a href="#" class="templates-brevo__name" @click.prevent="showEditForm(props.row)">
+          {{ props.row.name }}
+        </a>
+        <b-tag v-if="props.row.isDefault" class="ml-2">
+          {{ $t('templates.default') }}
+        </b-tag>
 
-    <div class="tpl-toolbar">
-      <b-field>
-        <b-input
-          v-model="query"
-          expanded
-          placeholder="Search for templates"
-          icon="magnify"
-          data-cy="template-search"
-        />
-      </b-field>
-      <span class="tpl-toolbar__meta">
-        {{ filteredTemplates.length }} of {{ templateList.length }}
-      </span>
-    </div>
+        <p class="is-size-7 has-text-grey" v-if="props.row.type === 'tx'">
+          {{ props.row.subject }}
+        </p>
+      </b-table-column>
 
-    <b-loading :active="loading.templates" :is-full-page="false" />
+      <b-table-column v-slot="props" field="type" :label="$t('globals.fields.type')" sortable>
+        <b-tag v-if="props.row.type === 'campaign'" :class="props.row.type" :data-cy="`type-${props.row.type}`">
+          {{ $tc('templates.typeCampaignHTML') }}
+        </b-tag>
+        <b-tag v-else-if="props.row.type === 'campaign_visual'" :class="props.row.type"
+          :data-cy="`type-${props.row.type}`">
+          {{ $tc('templates.typeCampaignVisual') }}
+        </b-tag>
+        <b-tag v-else-if="props.row.type === 'campaign_maily'" :class="props.row.type"
+          :data-cy="`type-${props.row.type}`">
+          {{ $tc('templates.typeCampaignMaily') }}
+        </b-tag>
+        <b-tag v-else :class="props.row.type" :data-cy="`type-${props.row.type}`">
+          {{ $tc('templates.typeTransactional') }}
+        </b-tag>
+      </b-table-column>
 
-    <div class="tpl-list">
-      <div
-        v-for="t in filteredTemplates"
-        :key="t.id"
-        class="tpl-card"
-      >
-        <div class="tpl-card__main">
-          <a href="#" class="tpl-card__title" @click.prevent="editTemplate(t)">
-            {{ t.name }}
-          </a>
-          <div class="tpl-card__meta">
-            #{{ t.id }} · Last edited on {{ formatDate(t.updatedAt || t.createdAt) }}
-          </div>
-          <div class="tpl-card__status" :class="statusClass(t)">
-            <span class="dot" />
-            {{ statusLabel(t) }}
-          </div>
-        </div>
+      <b-table-column v-slot="props" field="id" :label="$t('globals.fields.id')" sortable>
+        #{{ props.row.id }}
+      </b-table-column>
 
-        <div class="tpl-card__actions">
-          <a
-            href="#"
-            class="tpl-card__edit"
-            aria-label="Edit"
-            @click.prevent="editTemplate(t)"
+      <b-table-column v-slot="props" field="createdAt" :label="$t('globals.fields.createdAt')" sortable>
+        {{ $utils.niceDate(props.row.createdAt) }}
+      </b-table-column>
+
+      <b-table-column v-slot="props" field="updatedAt" :label="$t('globals.fields.updatedAt')" sortable>
+        {{ $utils.niceDate(props.row.updatedAt) }}
+      </b-table-column>
+
+      <b-table-column v-slot="props" cell-class="actions" align="right" label="Actions">
+        <b-dropdown position="is-bottom-left">
+          <template #trigger>
+            <button type="button" class="templates-brevo__kebab" aria-label="Actions">
+              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+                <circle cx="8" cy="3.5" r="1.4" fill="currentColor" />
+                <circle cx="8" cy="8" r="1.4" fill="currentColor" />
+                <circle cx="8" cy="12.5" r="1.4" fill="currentColor" />
+              </svg>
+            </button>
+          </template>
+          <b-dropdown-item @click="previewTemplate(props.row)">
+            {{ $t('templates.preview') }}
+          </b-dropdown-item>
+          <b-dropdown-item @click="showEditForm(props.row)">
+            {{ $t('globals.buttons.edit') }}
+          </b-dropdown-item>
+          <b-dropdown-item
+            @click="$utils.prompt(`Clone template`,
+              { placeholder: 'Name', value: `Copy of ${props.row.name}` },
+              (name) => cloneTemplate(name, props.row))"
           >
-            <b-tooltip label="Edit" type="is-dark" position="is-top">
-              <b-icon icon="pencil-outline" />
-            </b-tooltip>
-          </a>
+            {{ $t('globals.buttons.clone') }}
+          </b-dropdown-item>
+          <b-dropdown-item
+            v-if="!props.row.isDefault && props.row.type === 'campaign'"
+            @click="$utils.confirm(null, () => makeTemplateDefault(props.row))"
+          >
+            {{ $t('templates.makeDefault') }}
+          </b-dropdown-item>
+          <b-dropdown-item
+            v-if="!props.row.isDefault"
+            class="has-text-danger"
+            @click="$utils.confirm(null, () => deleteTemplate(props.row))"
+          >
+            {{ $t('globals.buttons.delete') }}
+          </b-dropdown-item>
+        </b-dropdown>
+      </b-table-column>
 
-          <b-dropdown position="is-bottom-left" class="campaign-actions-menu">
-            <template #trigger>
-              <button type="button" class="campaign-actions-trigger" aria-label="Actions">
-                <span class="campaign-kebab" aria-hidden="true"><span /><span /><span /></span>
-              </button>
-            </template>
-            <div class="campaign-actions-panel">
-              <a
-                href="#"
-                class="campaign-action"
-                aria-label="Preview"
-                @click.prevent="previewTemplate(t)"
-              >
-                <b-tooltip :label="$t('templates.preview')" type="is-dark" position="is-left">
-                  <b-icon icon="file-find-outline" />
-                </b-tooltip>
-              </a>
-              <a
-                href="#"
-                class="campaign-action"
-                aria-label="Clone"
-                @click.prevent="$utils.prompt($t('globals.buttons.clone'),
-                  { placeholder: $t('globals.fields.name'), value: $t('campaigns.copyOf', { name: t.name }) },
-                  (name) => cloneTemplate(name, t))"
-              >
-                <b-tooltip :label="$t('globals.buttons.clone')" type="is-dark" position="is-left">
-                  <b-icon icon="file-multiple-outline" />
-                </b-tooltip>
-              </a>
-              <a
-                v-if="!t.isDefault && t.type === 'campaign'"
-                href="#"
-                class="campaign-action"
-                aria-label="Make default"
-                @click.prevent="$utils.confirm(null, () => makeTemplateDefault(t))"
-              >
-                <b-tooltip :label="$t('templates.makeDefault')" type="is-dark" position="is-left">
-                  <b-icon icon="check-circle-outline" />
-                </b-tooltip>
-              </a>
-              <a
-                v-if="!t.isDefault"
-                href="#"
-                class="campaign-action"
-                aria-label="Delete"
-                @click.prevent="$utils.confirm(null, () => deleteTemplate(t))"
-              >
-                <b-tooltip :label="$t('globals.buttons.delete')" type="is-dark" position="is-left">
-                  <b-icon icon="trash-can-outline" />
-                </b-tooltip>
-              </a>
-            </div>
-          </b-dropdown>
-        </div>
-      </div>
+      <template #empty v-if="!loading.templates">
+        <empty-placeholder />
+      </template>
+    </b-table>
 
-      <div v-if="!loading.templates && filteredTemplates.length === 0" class="tpl-empty">
-        No templates found.
-      </div>
-    </div>
+    <!-- Add / edit form modal -->
+    <b-modal scroll="keep" :aria-modal="true" :active.sync="isFormVisible" :width="1200" :can-cancel="false"
+      class="template-modal">
+      <template-form :data="curItem" :is-editing="isEditing" @finished="formFinished" />
+    </b-modal>
 
-    <campaign-preview
-      v-if="previewItem"
-      type="template"
-      :id="previewItem.id"
-      :template-type="previewItem.type"
-      :title="previewItem.name"
-      @close="closePreview"
-    />
+    <campaign-preview v-if="previewItem" type="template" :id="previewItem.id" :template-type="previewItem.type"
+      :title="previewItem.name" @close="closePreview" />
   </section>
 </template>
 
 <script>
-import dayjs from 'dayjs';
 import Vue from 'vue';
 import { mapState } from 'vuex';
 import CampaignPreview from '../components/CampaignPreview.vue';
+import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
 import MarketingSubnav from '../components/MarketingSubnav.vue';
+
+import TemplateForm from './TemplateForm.vue';
 
 export default Vue.extend({
   components: {
     CampaignPreview,
+    TemplateForm,
+    EmptyPlaceholder,
     MarketingSubnav,
   },
 
   data() {
     return {
-      query: '',
+      curItem: null,
+      isEditing: false,
+      isFormVisible: false,
       previewItem: null,
     };
-  },
-
-  computed: {
-    ...mapState(['templates', 'loading']),
-
-    templateList() {
-      return Array.isArray(this.templates) ? this.templates : [];
-    },
-
-    filteredTemplates() {
-      const q = this.query.trim().toLowerCase();
-      if (!q) return this.templateList;
-      return this.templateList.filter((t) => (
-        (t.name || '').toLowerCase().includes(q)
-        || String(t.id).includes(q)
-      ));
-    },
   },
 
   methods: {
@@ -187,29 +173,26 @@ export default Vue.extend({
       this.$api.getTemplates();
     },
 
-    formatDate(iso) {
-      return dayjs(iso).format('MMM D, YYYY h:mm A');
+    // Show the edit form.
+    showEditForm(data) {
+      this.curItem = data;
+      this.isFormVisible = true;
+      this.isEditing = true;
     },
 
-    statusLabel(t) {
-      if (t.isDefault) return 'Active · Default';
-      return 'Active';
+    // Show the new form.
+    showNewForm() {
+      this.curItem = { type: 'campaign' };
+      this.isFormVisible = true;
+      this.isEditing = false;
     },
 
-    statusClass(t) {
-      return t.isDefault ? 'is-active' : 'is-active';
+    formFinished() {
+      this.$api.getTemplates();
     },
 
-    createTemplate() {
-      this.$router.push({ name: 'template', params: { id: 'new' } });
-    },
-
-    editTemplate(t) {
-      this.$router.push({ name: 'template', params: { id: t.id } });
-    },
-
-    previewTemplate(t) {
-      this.previewItem = t;
+    previewTemplate(c) {
+      this.previewItem = c;
     },
 
     closePreview() {
@@ -226,6 +209,7 @@ export default Vue.extend({
       };
       this.$api.createTemplate(data).then((d) => {
         this.$api.getTemplates();
+        this.$emit('finished');
         this.$utils.toast(`'${d.name}' created`);
       });
     },
@@ -243,6 +227,10 @@ export default Vue.extend({
         this.$utils.toast(this.$t('globals.messages.deleted', { name: tpl.name }));
       });
     },
+  },
+
+  computed: {
+    ...mapState(['templates', 'loading']),
   },
 
   created() {
