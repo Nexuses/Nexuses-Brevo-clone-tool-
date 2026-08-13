@@ -31,12 +31,18 @@
       <nav class="campaign-brevo__crumbs" aria-label="Breadcrumb">
         <router-link :to="{ name: 'campaigns' }">Email campaigns</router-link>
         <span>/</span>
-        <strong>Create an email campaign</strong>
+        <span>Create an email campaign</span>
       </nav>
 
       <header class="campaign-brevo__header">
         <div class="campaign-brevo__title-wrap">
           <div v-if="!isEditingName" class="campaign-brevo__title-row">
+            <router-link :to="{ name: 'campaigns' }" class="campaign-brevo__back" aria-label="Back to campaigns">
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <path d="M11.5 4.5L7 9l4.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"
+                  stroke-linejoin="round" />
+              </svg>
+            </router-link>
             <h1 class="campaign-brevo__title">{{ displayName }}</h1>
             <button
               v-if="canEdit"
@@ -45,8 +51,8 @@
               aria-label="Rename campaign"
               @click="startRename"
             >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M8.2 2.4l3.4 3.4L4.6 13H1.2v-3.4L8.2 2.4z" stroke="currentColor" stroke-width="1.4"
+              <svg width="15" height="15" viewBox="0 0 15 15" fill="none" aria-hidden="true">
+                <path d="M8.7 2.6l3.7 3.7L4.8 14H1.2v-3.6L8.7 2.6z" stroke="currentColor" stroke-width="1.35"
                   stroke-linejoin="round" />
               </svg>
             </button>
@@ -92,10 +98,20 @@
 
       <div class="campaign-brevo__stack">
         <section class="campaign-brevo__card">
+          <div class="campaign-brevo__card-top">
+            <button type="button" class="campaign-brevo__languages" @click="onAddLanguages">
+              Add languages
+              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+                <path d="M7 1.2l1.5 3.1 3.4.5-2.45 2.4.6 3.4L7 9l-3.05 1.6.6-3.4L2.1 4.8l3.4-.5L7 1.2z"
+                  fill="#E8B931" stroke="#C99514" stroke-width="0.6" />
+              </svg>
+            </button>
+          </div>
+
           <div class="campaign-brevo__row">
             <div class="campaign-brevo__row-main">
               <span class="campaign-brevo__check" :class="{ 'is-done': senderDone }" aria-hidden="true">
-                <svg v-if="senderDone" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <svg v-if="senderDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
                     stroke-linejoin="round" />
                 </svg>
@@ -113,7 +129,7 @@
           <div class="campaign-brevo__row">
             <div class="campaign-brevo__row-main">
               <span class="campaign-brevo__check" :class="{ 'is-done': recipientsDone }" aria-hidden="true">
-                <svg v-if="recipientsDone" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <svg v-if="recipientsDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
                     stroke-linejoin="round" />
                 </svg>
@@ -124,14 +140,14 @@
               </div>
             </div>
             <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="openPanel('recipients')">
-              Manage recipients
+              Edit recipients
             </button>
           </div>
 
           <div class="campaign-brevo__row">
             <div class="campaign-brevo__row-main">
               <span class="campaign-brevo__check" :class="{ 'is-done': subjectDone }" aria-hidden="true">
-                <svg v-if="subjectDone" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <svg v-if="subjectDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
                     stroke-linejoin="round" />
                 </svg>
@@ -149,46 +165,47 @@
           <div class="campaign-brevo__row campaign-brevo__row--design">
             <div class="campaign-brevo__row-main">
               <span class="campaign-brevo__check" :class="{ 'is-done': designDone }" aria-hidden="true">
-                <svg v-if="designDone" width="12" height="12" viewBox="0 0 12 12" fill="none">
+                <svg v-if="designDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
                     stroke-linejoin="round" />
                 </svg>
               </span>
-              <div>
-                <h2>Design</h2>
+              <div class="campaign-brevo__design-copy">
+                <div class="campaign-brevo__design-title">
+                  <h2>Design</h2>
+                  <div class="campaign-brevo__dd" ref="designDd">
+                    <button
+                      type="button"
+                      class="campaign-brevo__more"
+                      aria-label="Design options"
+                      @click.stop="designMenuOpen = !designMenuOpen"
+                    >
+                      <span /><span /><span />
+                    </button>
+                    <ul v-if="designMenuOpen" class="campaign-brevo__menu">
+                      <li><button type="button" @click="resetDesign">Reset design</button></li>
+                      <li><button type="button" @click="viewHtml">View the HTML code</button></li>
+                      <li><button type="button" @click="downloadHtml">Download the HTML code</button></li>
+                      <li><button type="button" @click="viewPlain">View the plain text version</button></li>
+                    </ul>
+                  </div>
+                </div>
+                <div class="campaign-brevo__thumb">
+                  <iframe
+                    v-if="campaignId && designDone"
+                    class="campaign-brevo__thumb-frame"
+                    :src="previewSrc"
+                    title="Email preview"
+                    tabindex="-1"
+                    sandbox="allow-scripts"
+                  />
+                  <div v-else class="campaign-brevo__thumb-empty">No design yet</div>
+                </div>
               </div>
             </div>
-            <div class="campaign-brevo__row-actions">
-              <div class="campaign-brevo__dd" ref="designDd">
-                <button
-                  type="button"
-                  class="campaign-brevo__more"
-                  aria-label="Design options"
-                  @click.stop="designMenuOpen = !designMenuOpen"
-                >
-                  ···
-                </button>
-                <ul v-if="designMenuOpen" class="campaign-brevo__menu">
-                  <li><button type="button" @click="resetDesign">Reset design</button></li>
-                  <li><button type="button" @click="viewHtml">View the HTML code</button></li>
-                  <li><button type="button" @click="downloadHtml">Download the HTML code</button></li>
-                  <li><button type="button" @click="viewPlain">View the plain text version</button></li>
-                </ul>
-              </div>
-              <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="openDesign">
-                Edit design
-              </button>
-            </div>
-          </div>
-          <div v-if="designDone || campaignId" class="campaign-brevo__preview-wrap">
-            <iframe
-              v-if="campaignId && designDone"
-              class="campaign-brevo__preview"
-              :src="previewSrc"
-              title="Email preview"
-              sandbox="allow-scripts"
-            />
-            <div v-else class="campaign-brevo__preview is-empty">No design yet</div>
+            <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="openDesign">
+              Edit design
+            </button>
           </div>
         </section>
 
@@ -311,7 +328,7 @@
                 <option>Select list(s), segment(s) or individual contacts</option>
               </select>
             </label>
-            <p class="campaign-brevo__hint">Filter recipients with listmonk subscriber queries after save.</p>
+            <p class="campaign-brevo__hint">Exclude lists or segments after you save this campaign.</p>
           </div>
           <div class="campaign-brevo__recip-foot">
             <strong>{{ recipientCountLabel }}</strong>
@@ -623,7 +640,7 @@ export default Vue.extend({
 
     senderSummary() {
       const { name, email } = this.parsedFrom;
-      if (name && email) return `${name} · ${email}`;
+      if (name && email) return `${name} • ${email}`;
       return email || name || 'Add a sender';
     },
 
@@ -912,6 +929,10 @@ export default Vue.extend({
       this.designMenuOpen = false;
       this.form.content.contentType = 'plain';
       this.openDesign();
+    },
+
+    onAddLanguages() {
+      this.$utils.toast('Multiple languages are not available in this plan');
     },
 
     openPreviewTest() {

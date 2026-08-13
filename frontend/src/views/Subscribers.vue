@@ -1,10 +1,16 @@
 <template>
   <section class="subscribers contacts-brevo">
+    <crm-subnav />
     <header class="contacts-brevo__header">
-      <h1 class="contacts-brevo__title">
-        <template v-if="currentList">{{ currentList.name }}</template>
-        <template v-else>Contacts</template>
-      </h1>
+      <div>
+        <h1 class="contacts-brevo__title">
+          <template v-if="currentList">{{ currentList.name }}</template>
+          <template v-else>Contacts</template>
+        </h1>
+        <p class="contacts-brevo__lead">
+          Create, import, and filter the people you send campaigns to.
+        </p>
+      </div>
       <div class="contacts-brevo__actions">
         <button
           v-if="$can('subscribers:manage')"
@@ -111,9 +117,6 @@
           </svg>
         </button>
       </div>
-      <button type="button" class="contacts-brevo__gear" aria-label="Settings">
-        <b-icon icon="cog-outline" size="is-small" />
-      </button>
     </div>
 
     <div class="contacts-brevo__meta">
@@ -212,33 +215,77 @@
       </div>
     </div>
 
+    <div class="contacts-brevo__card" :class="{ 'has-selection': hasSelection }">
+      <div v-if="hasSelection" class="contacts-brevo__select-bar">
+        <div class="contacts-brevo__select-left">
+          <label class="contacts-brevo__select-check">
+            <input type="checkbox" checked @change="clearSelection" aria-label="Clear selection" />
+          </label>
+          <button
+            v-if="$can('subscribers:manage')"
+            type="button"
+            class="contacts-brevo__select-action"
+            data-cy="btn-manage-lists"
+            @click="showBulkListForm"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <path d="M4 6h16M4 12h16M4 18h10" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+            </svg>
+            Add to a list(s)
+          </button>
+          <button
+            v-if="$can('subscribers:manage')"
+            type="button"
+            class="contacts-brevo__select-action"
+            data-cy="btn-manage-blocklist"
+            @click="blocklistSubscribers"
+          >
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+              <circle cx="12" cy="8" r="3.2" stroke="currentColor" stroke-width="1.7" />
+              <path d="M5.5 19c1.4-3 3.8-4.5 6.5-4.5s5.1 1.5 6.5 4.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+              <path d="M16.5 6.5l4 4M20.5 6.5l-4 4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
+            Blocklist
+          </button>
+          <b-dropdown class="contacts-brevo__more" :mobile-modal="false" position="is-bottom-left">
+            <template #trigger>
+              <button type="button" class="contacts-brevo__select-action">
+                More actions
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </template>
+            <b-dropdown-item data-cy="btn-export-subscribers" @click="exportSubscribers">
+              Export
+            </b-dropdown-item>
+            <b-dropdown-item
+              v-if="$can('subscribers:manage')"
+              class="has-text-danger"
+              data-cy="btn-delete-subscribers"
+              @click="deleteSubscribers"
+            >
+              Delete
+            </b-dropdown-item>
+          </b-dropdown>
+        </div>
+        <div class="contacts-brevo__select-right">
+          <strong>{{ $utils.formatNumber(numSelectedSubscribers) }} contacts selected</strong>
+          <button
+            v-if="!bulk.all && (subscribers.total || 0) > bulk.checked.length"
+            type="button"
+            class="contacts-brevo__select-all"
+            @click="selectAllSubscribers"
+          >
+            Select all contacts
+          </button>
+        </div>
+      </div>
+
     <b-table :data="subscribers.results ?? []" :loading="loading.subscribers" @check-all="onTableCheck"
       @check="onTableCheck" :checked-rows.sync="bulk.checked" :paginated="false"
       hoverable checkable backend-sorting @sort="onSort"
       class="contacts-brevo__table">
-      <template #top-left>
-        <div class="actions">
-          <a class="a" href="#" @click.prevent="exportSubscribers" data-cy="btn-export-subscribers">
-            <b-icon icon="cloud-download-outline" size="is-small" />
-            {{ $t('subscribers.export') }}
-          </a>
-          <template v-if="bulk.checked.length > 0">
-            <a class="a" href="#" @click.prevent="showBulkListForm" data-cy="btn-manage-lists">
-              <b-icon icon="format-list-bulleted-square" size="is-small" /> Manage lists
-            </a>
-            <a class="a" href="#" @click.prevent="deleteSubscribers" data-cy="btn-delete-subscribers">
-              <b-icon icon="trash-can-outline" size="is-small" /> Delete
-            </a>
-            <a class="a" href="#" @click.prevent="blocklistSubscribers" data-cy="btn-manage-blocklist">
-              <b-icon icon="account-off-outline" size="is-small" /> Blocklist
-            </a>
-            <span class="a">
-              {{ $t('globals.messages.numSelected', { num: numSelectedSubscribers }) }}
-            </span>
-          </template>
-        </div>
-      </template>
-
       <b-table-column v-slot="props" field="name" label="CONTACT" header-class="cy-email" sortable
         :td-attrs="$utils.tdID">
         <a :href="`/contacts/${props.row.id}`" @click.prevent="showEditForm(props.row)"
@@ -289,7 +336,10 @@
       </b-table-column>
 
       <template #empty v-if="!loading.subscribers">
-        <empty-placeholder />
+        <empty-placeholder
+          label="No contacts yet"
+          description="Create a contact or import a file to start building your audience."
+        />
       </template>
     </b-table>
 
@@ -314,6 +364,7 @@
           Next
         </button>
       </div>
+    </div>
     </div>
 
     <b-modal scroll="keep" :aria-modal="true" :active.sync="isBulkListFormVisible" :width="500" class="has-overflow">
@@ -350,25 +401,25 @@
         </header>
         <form class="contacts-drawer__body" @submit.prevent="createContactFromDrawer">
           <label class="contacts-drawer__field">
-            <span>FIRSTNAME</span>
-            <input v-model="createForm.firstname" type="text" placeholder="Enter the FIRSTNAME" maxlength="200" />
+            <span>First name</span>
+            <input v-model="createForm.firstname" type="text" placeholder="First name" maxlength="200" />
           </label>
           <label class="contacts-drawer__field">
-            <span>LASTNAME</span>
-            <input v-model="createForm.lastname" type="text" placeholder="Enter the LASTNAME" maxlength="200" />
+            <span>Last name</span>
+            <input v-model="createForm.lastname" type="text" placeholder="Last name" maxlength="200" />
           </label>
           <label class="contacts-drawer__field">
-            <span>EMAIL</span>
+            <span>Email</span>
             <input
               v-model="createForm.email"
               type="email"
-              placeholder="Enter the email address"
+              placeholder="name@example.com"
               maxlength="200"
               required
             />
           </label>
           <label class="contacts-drawer__field">
-            <span>SMS</span>
+            <span>Phone</span>
             <input v-model="createForm.sms" type="text" placeholder="+91" maxlength="40" />
           </label>
           <label class="contacts-drawer__field">
@@ -499,6 +550,7 @@ import Vue from 'vue';
 import { mapState } from 'vuex';
 import dayjs from 'dayjs';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
+import CrmSubnav from '../components/CrmSubnav.vue';
 import { uris } from '../constants';
 import SubscriberBulkList from './SubscriberBulkList.vue';
 import SubscriberForm from './SubscriberForm.vue';
@@ -507,6 +559,7 @@ export default Vue.extend({
   components: {
     SubscriberForm,
     SubscriberBulkList,
+    CrmSubnav,
     EmptyPlaceholder,
   },
 
@@ -933,6 +986,12 @@ export default Vue.extend({
     // Mark all subscribers in the query as selected.
     selectAllSubscribers() {
       this.bulk.all = true;
+      this.bulk.checked = [...(this.subscribers.results || [])];
+    },
+
+    clearSelection() {
+      this.bulk.all = false;
+      this.bulk.checked = [];
     },
 
     onTableCheck() {
@@ -1305,6 +1364,10 @@ export default Vue.extend({
         return this.subscribers.total;
       }
       return this.bulk.checked.length;
+    },
+
+    hasSelection() {
+      return this.bulk.checked.length > 0 || this.bulk.all;
     },
 
     // Returns the list that the subscribers are being filtered by in.

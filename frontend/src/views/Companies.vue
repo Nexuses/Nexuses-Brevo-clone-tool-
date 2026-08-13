@@ -10,9 +10,6 @@
         </p>
       </div>
       <div class="companies-brevo__actions">
-        <button type="button" class="bv-btn-outline" data-cy="btn-import-companies" @click="importHint">
-          Import companies
-        </button>
         <button type="button" class="companies-brevo__create" data-cy="btn-new-company" @click="createCompany">
           <span class="companies-brevo__create-plus" aria-hidden="true">+</span>
           Create company
@@ -22,17 +19,6 @@
 
     <div class="crm-view-tabs">
       <button type="button" class="crm-view-tabs__tab is-active">All companies</button>
-    </div>
-
-    <div class="crm-filter-bar">
-      <b-dropdown>
-        <template #trigger>
-          <button type="button" class="crm-filter-bar__btn">
-            Add filter <b-icon icon="arrow-down" size="is-small" />
-          </button>
-        </template>
-        <b-dropdown-item disabled>Coming soon</b-dropdown-item>
-      </b-dropdown>
     </div>
 
     <div class="crm-meta-row">
@@ -81,18 +67,25 @@
             <td>{{ c.owner || '--' }}</td>
             <td>{{ c.phone || '--' }}</td>
             <td class="has-text-right">
-              <b-dropdown position="is-bottom-left">
+              <b-dropdown
+                class="bv-action-menu"
+                position="is-bottom-left"
+                :mobile-modal="false"
+              >
                 <template #trigger>
-                  <button type="button" class="crm-kebab" aria-label="Actions">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <circle cx="8" cy="3.5" r="1.4" fill="currentColor" />
-                      <circle cx="8" cy="8" r="1.4" fill="currentColor" />
-                      <circle cx="8" cy="12.5" r="1.4" fill="currentColor" />
-                    </svg>
+                  <button type="button" class="campaign-actions-trigger" aria-label="Actions">
+                    <span class="campaign-kebab" aria-hidden="true">
+                      <span /><span /><span />
+                    </span>
                   </button>
                 </template>
-                <b-dropdown-item @click="editCompany(c)">Edit</b-dropdown-item>
-                <b-dropdown-item class="has-text-danger" @click="deleteCompany(c)">
+                <b-dropdown-item @click="editCompany(c)">
+                  <b-icon icon="pencil-outline" size="is-small" />
+                  Edit
+                </b-dropdown-item>
+                <hr class="bv-action-menu__sep" />
+                <b-dropdown-item class="bv-action-menu__danger" @click="deleteCompany(c)">
+                  <b-icon icon="trash-can-outline" size="is-small" />
                   Delete
                 </b-dropdown-item>
               </b-dropdown>
@@ -182,10 +175,6 @@ export default {
       } else {
         this.checked = [];
       }
-    },
-
-    importHint() {
-      this.$utils.toast('Company import coming soon');
     },
 
     createCompany() {

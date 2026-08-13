@@ -21,9 +21,9 @@
         </button>
       </header>
 
-      <section class="wrap" v-if="form">
+      <section class="settings-brevo__body wrap" v-if="form">
         <b-tabs :animated="false" v-model="tab">
-          <b-tab-item :label="$t('settings.general.name')" label-position="on-border">
+          <b-tab-item :label="$t('settings.general.name')">
             <general-settings :form="form" :key="key" />
           </b-tab-item><!-- general -->
 

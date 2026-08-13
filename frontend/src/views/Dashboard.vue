@@ -273,7 +273,7 @@
 
     <b-modal
       :active.sync="isCreateOpen"
-      :width="760"
+      :width="840"
       scroll="keep"
       class="create-campaign-form-modal"
     >

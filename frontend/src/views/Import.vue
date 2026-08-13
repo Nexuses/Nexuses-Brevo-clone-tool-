@@ -155,7 +155,6 @@
             <path d="M4.5 6V4.4a2.5 2.5 0 0 1 5 0V6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
           </svg>
           We don't sell, rent or use your database for any commercial purposes.
-          <a href="https://listmonk.app" target="_blank" rel="noopener noreferrer">Read our Privacy Policy</a>
         </p>
       </div>
 
@@ -280,21 +279,56 @@
       <div class="import-brevo__paste-card">
         <h3>1) Import your data</h3>
         <p class="import-brevo__paste-sub">Copy and paste your contacts and their information from a file.</p>
-        <label class="is-sr-only" for="paste-import-box">Paste contacts data</label>
+        <label v-if="!pasteHeaders.length" class="is-sr-only" for="paste-import-box">Paste contacts data</label>
         <textarea
+          v-if="!pasteHeaders.length"
           id="paste-import-box"
           v-model="form.paste"
           class="import-brevo__paste-box"
           rows="10"
           placeholder="CONTACT ID,EMAIL,FIRSTNAME,LASTNAME&#10;12345,emma@example.com,Emma,Dubois"
+          @paste="onPasteData"
+          @input="onPasteInput"
         />
+        <div v-else class="import-brevo__paste-preview">
+          <div class="import-brevo__paste-preview-meta">
+            <span>{{ pasteRows.length }} row(s) · {{ pasteHeaders.length }} column(s)</span>
+            <button type="button" class="import-brevo__paste-reset" @click="clearPasteGrid">
+              Paste different data
+            </button>
+          </div>
+          <div class="import-brevo__paste-preview-scroll">
+            <table>
+              <caption class="is-sr-only">Pasted contacts preview</caption>
+              <thead>
+                <tr>
+                  <th v-for="(h, hi) in pasteHeaders" :key="'ph-' + hi" :title="h">{{ h }}</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr v-for="(row, ri) in pastePreviewRows" :key="'pr-' + ri">
+                  <td
+                    v-for="(cell, ci) in paddedPasteRow(row)"
+                    :key="'pc-' + ri + '-' + ci"
+                    :title="cell"
+                  >
+                    {{ cell }}
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p v-if="pasteRows.length > 25" class="import-brevo__paste-preview-note">
+            Showing the first 25 rows. All {{ pasteRows.length }} rows will be imported.
+          </p>
+        </div>
         <p class="import-brevo__paste-note">
           We don't sell, rent or use your database for any commercial purposes.
         </p>
         <button
           type="button"
           class="import-brevo__check-btn"
-          :disabled="!(form.paste || '').trim()"
+          :disabled="!hasPasteData"
           @click="checkPasteData"
         >
           Check the data
@@ -395,6 +429,8 @@ export default Vue.extend({
       example: '',
       pasteChecked: false,
       pasteSummary: '',
+      pasteHeaders: [],
+      pasteRows: [],
       fileStep: 1,
       fileDragOver: false,
       fileColumns: [],
@@ -427,8 +463,7 @@ export default Vue.extend({
     openStep(nextStep) {
       this.step = nextStep;
       if (nextStep === 'paste') {
-        this.pasteChecked = false;
-        this.pasteSummary = '';
+        this.clearPasteGrid();
       }
       if (nextStep === 'file') {
         this.resetFileWizard();
@@ -529,9 +564,9 @@ export default Vue.extend({
 
     detectDelim(line) {
       const counts = {
-        ',': (line.match(/,/g) || []).length,
-        ';': (line.match(/;/g) || []).length,
         '\t': (line.match(/\t/g) || []).length,
+        ';': (line.match(/;/g) || []).length,
+        ',': (line.match(/,/g) || []).length,
       };
       let best = ',';
       let max = -1;
@@ -541,7 +576,149 @@ export default Vue.extend({
           best = d;
         }
       });
+      if (max <= 0) return ',';
       return best;
+    },
+
+    clearPasteGrid() {
+      this.pasteHeaders = [];
+      this.pasteRows = [];
+      this.pasteChecked = false;
+      this.pasteSummary = '';
+      this.form.paste = '';
+      this.form.delim = ',';
+    },
+
+    paddedPasteRow(row) {
+      const out = Array.isArray(row) ? row.slice() : [];
+      while (out.length < this.pasteHeaders.length) {
+        out.push('');
+      }
+      return out.slice(0, this.pasteHeaders.length);
+    },
+
+    attribKeyFromHeader(header) {
+      return String(header || '')
+        .toLowerCase()
+        .replace(/[^a-z0-9]+/g, '_')
+        .replace(/^_|_$/g, '');
+    },
+
+    csvEscape(value) {
+      const text = String(value == null ? '' : value);
+      if (/[",\n\r]/.test(text)) {
+        return `"${text.replace(/"/g, '""')}"`;
+      }
+      return text;
+    },
+
+    parsePastedHtmlTable(html) {
+      if (!html || html.toLowerCase().indexOf('<table') === -1) return null;
+      const doc = new DOMParser().parseFromString(html, 'text/html');
+      const table = doc.querySelector('table');
+      if (!table) return null;
+      const rows = Array.from(table.querySelectorAll('tr')).map((tr) => (
+        Array.from(tr.querySelectorAll('th,td')).map((cell) => (
+          String(cell.innerText || '').replace(/\s+/g, ' ').trim()
+        ))
+      )).filter((row) => row.some((cell) => cell));
+      if (rows.length < 2) return null;
+      return { headers: rows[0], rows: rows.slice(1), delim: ',' };
+    },
+
+    parsePastedText(text) {
+      const raw = String(text || '')
+        .replace(/^\uFEFF/, '')
+        .replace(/\r\n/g, '\n')
+        .replace(/\r/g, '\n')
+        .trim();
+      if (!raw) return null;
+      const lines = raw.split(/\r?\n/).filter((line) => line.trim().length > 0);
+      if (lines.length < 2) return null;
+      const delim = this.detectDelim(lines[0]);
+      const headers = this.parseCsvLine(lines[0], delim);
+      if (headers.filter((h) => h).length < 2) return null;
+      const rows = lines.slice(1).map((line) => this.parseCsvLine(line, delim));
+      return { headers, rows, delim };
+    },
+
+    applyPasteGrid(parsed) {
+      if (!parsed || !parsed.headers || parsed.headers.length < 2) return false;
+      this.pasteHeaders = parsed.headers.map((h) => String(h || '').trim());
+      this.pasteRows = parsed.rows || [];
+      this.form.delim = parsed.delim || ',';
+      this.form.paste = [this.pasteHeaders, ...this.pasteRows]
+        .map((row) => row.map((cell) => this.csvEscape(cell)).join(','))
+        .join('\n');
+      this.pasteChecked = false;
+      this.pasteSummary = '';
+      return true;
+    },
+
+    onPasteData(e) {
+      const clip = e.clipboardData;
+      if (!clip) return;
+      const html = clip.getData('text/html');
+      const text = clip.getData('text/plain');
+      const parsed = this.parsePastedHtmlTable(html) || this.parsePastedText(text);
+      if (!parsed) return;
+      e.preventDefault();
+      this.applyPasteGrid(parsed);
+    },
+
+    onPasteInput() {
+      if (!(this.form.paste || '').trim()) {
+        this.pasteHeaders = [];
+        this.pasteRows = [];
+        this.pasteChecked = false;
+        this.pasteSummary = '';
+        return;
+      }
+      if ((this.form.paste.match(/\t/g) || []).length < 2) return;
+      const parsed = this.parsePastedText(this.form.paste);
+      if (parsed) this.applyPasteGrid(parsed);
+    },
+
+    buildImportCsvFromPaste() {
+      if (!this.pasteHeaders.length || !this.pasteRows.length) return '';
+      const mapped = this.pasteHeaders.map((h) => this.guessMappedField(h));
+      const knownIdx = {
+        email: -1,
+        firstname: -1,
+        lastname: -1,
+        name: -1,
+        company: -1,
+      };
+      mapped.forEach((key, i) => {
+        if (key && knownIdx[key] === -1) knownIdx[key] = i;
+      });
+      if (knownIdx.email === -1) return '';
+
+      const extraIdx = mapped.map((key, i) => (key ? -1 : i)).filter((i) => i >= 0);
+      const outHeaders = ['email'];
+      if (knownIdx.firstname !== -1) outHeaders.push('firstname');
+      if (knownIdx.lastname !== -1) outHeaders.push('lastname');
+      if (knownIdx.name !== -1) outHeaders.push('name');
+      if (knownIdx.company !== -1) outHeaders.push('company');
+      if (extraIdx.length) outHeaders.push('attributes');
+
+      const lines = [outHeaders.join(',')];
+      this.pasteRows.forEach((row) => {
+        const cells = outHeaders.map((key) => {
+          if (key !== 'attributes') {
+            return this.csvEscape((row[knownIdx[key]] || '').trim());
+          }
+          const attribs = {};
+          extraIdx.forEach((i) => {
+            const attrKey = this.attribKeyFromHeader(this.pasteHeaders[i]);
+            const val = String(row[i] || '').trim();
+            if (attrKey && val) attribs[attrKey] = val;
+          });
+          return this.csvEscape(JSON.stringify(attribs));
+        });
+        lines.push(cells.join(','));
+      });
+      return `${lines.join('\n')}\n`;
     },
 
     guessMappedField(header) {
@@ -549,6 +726,7 @@ export default Vue.extend({
       const aliases = {
         email: 'email',
         emailaddress: 'email',
+        emailid: 'email',
         mail: 'email',
         name: 'name',
         fullname: 'name',
@@ -709,6 +887,7 @@ export default Vue.extend({
         this.pollStatus();
         this.form.file = null;
         this.form.paste = '';
+        this.clearPasteGrid();
         this.resetFileWizard();
         this.step = 'chooser';
       });
@@ -731,23 +910,27 @@ export default Vue.extend({
       this.form.lists = [];
       this.form.subStatus = 'unconfirmed';
       this.form.delim = ',';
-      this.pasteChecked = false;
-      this.pasteSummary = '';
+      this.clearPasteGrid();
       this.resetFileWizard();
       this.preselectListFromQuery();
     },
 
     checkPasteData() {
-      const text = (this.form.paste || '').trim();
-      if (!text) return;
-      const lines = text.split(/\r?\n/).filter((l) => l.trim().length > 0);
-      if (lines.length < 2) {
-        this.$utils.toast('Please paste at least a header and one row.', 'is-danger');
+      if (!this.pasteHeaders.length) {
+        const parsed = this.parsePastedText(this.form.paste);
+        if (!parsed) {
+          this.$utils.toast('Please paste at least a header and one row.', 'is-danger');
+          return;
+        }
+        this.applyPasteGrid(parsed);
+      }
+      const hasEmail = this.pasteHeaders.some((h) => this.guessMappedField(h) === 'email');
+      if (!hasEmail) {
+        this.$utils.toast('An Email column is required.', 'is-danger');
         return;
       }
-      const cols = (lines[0].match(/,/g) || []).length + 1;
       this.pasteChecked = true;
-      this.pasteSummary = `${lines.length - 1} row(s) detected with ${cols} column(s).`;
+      this.pasteSummary = `${this.pasteRows.length} row(s) detected with ${this.pasteHeaders.length} column(s).`;
     },
 
     preselectListFromQuery() {
@@ -768,9 +951,14 @@ export default Vue.extend({
 
     onUpload() {
       if (this.step === 'paste') {
-        const text = (this.form.paste || '').trim();
-        if (!text || !this.pasteChecked) return;
-        this.form.file = new File([`${text}\n`], 'paste-import.csv', { type: 'text/csv' });
+        if (!this.pasteChecked) return;
+        const csv = this.buildImportCsvFromPaste();
+        if (!csv) {
+          this.$utils.toast('An Email column is required.', 'is-danger');
+          return;
+        }
+        this.form.delim = ',';
+        this.form.file = new File([csv], 'paste-import.csv', { type: 'text/csv' });
       }
 
       if (this.form.mode === 'subscribe' && this.form.overwriteSubStatus) {
@@ -817,7 +1005,15 @@ export default Vue.extend({
     canSubmitPaste() {
       if (!this.pasteChecked) return false;
       if (this.form.mode === 'subscribe' && this.form.lists.length === 0) return false;
-      return !!(this.form.paste || '').trim();
+      return this.pasteRows.length > 0 && this.pasteHeaders.some((h) => this.guessMappedField(h) === 'email');
+    },
+
+    hasPasteData() {
+      return this.pasteHeaders.length > 0 || !!(this.form.paste || '').trim();
+    },
+
+    pastePreviewRows() {
+      return (this.pasteRows || []).slice(0, 25);
     },
 
     progress() {

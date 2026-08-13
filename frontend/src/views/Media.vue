@@ -129,7 +129,10 @@
 
       <!-- Empty State -->
       <div v-else-if="!loading.media">
-        <empty-placeholder />
+        <empty-placeholder
+          label="No media yet"
+          description="Upload images to use in campaigns and templates."
+        />
       </div>
 
       <!-- Pagination -->

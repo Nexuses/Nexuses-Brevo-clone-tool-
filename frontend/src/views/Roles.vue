@@ -19,7 +19,34 @@
         {{ $t('globals.buttons.new') }}
       </button>
     </header>
-    <b-table :data="roles" :loading="isLoading()" hoverable class="roles-brevo__table">
+    <div class="bv-table-card" :class="{ 'has-selection': hasSelection }">
+      <bv-select-bar
+        :selected="numSelectedRoles"
+        :total="roles.length || 0"
+        noun="roles"
+        :all-selected="allSelected"
+        @clear="clearSelection"
+        @select-all="selectAllRoles"
+      >
+        <button
+          v-if="$can('roles:manage')"
+          type="button"
+          class="bv-select-bar__action"
+          @click="deleteSelectedRoles"
+        >
+          Delete
+        </button>
+      </bv-select-bar>
+    <b-table
+      :data="roles"
+      :loading="isLoading()"
+      hoverable
+      checkable
+      :checked-rows.sync="checked"
+      @check-all="onTableCheck"
+      @check="onTableCheck"
+      class="roles-brevo__table"
+    >
       <b-table-column v-slot="props" field="role" :label="$tc('users.role')" sortable>
         <a href="#" class="bv-link" @click.prevent="showEditForm(props.row, 'user')">
           <b-tag v-if="props.row.id === 1" class="enabled">
@@ -71,9 +98,13 @@
       </b-table-column>
 
       <template #empty v-if="!isLoading()">
-        <empty-placeholder />
+        <empty-placeholder
+          label="No roles yet"
+          description="Create a role to control what users can do."
+        />
       </template>
     </b-table>
+    </div>
 
     <!-- Add / edit form modal -->
     <b-modal scroll="keep" :aria-modal="true" :active.sync="isFormVisible" :width="700" @close="onFormClose">
@@ -86,12 +117,14 @@
 import Vue from 'vue';
 import { mapState } from 'vuex';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
+import BvSelectBar from '../components/BvSelectBar.vue';
 import RoleForm from './RoleForm.vue';
 
 export default Vue.extend({
   components: {
     EmptyPlaceholder,
     RoleForm,
+    BvSelectBar,
   },
 
   data() {
@@ -100,6 +133,8 @@ export default Vue.extend({
       curType: null,
       isEditing: false,
       isFormVisible: false,
+      checked: [],
+      allSelected: false,
     };
   },
 
@@ -170,6 +205,38 @@ export default Vue.extend({
       );
     },
 
+    onTableCheck() {
+      if (this.checked.length !== (this.roles || []).length) {
+        this.allSelected = false;
+      }
+    },
+
+    selectAllRoles() {
+      this.allSelected = true;
+      this.checked = [...(this.roles || [])];
+    },
+
+    clearSelection() {
+      this.allSelected = false;
+      this.checked = [];
+    },
+
+    deleteSelectedRoles() {
+      const rows = (this.checked || []).filter((r) => r.id !== 1);
+      if (!rows.length) {
+        this.$utils.toast('The default role cannot be deleted.');
+        return;
+      }
+      this.$utils.confirm(
+        this.$t('globals.messages.confirm'),
+        () => Promise.all(rows.map((r) => this.$api.deleteRole(r.id))).then(() => {
+          this.clearSelection();
+          this.fetchRoles();
+          this.$utils.toast(`${rows.length} roles deleted`);
+        }),
+      );
+    },
+
   },
 
   computed: {
@@ -185,6 +252,14 @@ export default Vue.extend({
 
     roles() {
       return this.isUser ? this.userRoles : this.listRoles;
+    },
+
+    numSelectedRoles() {
+      return this.allSelected ? (this.roles || []).length : this.checked.length;
+    },
+
+    hasSelection() {
+      return this.checked.length > 0 || this.allSelected;
     },
   },
 

@@ -51,24 +51,29 @@
             </td>
             <td class="is-capitalized">{{ t.status || 'open' }}</td>
             <td class="has-text-right">
-              <b-dropdown position="is-bottom-left">
+              <b-dropdown
+                class="bv-action-menu"
+                position="is-bottom-left"
+                :mobile-modal="false"
+              >
                 <template #trigger>
-                  <button type="button" class="crm-kebab" aria-label="Actions">
-                    <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                      <circle cx="8" cy="3.5" r="1.4" fill="currentColor" />
-                      <circle cx="8" cy="8" r="1.4" fill="currentColor" />
-                      <circle cx="8" cy="12.5" r="1.4" fill="currentColor" />
-                    </svg>
+                  <button type="button" class="campaign-actions-trigger" aria-label="Actions">
+                    <span class="campaign-kebab" aria-hidden="true">
+                      <span /><span /><span />
+                    </span>
                   </button>
                 </template>
-                <b-dropdown-item @click="openEdit(t)">Edit</b-dropdown-item>
-                <b-dropdown-item
-                  v-if="t.status !== 'done'"
-                  @click="completeTask(t)"
-                >
+                <b-dropdown-item @click="openEdit(t)">
+                  <b-icon icon="pencil-outline" size="is-small" />
+                  Edit
+                </b-dropdown-item>
+                <b-dropdown-item v-if="t.status !== 'done'" @click="completeTask(t)">
+                  <b-icon icon="check-circle-outline" size="is-small" />
                   Complete
                 </b-dropdown-item>
-                <b-dropdown-item class="has-text-danger" @click="deleteTask(t)">
+                <hr class="bv-action-menu__sep" />
+                <b-dropdown-item class="bv-action-menu__danger" @click="deleteTask(t)">
+                  <b-icon icon="trash-can-outline" size="is-small" />
                   Delete
                 </b-dropdown-item>
               </b-dropdown>
@@ -133,8 +138,9 @@ export default {
     },
 
     formatDue(t) {
-      if (!t.dueDate) return 'â€”';
-      return `${dayjs(t.dueDate).format('MMM D, YYYY')} Â· ${t.time || ''}`.trim();
+      if (!t.dueDate) return '-';
+      const date = dayjs(t.dueDate).format('MMM D, YYYY');
+      return t.time ? `${date} - ${t.time}` : date;
     },
 
     openCreate() {

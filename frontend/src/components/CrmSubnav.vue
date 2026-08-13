@@ -56,6 +56,18 @@ export default {
           match: ['tasks'],
           icon: 'tasks',
         },
+        {
+          name: 'import',
+          label: 'Import',
+          match: ['import'],
+          icon: 'lists',
+        },
+        {
+          name: 'bounces',
+          label: 'Bounces',
+          match: ['bounces'],
+          icon: 'lists',
+        },
       ];
     },
   },

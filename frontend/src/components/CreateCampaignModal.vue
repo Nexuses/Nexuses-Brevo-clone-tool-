@@ -10,7 +10,7 @@
     </header>
 
     <div class="create-campaign-modal__body">
-      <section class="create-campaign-modal__section">
+      <section class="create-campaign-modal__section create-campaign-modal__section--standard">
         <h3>Standard</h3>
         <p>Create a one-off campaign from scratch.</p>
         <div class="create-campaign-modal__channels">
@@ -66,7 +66,7 @@
         </div>
       </section>
 
-      <section class="create-campaign-modal__section" ref="automated">
+      <section class="create-campaign-modal__section create-campaign-modal__section--automated" ref="automated">
         <div class="create-campaign-modal__section-head">
           <div>
             <h3>Automated</h3>
@@ -86,207 +86,98 @@
           class="create-campaign-modal__ai-teaser"
           @click="aiOpen = true"
         >
-          Start with a sentence. we’ll build your automation
+          Start with a sentence. we'll build your automation
         </button>
 
-        <div v-else class="create-campaign-modal__ai">
-          <h4>Start with a sentence, we’ll build your automation</h4>
-          <div class="create-campaign-modal__ai-modes" role="tablist" aria-label="AI mode">
-            <button
-              type="button"
-              class="create-campaign-modal__ai-mode"
-              :class="{ 'is-active': aiMode === 'guided' }"
-              @click="aiMode = 'guided'"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M2 7h10M7 2v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
-                <circle cx="7" cy="7" r="5.2" stroke="currentColor" stroke-width="1.4" />
-              </svg>
-              Guided mode
-            </button>
-            <button
-              type="button"
-              class="create-campaign-modal__ai-mode"
-              :class="{ 'is-active': aiMode === 'write' }"
-              @click="aiMode = 'write'"
-            >
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M8.2 2.4l3.4 3.4L4.6 13H1.2v-3.4L8.2 2.4z" stroke="currentColor" stroke-width="1.4"
-                  stroke-linejoin="round" />
-              </svg>
-              Write your own
-            </button>
-          </div>
-
-          <div v-if="aiMode === 'guided'" class="create-campaign-modal__ai-box">
-            <p class="create-campaign-modal__sentence">
-              Create an automation that
-              <span class="create-campaign-modal__token-wrap">
-                <button type="button" class="create-campaign-modal__token" @click.stop="toggleMenu('action')">
-                  {{ actionLabel }}
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M3 4.2L6 7.2 9 4.2" stroke="currentColor" stroke-width="1.5"
-                      stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-                <ul v-if="openMenu === 'action'" class="create-campaign-modal__menu">
-                  <li v-for="opt in actionOptions" :key="opt.value">
-                    <button type="button" @click="aiAction = opt.value; openMenu = null">{{ opt.label }}</button>
-                  </li>
-                </ul>
-              </span>
-              a message via
-              <span class="create-campaign-modal__token-wrap">
-                <button
-                  type="button"
-                  class="create-campaign-modal__token"
-                  :class="{ 'is-placeholder': !aiChannel }"
-                  @click.stop="toggleMenu('channel')"
-                >
-                  {{ channelTokenLabel }}
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M3 4.2L6 7.2 9 4.2" stroke="currentColor" stroke-width="1.5"
-                      stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-                <ul v-if="openMenu === 'channel'" class="create-campaign-modal__menu">
-                  <li v-for="opt in channelOptions" :key="opt.value">
-                    <button type="button" @click="aiChannel = opt.value; openMenu = null">{{ opt.label }}</button>
-                  </li>
-                </ul>
-              </span>
-              when
-              <span class="create-campaign-modal__token-wrap">
-                <button
-                  type="button"
-                  class="create-campaign-modal__token"
-                  :class="{ 'is-placeholder': !aiTrigger }"
-                  @click.stop="toggleMenu('trigger')"
-                >
-                  {{ triggerTokenLabel }}
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M3 4.2L6 7.2 9 4.2" stroke="currentColor" stroke-width="1.5"
-                      stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-                <ul v-if="openMenu === 'trigger'" class="create-campaign-modal__menu">
-                  <li v-for="opt in triggerOptions" :key="opt.value">
-                    <button type="button" @click="aiTrigger = opt.value; openMenu = null">{{ opt.label }}</button>
-                  </li>
-                </ul>
-              </span>
-            </p>
-            <div class="create-campaign-modal__ai-foot">
-              <button type="button" class="create-campaign-modal__icon-btn" aria-label="Reset" @click="resetAi">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M3 8a5 5 0 019.5-2.2M13 8a5 5 0 01-9.5 2.2" stroke="currentColor"
-                    stroke-width="1.5" stroke-linecap="round" />
-                  <path d="M12.5 2.5V5.8H9.2M3.5 13.5V10.2H6.8" stroke="currentColor"
-                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
-              <button type="button" class="create-campaign-modal__submit" aria-label="Create automation" @click="submitAi">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M8 12V4M4.5 7.5L8 4l3.5 3.5" stroke="currentColor" stroke-width="1.7"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
-            </div>
-          </div>
-
-          <div v-else class="create-campaign-modal__ai-box">
+        <template v-else>
+          <div class="create-campaign-modal__ai-banner">
             <label class="is-sr-only" for="ai-write">Describe your automation</label>
             <textarea
               id="ai-write"
               v-model="aiText"
-              class="create-campaign-modal__write"
-              rows="4"
-              placeholder="Describe the automation you want, e.g. Send a welcome email when someone joins my list"
-              @keydown.enter.ctrl.prevent="submitAi"
+              class="create-campaign-modal__ai-banner-input"
+              rows="3"
+              placeholder="Start with a sentence, we'll build your automation"
+              @keydown.enter.ctrl.prevent="submitBanner"
             />
-            <div class="create-campaign-modal__ai-foot">
-              <button type="button" class="create-campaign-modal__icon-btn" aria-label="Reset" @click="resetAi">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M3 8a5 5 0 019.5-2.2M13 8a5 5 0 01-9.5 2.2" stroke="currentColor"
-                    stroke-width="1.5" stroke-linecap="round" />
-                  <path d="M12.5 2.5V5.8H9.2M3.5 13.5V10.2H6.8" stroke="currentColor"
-                    stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            <div class="create-campaign-modal__ai-banner-actions">
+              <button type="button" class="create-campaign-modal__ai-circle" aria-label="Reset" @click="resetAi">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <path d="M4 9a5 5 0 019.6-2M14 9a5 5 0 01-9.6 2" stroke="#6B7280" stroke-width="1.6" stroke-linecap="round" />
+                  <path d="M13.4 3.2V6.4H10.2M4.6 14.8v-3.2H7.8" stroke="#6B7280" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </button>
-              <button type="button" class="create-campaign-modal__submit" aria-label="Create automation" @click="submitAi">
-                <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-                  <path d="M8 12V4M4.5 7.5L8 4l3.5 3.5" stroke="currentColor" stroke-width="1.7"
-                    stroke-linecap="round" stroke-linejoin="round" />
+              <button type="button" class="create-campaign-modal__ai-circle" aria-label="Create automation" @click="submitBanner">
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                  <path d="M9 13.5V4.5M5.2 8.2L9 4.5l3.8 3.7" stroke="#6B7280" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" />
                 </svg>
               </button>
             </div>
           </div>
-        </div>
-      </section>
 
-      <section class="create-campaign-modal__section">
-        <div class="create-campaign-modal__filters">
-          <div class="create-campaign-modal__filter">
-            <span id="prebuilt-type-label">Pre-built automation type</span>
-            <span class="create-campaign-modal__token-wrap is-filter">
-              <button
-                type="button"
-                class="create-campaign-modal__select"
-                aria-labelledby="prebuilt-type-label"
-                @click.stop="toggleMenu('typeFilter')"
-              >
-                {{ typeFilterLabel }}
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                  <path d="M3 4.2L6 7.2 9 4.2" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
-              <ul v-if="openMenu === 'typeFilter'" class="create-campaign-modal__menu">
-                <li v-for="opt in typeFilterOptions" :key="opt.value">
-                  <button type="button" @click="typeFilter = opt.value; openMenu = null">{{ opt.label }}</button>
-                </li>
-              </ul>
-            </span>
+          <div class="create-campaign-modal__filters">
+            <div class="create-campaign-modal__filter">
+              <span id="prebuilt-type-label">Pre-built automation type</span>
+              <span class="create-campaign-modal__token-wrap is-filter">
+                <button
+                  type="button"
+                  class="create-campaign-modal__select"
+                  aria-labelledby="prebuilt-type-label"
+                  @click.stop="toggleMenu('typeFilter')"
+                >
+                  {{ typeFilterLabel }}
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M3 4.2L6 7.2 9 4.2" stroke="currentColor" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+                <ul v-if="openMenu === 'typeFilter'" class="create-campaign-modal__menu">
+                  <li v-for="opt in typeFilterOptions" :key="opt.value">
+                    <button type="button" @click="typeFilter = opt.value; openMenu = null">{{ opt.label }}</button>
+                  </li>
+                </ul>
+              </span>
+            </div>
+            <div class="create-campaign-modal__filter">
+              <span id="prebuilt-channel-label">Channel</span>
+              <span class="create-campaign-modal__token-wrap is-filter">
+                <button
+                  type="button"
+                  class="create-campaign-modal__select"
+                  aria-labelledby="prebuilt-channel-label"
+                  @click.stop="toggleMenu('channelFilter')"
+                >
+                  {{ channelFilterLabel }}
+                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                    <path d="M3 4.2L6 7.2 9 4.2" stroke="currentColor" stroke-width="1.5"
+                      stroke-linecap="round" stroke-linejoin="round" />
+                  </svg>
+                </button>
+                <ul v-if="openMenu === 'channelFilter'" class="create-campaign-modal__menu">
+                  <li v-for="opt in channelFilterOptions" :key="opt.value">
+                    <button type="button" @click="channelFilter = opt.value; openMenu = null">{{ opt.label }}</button>
+                  </li>
+                </ul>
+              </span>
+            </div>
           </div>
-          <div class="create-campaign-modal__filter">
-            <span id="prebuilt-channel-label">Channel</span>
-            <span class="create-campaign-modal__token-wrap is-filter">
-              <button
-                type="button"
-                class="create-campaign-modal__select"
-                aria-labelledby="prebuilt-channel-label"
-                @click.stop="toggleMenu('channelFilter')"
-              >
-                {{ channelFilterLabel }}
-                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                  <path d="M3 4.2L6 7.2 9 4.2" stroke="currentColor" stroke-width="1.5"
-                    stroke-linecap="round" stroke-linejoin="round" />
-                </svg>
-              </button>
-              <ul v-if="openMenu === 'channelFilter'" class="create-campaign-modal__menu">
-                <li v-for="opt in channelFilterOptions" :key="opt.value">
-                  <button type="button" @click="channelFilter = opt.value; openMenu = null">{{ opt.label }}</button>
-                </li>
-              </ul>
-            </span>
-          </div>
-        </div>
 
-        <div class="create-campaign-modal__templates">
-          <button
-            v-for="tpl in visibleTemplates"
-            :key="tpl.id"
-            type="button"
-            class="create-campaign-modal__template"
-            @click="onTemplate(tpl)"
-          >
-            <strong>{{ tpl.title }}</strong>
-            <span>{{ tpl.desc }}</span>
-          </button>
-          <p v-if="!visibleTemplates.length" class="create-campaign-modal__empty">
-            No pre-built automations match these filters.
-          </p>
-        </div>
+          <div class="create-campaign-modal__templates">
+            <button
+              v-for="tpl in visibleTemplates"
+              :key="tpl.id"
+              type="button"
+              class="create-campaign-modal__template"
+              @click="onTemplate(tpl)"
+            >
+              <strong>{{ tpl.title }}</strong>
+              <span>{{ tpl.desc }}</span>
+            </button>
+            <p v-if="!visibleTemplates.length" class="create-campaign-modal__empty">
+              No pre-built automations match these filters.
+            </p>
+          </div>
+        </template>
       </section>
     </div>
   </div>
@@ -357,7 +248,7 @@ export default Vue.extend({
   data() {
     return {
       aiOpen: false,
-      aiMode: 'guided',
+      aiMode: 'write',
       aiAction: 'sends',
       aiChannel: '',
       aiTrigger: '',
@@ -475,6 +366,17 @@ export default Vue.extend({
       this.aiTrigger = '';
       this.aiText = '';
       this.openMenu = null;
+      this.typeFilter = 'popular';
+      this.channelFilter = 'email';
+    },
+
+    submitBanner() {
+      this.aiMode = 'write';
+      if (!(this.aiText || '').trim()) {
+        this.onScratch();
+        return;
+      }
+      this.submitAi();
     },
 
     messengers() {

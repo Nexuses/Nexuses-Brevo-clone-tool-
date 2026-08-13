@@ -6,12 +6,6 @@
       <div class="campaigns-brevo__title-row">
         <h1 class="campaigns-brevo__title">Campaigns</h1>
         <div class="campaigns-brevo__actions">
-          <button type="button" class="campaigns-brevo__btn campaigns-brevo__btn--outline" @click="onCreateFolder">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path d="M2.5 4.5h4l1.2 1.5H13.5v6.5a1 1 0 01-1 1h-10a1 1 0 01-1-1V5.5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
-            </svg>
-            Create folder
-          </button>
           <button
             v-if="$can('campaigns:manage')"
             type="button"
@@ -26,12 +20,9 @@
           </button>
         </div>
       </div>
-
-      <div class="campaigns-brevo__channel-tabs" role="tablist" aria-label="Campaign type">
-        <button type="button" class="campaigns-brevo__channel is-active" role="tab" aria-selected="true">
-          Email
-        </button>
-      </div>
+      <p class="campaigns-brevo__lead">
+        Create, schedule, and track email campaigns from one place.
+      </p>
     </header>
 
     <div class="campaigns-brevo__controls">
@@ -100,16 +91,8 @@
       </div>
     </div>
 
-    <div class="campaigns-brevo__meta" v-if="campaigns.total > 0 || bulk.checked.length > 0">
-      <div class="actions campaigns-brevo__bulk" v-if="bulk.checked.length > 0">
-        <a class="a" href="#" @click.prevent="deleteCampaigns" data-cy="btn-delete-campaigns">
-          <b-icon icon="trash-can-outline" size="is-small" /> Delete
-        </a>
-        <span class="a">
-          {{ $tc('globals.messages.numSelected', numSelectedCampaigns, { num: numSelectedCampaigns }) }}
-        </span>
-      </div>
-      <div class="campaigns-brevo__pager" v-if="campaigns.total > 0">
+    <div class="campaigns-brevo__meta" v-if="campaigns.total > 0">
+      <div class="campaigns-brevo__pager">
         <span class="campaigns-brevo__pager-range">{{ pageRangeLabel }}</span>
         <label class="campaigns-brevo__pager-jump">
           <select :value="queryParams.page" aria-label="Page" @change="onPageSelect">
@@ -142,6 +125,25 @@
       </div>
     </div>
 
+    <div class="campaigns-brevo__list">
+      <bv-select-bar
+        :selected="numSelectedCampaigns"
+        :total="campaigns.total || 0"
+        noun="campaigns"
+        :all-selected="bulk.all"
+        @clear="clearSelection"
+        @select-all="selectAllCampaigns"
+      >
+        <button
+          v-if="$can('campaigns:manage')"
+          type="button"
+          class="bv-select-bar__action"
+          data-cy="btn-delete-campaigns"
+          @click="deleteCampaigns"
+        >
+          Delete
+        </button>
+      </bv-select-bar>
     <b-table
       class="bv-campaigns-table"
       :data="campaigns.results"
@@ -183,6 +185,7 @@
             <div class="bv-campaign-card__status" :class="`is-${props.row.status}`">
               <span class="dot" />
               <span class="bv-campaign-card__status-label">{{ statusLabel(props.row) }}</span>
+              <span v-if="statusWhen(props.row, stats)" class="bv-campaign-card__status-sep">·</span>
               <span class="bv-campaign-card__status-when">{{ statusWhen(props.row, stats) }}</span>
               <span class="spinner is-tiny" v-if="isRunning(props.row.id)">
                 <b-loading :is-full-page="false" active />
@@ -209,12 +212,12 @@
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Unsubscribed</span>
-              <strong class="bv-metric__val">{{ hasMetrics(props.row) ? '0' : '—' }}</strong>
-              <span class="bv-metric__pct">{{ hasMetrics(props.row) ? '0%' : '' }}</span>
+              <strong class="bv-metric__val">{{ metricOrDash(props.row, metricVal(stats, ['unsubscribed', 'unsubscribes', 'unsub'])) }}</strong>
+              <span class="bv-metric__pct">{{ metricPctOrDash(props.row, metricVal(stats, ['unsubscribed', 'unsubscribes', 'unsub']), sentCount(stats)) }}</span>
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Conversions</span>
-              <strong class="bv-metric__val">—</strong>
+              <strong class="bv-metric__val">{{ hasMetrics(props.row) ? '0' : '—' }}</strong>
               <span class="bv-metric__pct">{{ hasMetrics(props.row) ? '0%' : '' }}</span>
             </div>
           </div>
@@ -240,12 +243,15 @@
               aria-label="Report"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                <path d="M3 13.5l3.2-3.2 2.3 2.3L15 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
-                <path d="M12 6h3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M9 2.5l1.4 4.1H15l-3.5 2.6 1.3 4.2L9 10.9 5.2 13.4l1.3-4.2L3 6.6h4.6L9 2.5z" fill="currentColor" />
               </svg>
             </router-link>
 
-            <b-dropdown class="campaign-actions-menu" position="is-bottom-left">
+            <b-dropdown
+              class="bv-action-menu campaign-actions-menu"
+              position="is-bottom-left"
+              :mobile-modal="false"
+            >
               <template #trigger>
                 <button
                   type="button"
@@ -259,130 +265,111 @@
                 </button>
               </template>
 
-              <div class="campaign-actions-panel">
-                <template v-if="$can('campaigns:send')">
-                  <a
-                    v-if="canStart(props.row)"
-                    href="#"
-                    class="campaign-action"
-                    @click.prevent="$utils.confirm(null, () => changeCampaignStatus(props.row, 'running'))"
-                    data-cy="btn-start"
-                    :aria-label="$t('campaigns.start')"
-                  >
-                    <b-tooltip :label="$t('campaigns.start')" type="is-dark" position="is-left">
-                      <b-icon icon="rocket-launch-outline" />
-                    </b-tooltip>
-                  </a>
-                  <a
-                    v-else-if="canResume(props.row)"
-                    href="#"
-                    class="campaign-action"
-                    @click.prevent="$utils.confirm(null, () => changeCampaignStatus(props.row, 'running'))"
-                    data-cy="btn-resume"
-                    :aria-label="$t('campaigns.send')"
-                  >
-                    <b-tooltip :label="$t('campaigns.send')" type="is-dark" position="is-left">
-                      <b-icon icon="rocket-launch-outline" />
-                    </b-tooltip>
-                  </a>
-                  <a
-                    v-else-if="canSchedule(props.row)"
-                    href="#"
-                    class="campaign-action"
-                    @click.prevent="$utils.confirm($t('campaigns.confirmSchedule'), () => changeCampaignStatus(props.row, 'scheduled'))"
-                    data-cy="btn-schedule"
-                    :aria-label="$t('campaigns.schedule')"
-                  >
-                    <b-tooltip :label="$t('campaigns.schedule')" type="is-dark" position="is-left">
-                      <b-icon icon="rocket-launch-outline" />
-                    </b-tooltip>
-                  </a>
-                  <span v-else class="campaign-action is-disabled">
-                    <b-icon icon="rocket-launch-outline" />
-                  </span>
+              <b-dropdown-item
+                v-if="isReportCampaign(props.row)"
+                @click="$router.push(campaignTarget(props.row))"
+              >
+                <b-icon icon="chart-line" size="is-small" />
+                Report
+              </b-dropdown-item>
+              <b-dropdown-item
+                v-else-if="isEditableCampaign(props.row)"
+                @click="$router.push(campaignTarget(props.row))"
+              >
+                <b-icon icon="pencil-outline" size="is-small" />
+                Edit
+              </b-dropdown-item>
 
-                  <a
-                    v-if="canPause(props.row)"
-                    href="#"
-                    class="campaign-action"
-                    @click.prevent="$utils.confirm(null, () => changeCampaignStatus(props.row, 'paused'))"
-                    data-cy="btn-pause"
-                    :aria-label="$t('campaigns.pause')"
-                  >
-                    <b-tooltip :label="$t('campaigns.pause')" type="is-dark" position="is-left">
-                      <b-icon icon="pause-circle-outline" />
-                    </b-tooltip>
-                  </a>
+              <b-dropdown-item data-cy="btn-preview" @click="previewCampaign(props.row)">
+                <b-icon icon="eye-outline" size="is-small" />
+                Preview & test
+              </b-dropdown-item>
 
-                  <a
-                    v-if="canCancel(props.row)"
-                    href="#"
-                    class="campaign-action"
-                    @click.prevent="$utils.confirm(null, () => changeCampaignStatus(props.row, 'cancelled'))"
-                    data-cy="btn-cancel"
-                    :aria-label="$t('globals.buttons.cancel')"
-                  >
-                    <b-tooltip :label="$t('globals.buttons.cancel')" type="is-dark" position="is-left">
-                      <b-icon icon="cancel" />
-                    </b-tooltip>
-                  </a>
-                  <span v-else class="campaign-action is-disabled">
-                    <b-icon icon="cancel" />
-                  </span>
-                </template>
+              <b-dropdown-item
+                v-if="$can('campaigns:manage')"
+                data-cy="btn-clone"
+                @click="cloneCampaignPrompt(props.row)"
+              >
+                <b-icon icon="content-copy" size="is-small" />
+                Duplicate
+              </b-dropdown-item>
 
-                <a
-                  href="#"
-                  class="campaign-action"
-                  @click.prevent="previewCampaign(props.row)"
-                  data-cy="btn-preview"
-                  :aria-label="$t('campaigns.preview')"
+              <template v-if="$can('campaigns:send') && (canStart(props.row) || canResume(props.row) || canSchedule(props.row) || canPause(props.row) || canCancel(props.row))">
+                <hr class="bv-action-menu__sep" />
+                <b-dropdown-item
+                  v-if="canStart(props.row)"
+                  data-cy="btn-start"
+                  @click="$utils.confirm(null, () => changeCampaignStatus(props.row, 'running'))"
                 >
-                  <b-tooltip :label="$t('campaigns.preview')" type="is-dark" position="is-left">
-                    <b-icon icon="file-find-outline" />
-                  </b-tooltip>
-                </a>
-
-                <a
-                  v-if="$can('campaigns:manage')"
-                  href="#"
-                  class="campaign-action"
-                  @click.prevent="$utils.prompt($t('globals.buttons.clone'),
-                    {
-                      placeholder: $t('globals.fields.name'),
-                      value: $t('campaigns.copyOf', { name: props.row.name }),
-                    },
-                    (name) => cloneCampaign(name, props.row))"
-                  data-cy="btn-clone"
-                  :aria-label="$t('globals.buttons.clone')"
+                  <b-icon icon="rocket-launch-outline" size="is-small" />
+                  {{ $t('campaigns.start') }}
+                </b-dropdown-item>
+                <b-dropdown-item
+                  v-else-if="canResume(props.row)"
+                  data-cy="btn-resume"
+                  @click="$utils.confirm(null, () => changeCampaignStatus(props.row, 'running'))"
                 >
-                  <b-tooltip :label="$t('globals.buttons.clone')" type="is-dark" position="is-left">
-                    <b-icon icon="file-multiple-outline" />
-                  </b-tooltip>
-                </a>
-
-                <a
-                  v-if="$can('campaigns:manage')"
-                  href="#"
-                  class="campaign-action"
-                  @click.prevent="$utils.confirm($t('campaigns.confirmDelete', { name: props.row.name }), () => deleteCampaign(props.row))"
-                  data-cy="btn-delete"
-                  :aria-label="$t('globals.buttons.delete')"
+                  <b-icon icon="rocket-launch-outline" size="is-small" />
+                  {{ $t('campaigns.send') }}
+                </b-dropdown-item>
+                <b-dropdown-item
+                  v-else-if="canSchedule(props.row)"
+                  data-cy="btn-schedule"
+                  @click="$utils.confirm($t('campaigns.confirmSchedule'), () => changeCampaignStatus(props.row, 'scheduled'))"
                 >
-                  <b-tooltip :label="$t('globals.buttons.delete')" type="is-dark" position="is-left">
-                    <b-icon icon="trash-can-outline" />
-                  </b-tooltip>
-                </a>
-              </div>
+                  <b-icon icon="clock-outline" size="is-small" />
+                  {{ $t('campaigns.schedule') }}
+                </b-dropdown-item>
+                <b-dropdown-item
+                  v-if="canPause(props.row)"
+                  data-cy="btn-pause"
+                  @click="$utils.confirm(null, () => changeCampaignStatus(props.row, 'paused'))"
+                >
+                  <b-icon icon="pause-circle-outline" size="is-small" />
+                  {{ $t('campaigns.pause') }}
+                </b-dropdown-item>
+                <b-dropdown-item
+                  v-if="canCancel(props.row)"
+                  data-cy="btn-cancel"
+                  @click="$utils.confirm(null, () => changeCampaignStatus(props.row, 'cancelled'))"
+                >
+                  <b-icon icon="cancel" size="is-small" />
+                  {{ $t('globals.buttons.cancel') }}
+                </b-dropdown-item>
+              </template>
+
+              <hr v-if="$can('campaigns:manage')" class="bv-action-menu__sep" />
+              <b-dropdown-item
+                v-if="$can('campaigns:manage')"
+                class="bv-action-menu__danger"
+                data-cy="btn-delete"
+                @click="$utils.confirm($t('campaigns.confirmDelete', { name: props.row.name }), () => deleteCampaign(props.row))"
+              >
+                <b-icon icon="trash-can-outline" size="is-small" />
+                Delete
+              </b-dropdown-item>
             </b-dropdown>
           </div>
         </div>
       </b-table-column>
 
       <template #empty v-if="!loading.campaigns">
-        <empty-placeholder />
+        <empty-placeholder
+          label="No campaigns yet"
+          description="Create your first campaign to reach your contacts."
+        >
+          <button
+            v-if="$can('campaigns:manage')"
+            type="button"
+            class="btn-new"
+            @click="openCreateModal('standard')"
+          >
+            Create campaign
+          </button>
+        </empty-placeholder>
       </template>
     </b-table>
+    </div>
 
     <campaign-preview
       v-if="previewItem"
@@ -394,7 +381,7 @@
 
     <b-modal
       :active.sync="isCreateOpen"
-      :width="760"
+      :width="840"
       scroll="keep"
       class="create-campaign-form-modal"
     >
@@ -415,6 +402,7 @@ import CampaignPreview from '../components/CampaignPreview.vue';
 import CreateCampaignModal from '../components/CreateCampaignModal.vue';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
 import MarketingSubnav from '../components/MarketingSubnav.vue';
+import BvSelectBar from '../components/BvSelectBar.vue';
 
 export default Vue.extend({
   components: {
@@ -422,6 +410,7 @@ export default Vue.extend({
     CreateCampaignModal,
     EmptyPlaceholder,
     MarketingSubnav,
+    BvSelectBar,
   },
 
   data() {
@@ -581,6 +570,7 @@ export default Vue.extend({
 
     metricPctOrDash(c, num, den) {
       if (!this.hasMetrics(c)) return '';
+      if (!den || den <= 0) return '0%';
       return this.pctLabel(num, den);
     },
 
@@ -608,8 +598,15 @@ export default Vue.extend({
       this.$router.push(this.campaignTarget(c));
     },
 
-    onCreateFolder() {
-      this.$utils.toast('Campaign folders coming soon');
+    cloneCampaignPrompt(c) {
+      this.$utils.prompt(
+        this.$t('globals.buttons.clone'),
+        {
+          placeholder: this.$t('globals.fields.name'),
+          value: this.$t('campaigns.copyOf', { name: c.name }),
+        },
+        (name) => this.cloneCampaign(name, c),
+      );
     },
 
     toggleStatusMenu() {
@@ -823,6 +820,16 @@ export default Vue.extend({
       this.bulk.all = true;
     },
 
+    selectAllCampaigns() {
+      this.bulk.all = true;
+      this.bulk.checked = [...(this.campaigns.results || [])];
+    },
+
+    clearSelection() {
+      this.bulk.all = false;
+      this.bulk.checked = [];
+    },
+
     onTableCheck() {
       // Disable bulk.all selection if there are no rows checked in the table.
       if (this.bulk.checked.length !== this.campaigns.total) {
@@ -868,6 +875,10 @@ export default Vue.extend({
 
     numSelectedCampaigns() {
       return this.bulk.all ? this.campaigns.total : this.bulk.checked.length;
+    },
+
+    hasSelection() {
+      return this.bulk.checked.length > 0 || this.bulk.all;
     },
 
     allVisibleChecked() {

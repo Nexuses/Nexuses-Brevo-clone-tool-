@@ -12,7 +12,7 @@
       </div>
     </header>
 
-    <b-table :data="bounces.results" :hoverable="true" :loading="loading.bounces" default-sort="createdAt" checkable
+    <b-table class="bounces-brevo__table" :data="bounces.results" :hoverable="true" :loading="loading.bounces" default-sort="createdAt" checkable
       @check-all="onTableCheck" @check="onTableCheck" :checked-rows.sync="bulk.checked" detailed show-detail-icon
       paginated backend-pagination pagination-position="both" @page-change="onPageChange"
       :current-page="queryParams.page" :per-page="bounces.perPage" :total="bounces.total" backend-sorting
@@ -92,7 +92,10 @@
       </template>
 
       <template #empty v-if="!loading.bounces">
-        <empty-placeholder />
+        <empty-placeholder
+          label="No bounces yet"
+          description="Bounced emails will appear here so you can keep your lists clean."
+        />
       </template>
     </b-table>
   </section>

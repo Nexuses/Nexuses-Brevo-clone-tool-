@@ -14,13 +14,14 @@
     </header>
 
     <b-loading v-if="loading.lists" :active="loading.lists" :is-full-page="false" />
-    <p v-else-if="publicLists.length === 0" class="bv-page__card">
+    <p v-else-if="publicLists.length === 0" class="bv-panel">
       {{ $t('forms.noPublicLists') }}
     </p>
     <div class="columns" v-else-if="publicLists.length > 0">
       <div class="column is-4">
-        <h4>{{ $t('forms.publicLists') }}</h4>
-        <p class="has-text-grey">{{ $t('forms.selectHelp') }}</p>
+        <div class="bv-panel">
+        <h2 class="bv-panel__title">{{ $t('forms.publicLists') }}</h2>
+        <p class="bv-panel__help">{{ $t('forms.selectHelp') }}</p>
 
         <b-loading :active="loading.lists" :is-full-page="false" />
         <ul class="no" data-cy="lists">
@@ -41,14 +42,17 @@
             </a>
           </p>
         </template>
+        </div>
       </div>
       <div class="column" data-cy="form">
-        <h4>{{ $t('forms.formHTML') }}</h4>
-        <p>
+        <div class="bv-panel">
+        <h2 class="bv-panel__title">{{ $t('forms.formHTML') }}</h2>
+        <p class="bv-panel__help">
           {{ $t('forms.formHTMLHelp') }}
         </p>
 
         <code-editor lang="html" v-if="checked.length > 0" v-model="html" disabled />
+        </div>
       </div>
     </div><!-- columns -->
   </section>

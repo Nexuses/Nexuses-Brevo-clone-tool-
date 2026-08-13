@@ -37,11 +37,33 @@
       </button>
     </header>
 
+    <div class="bv-table-card" :class="{ 'has-selection': hasSelection }">
+      <bv-select-bar
+        :selected="numSelectedTemplates"
+        :total="templates.length || 0"
+        noun="templates"
+        :all-selected="allSelected"
+        @clear="clearSelection"
+        @select-all="selectAllTemplates"
+      >
+        <button
+          v-if="$can('templates:manage')"
+          type="button"
+          class="bv-select-bar__action"
+          @click="deleteSelectedTemplates"
+        >
+          Delete
+        </button>
+      </bv-select-bar>
     <b-table
       :data="templates"
       :hoverable="true"
       :loading="loading.templates"
       default-sort="createdAt"
+      checkable
+      :checked-rows.sync="checked"
+      @check-all="onTableCheck"
+      @check="onTableCheck"
       class="templates-brevo__table"
     >
       <b-table-column v-slot="props" field="name" label="Template" :td-attrs="$utils.tdID" sortable>
@@ -127,9 +149,13 @@
       </b-table-column>
 
       <template #empty v-if="!loading.templates">
-        <empty-placeholder />
+        <empty-placeholder
+          label="No templates yet"
+          description="Create a reusable template for your email campaigns."
+        />
       </template>
     </b-table>
+    </div>
 
     <!-- Add / edit form modal -->
     <b-modal scroll="keep" :aria-modal="true" :active.sync="isFormVisible" :width="1200" :can-cancel="false"
@@ -148,6 +174,7 @@ import { mapState } from 'vuex';
 import CampaignPreview from '../components/CampaignPreview.vue';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
 import MarketingSubnav from '../components/MarketingSubnav.vue';
+import BvSelectBar from '../components/BvSelectBar.vue';
 
 import TemplateForm from './TemplateForm.vue';
 
@@ -157,6 +184,7 @@ export default Vue.extend({
     TemplateForm,
     EmptyPlaceholder,
     MarketingSubnav,
+    BvSelectBar,
   },
 
   data() {
@@ -165,6 +193,8 @@ export default Vue.extend({
       isEditing: false,
       isFormVisible: false,
       previewItem: null,
+      checked: [],
+      allSelected: false,
     };
   },
 
@@ -227,10 +257,50 @@ export default Vue.extend({
         this.$utils.toast(this.$t('globals.messages.deleted', { name: tpl.name }));
       });
     },
+
+    onTableCheck() {
+      if (this.checked.length !== (this.templates || []).length) {
+        this.allSelected = false;
+      }
+    },
+
+    selectAllTemplates() {
+      this.allSelected = true;
+      this.checked = [...(this.templates || [])];
+    },
+
+    clearSelection() {
+      this.allSelected = false;
+      this.checked = [];
+    },
+
+    deleteSelectedTemplates() {
+      const rows = (this.checked || []).filter((t) => !t.isDefault);
+      if (!rows.length) {
+        this.$utils.toast('Default templates cannot be deleted.');
+        return;
+      }
+      this.$utils.confirm(
+        this.$t('globals.messages.confirm'),
+        () => Promise.all(rows.map((t) => this.$api.deleteTemplate(t.id))).then(() => {
+          this.clearSelection();
+          this.$api.getTemplates();
+          this.$utils.toast(`${rows.length} templates deleted`);
+        }),
+      );
+    },
   },
 
   computed: {
     ...mapState(['templates', 'loading']),
+
+    numSelectedTemplates() {
+      return this.allSelected ? (this.templates || []).length : this.checked.length;
+    },
+
+    hasSelection() {
+      return this.checked.length > 0 || this.allSelected;
+    },
   },
 
   created() {

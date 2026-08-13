@@ -1,6 +1,9 @@
 <template>
-  <section class="campaign bv-page" :class="{ 'is-design-open': isDesignOpen, 'is-report': showReport }">
-    <marketing-subnav v-if="!isDesignOpen && !showReport" />
+  <section
+    class="campaign bv-page"
+    :class="{ 'is-design-open': isDesignOpen, 'is-report': showReport, 'is-setup': showSetup }"
+  >
+    <marketing-subnav v-if="!isDesignOpen && !showReport && !showSetup" />
 
     <campaign-report
       v-if="showReport"

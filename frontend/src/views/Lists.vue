@@ -1,5 +1,6 @@
 <template>
   <section class="lists lists-brevo">
+    <crm-subnav />
     <header class="lists-brevo__header">
       <div class="lists-brevo__title-row">
         <h1 class="lists-brevo__title">Lists</h1>
@@ -124,6 +125,25 @@
       </form>
     </div>
 
+    <div class="bv-table-card" :class="{ 'has-selection': hasSelection }">
+      <bv-select-bar
+        :selected="numSelectedLists"
+        :total="lists.total || 0"
+        noun="lists"
+        :all-selected="bulk.all"
+        @clear="clearSelection"
+        @select-all="selectAllLists"
+      >
+        <button
+          v-if="$can('lists:manage_all')"
+          type="button"
+          class="bv-select-bar__action"
+          data-cy="btn-delete-lists"
+          @click="deleteLists"
+        >
+          Delete
+        </button>
+      </bv-select-bar>
     <b-table
       :data="lists.results"
       :loading="loading.listsFull"
@@ -131,6 +151,7 @@
       @check="onTableCheck"
       :checked-rows.sync="bulk.checked"
       hoverable
+      checkable
       :mobile-cards="false"
       default-sort="createdAt"
       default-sort-direction="desc"
@@ -142,17 +163,6 @@
       @sort="onSort"
       class="lists-brevo__table"
     >
-      <template #top-left>
-        <div class="actions" v-if="bulk.checked.length > 0">
-          <a class="a" href="#" @click.prevent="deleteLists" data-cy="btn-delete-lists">
-            <b-icon icon="trash-can-outline" size="is-small" /> {{ $t('globals.buttons.delete') }}
-          </a>
-          <span class="a">
-            {{ $tc('globals.messages.numSelected', numSelectedLists, { num: numSelectedLists }) }}
-          </span>
-        </div>
-      </template>
-
       <b-table-column
         v-slot="props"
         field="name"
@@ -208,7 +218,7 @@
       <b-table-column v-slot="props" label="Actions" cell-class="actions" align="right" width="70">
         <b-dropdown
           position="is-bottom-left"
-          class="lists-brevo__actions-dd"
+          class="bv-action-menu lists-brevo__actions-dd"
           :mobile-modal="false"
         >
           <button
@@ -255,10 +265,10 @@
             <b-icon icon="arrow-all" size="is-small" />
             Move
           </b-dropdown-item>
-          <hr class="lists-brevo__actions-sep" />
+          <hr class="bv-action-menu__sep" />
           <b-dropdown-item
             v-if="$can('lists:manage') || $canList(props.row.id, 'list:manage')"
-            class="lists-brevo__actions-danger"
+            class="bv-action-menu__danger"
             @click="deleteList(props.row)"
           >
             <b-icon icon="trash-can-outline" size="is-small" />
@@ -268,7 +278,10 @@
       </b-table-column>
 
       <template #empty v-if="!loading.listsFull">
-        <empty-placeholder />
+        <empty-placeholder
+          label="No lists yet"
+          description="Create a list to organize contacts for campaigns and imports."
+        />
       </template>
     </b-table>
 
@@ -295,6 +308,7 @@
           Next
         </button>
       </div>
+    </div>
     </div>
 
     <!-- Edit list keeps modal -->
@@ -515,6 +529,8 @@ import Vue from 'vue';
 import { mapState } from 'vuex';
 import dayjs from 'dayjs';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
+import CrmSubnav from '../components/CrmSubnav.vue';
+import BvSelectBar from '../components/BvSelectBar.vue';
 import ListForm from './ListForm.vue';
 
 const FOLDERS_KEY = 'nexuses.crm.listFolders';
@@ -536,6 +552,8 @@ export default Vue.extend({
   components: {
     ListForm,
     EmptyPlaceholder,
+    CrmSubnav,
+    BvSelectBar,
   },
 
   data() {
@@ -899,6 +917,16 @@ export default Vue.extend({
       }
     },
 
+    selectAllLists() {
+      this.bulk.all = true;
+      this.bulk.checked = [...(this.lists.results || [])];
+    },
+
+    clearSelection() {
+      this.bulk.all = false;
+      this.bulk.checked = [];
+    },
+
     deleteLists() {
       const name = this.$tc('globals.terms.list', this.numSelectedLists);
 
@@ -936,6 +964,10 @@ export default Vue.extend({
 
     numSelectedLists() {
       return this.bulk.all ? this.lists.total : this.bulk.checked.length;
+    },
+
+    hasSelection() {
+      return this.bulk.checked.length > 0 || this.bulk.all;
     },
 
     allListsCount() {

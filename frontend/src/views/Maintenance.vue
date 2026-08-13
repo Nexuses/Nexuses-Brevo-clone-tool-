@@ -9,10 +9,10 @@
       </p>
     </header>
 
-    <div class="box">
-      <h4 class="is-size-4">
+    <div class="bv-panel">
+      <h2 class="bv-panel__title">
         {{ $t('globals.terms.subscribers') }}
-      </h4><br />
+      </h2>
       <div class="columns">
         <div class="column is-4">
           <b-field label="Data" :message="$t('maintenance.orphanHelp')">
@@ -28,7 +28,6 @@
         </div>
         <div class="column is-5" />
         <div class="column">
-          <br />
           <b-field>
             <b-button type="is-dark" class="btn-new" :loading="loading.maintenance" @click="deleteSubscribers" expanded>
               {{ $t('globals.buttons.delete') }}
@@ -38,10 +37,10 @@
       </div>
     </div><!-- subscribers -->
 
-    <div class="box mt-6">
-      <h4 class="is-size-4">
+    <div class="bv-panel">
+      <h2 class="bv-panel__title">
         {{ $tc('globals.terms.subscriptions', 2) }}
-      </h4><br />
+      </h2>
       <div class="columns">
         <div class="column is-4">
           <b-field label="Data">
@@ -60,7 +59,6 @@
         </div>
         <div class="column is-1" />
         <div class="column">
-          <br />
           <b-field>
             <b-button type="is-dark" class="btn-new" :loading="loading.maintenance" @click="deleteSubscriptions" expanded>
               {{ $t('globals.buttons.delete') }}
@@ -70,10 +68,10 @@
       </div>
     </div><!-- subscriptions -->
 
-    <div class="box mt-6">
-      <h4 class="is-size-4">
+    <div class="bv-panel">
+      <h2 class="bv-panel__title">
         {{ $t('globals.terms.analytics') }}
-      </h4><br />
+      </h2>
       <div class="columns">
         <div class="column is-4">
           <b-field label="Data">
@@ -98,7 +96,6 @@
         </div>
         <div class="column is-1" />
         <div class="column">
-          <br />
           <b-field>
             <b-button expanded type="is-dark" class="btn-new" :loading="loading.maintenance" @click="deleteAnalytics">
               {{ $t('globals.buttons.delete') }}
@@ -108,10 +105,9 @@
       </div>
 
       <hr />
-      <h5 class="is-size-5">
+      <h3 class="bv-panel__subtitle">
         {{ $t('subscribers.export') }}
-      </h5>
-      <br />
+      </h3>
       <div class="columns">
         <div class="column is-4">
           <b-field label="Data">
@@ -133,7 +129,6 @@
         </div>
         <div class="column is-1" />
         <div class="column">
-          <br />
           <b-field>
             <b-button expanded type="is-dark" class="btn-new" tag="a" icon-left="download"
               :href="exportURL">
@@ -144,15 +139,14 @@
       </div>
     </div><!-- analytics -->
 
-    <form @submit.prevent="onUpdateDBSettings" class="box mt-6">
-      <h4 class="is-size-4">
+    <form @submit.prevent="onUpdateDBSettings" class="bv-panel">
+      <h2 class="bv-panel__title">
         {{ $t('maintenance.database.title') }}
-      </h4><br />
-      <h5 class="is-size-5">Vacuum</h5>
-      <p class="has-text-grey is-size-7">
+      </h2>
+      <h3 class="bv-panel__subtitle">Vacuum</h3>
+      <p class="bv-panel__help">
         {{ $t('maintenance.database.vacuumHelp') }}
       </p>
-      <br />
       <div class="columns">
         <div class="column is-2">
           <b-field :label="$t('globals.buttons.enabled')">
@@ -167,7 +161,6 @@
         </div>
         <div class="column is-3" />
         <div class="column is-3">
-          <br />
           <b-button type="is-dark" class="btn-new" native-type="submit" :loading="loading.settings" expanded>
             {{ $t('globals.buttons.save') }}
           </b-button>

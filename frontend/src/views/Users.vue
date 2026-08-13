@@ -123,7 +123,10 @@
       </b-table-column>
 
       <template #empty v-if="!loading.users">
-        <empty-placeholder />
+        <empty-placeholder
+          label="No users yet"
+          description="Invite teammates and assign roles to manage this account."
+        />
       </template>
     </b-table>
 
