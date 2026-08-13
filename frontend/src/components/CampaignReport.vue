@@ -1,12 +1,19 @@
 <template>
-  <section class="campaign-report">
+  <section class="campaign-report" data-ui="brevo-report">
     <header class="campaign-report__top">
       <router-link :to="{ name: 'campaigns' }" class="campaign-report__back" aria-label="Back">
         <b-icon icon="arrow-left" />
       </router-link>
 
       <div class="campaign-report__thumb" aria-hidden="true">
-        <div class="campaign-report__thumb-inner">
+        <iframe
+          v-if="campaign.id"
+          class="campaign-report__thumb-frame"
+          :src="`/api/campaigns/${campaign.id}/preview`"
+          title="Campaign preview"
+          tabindex="-1"
+        />
+        <div v-else class="campaign-report__thumb-inner">
           <b-icon icon="email-outline" size="is-large" />
         </div>
       </div>
@@ -34,6 +41,9 @@
       </div>
 
       <div class="campaign-report__actions">
+        <button type="button" class="campaign-report__icon-btn" aria-label="Share" @click="onShare">
+          <b-icon icon="share-variant-outline" />
+        </button>
         <b-button
           v-if="canExport"
           tag="a"
@@ -41,17 +51,14 @@
           target="_blank"
           rel="noopener noreferrer"
           type="is-light"
-          icon-left="cloud-download-outline"
+          icon-left="download-outline"
         >
           Export report
-        </b-button>
-        <b-button type="is-light" icon-left="pencil-outline" @click="$emit('edit')">
-          Edit
         </b-button>
       </div>
     </header>
 
-    <nav class="campaign-report__tabs">
+    <nav class="campaign-report__tabs" aria-label="Report sections">
       <button
         v-for="t in tabs"
         :key="t.id"
@@ -68,7 +75,12 @@
     <div v-if="activeTab === 'overview'" class="campaign-report__panel">
       <div class="campaign-report__section-head">
         <h2>Campaign performance</h2>
-        <span class="hint">Automated opens and clicks included.</span>
+        <span class="hint">
+          Automated opens and clicks included
+          <b-tooltip label="Includes automated and privacy-proxy opens and clicks.">
+            <b-icon icon="help-circle-outline" size="is-small" />
+          </b-tooltip>
+        </span>
       </div>
 
       <div class="campaign-report__metrics">
@@ -77,36 +89,46 @@
             <span class="metric__label">Delivered</span>
             <router-link
               v-if="$can('subscribers:get_all', 'subscribers:get')"
-              :to="{ name: 'subscribers' }"
+              :to="subscribersRoute"
               class="metric__view"
             >
-              <b-icon icon="account-multiple-outline" size="is-small" /> View
+              <b-icon icon="account-outline" size="is-small" /> View
             </router-link>
           </div>
-          <div class="metric__value">{{ $utils.niceNumber(delivered) }}</div>
-          <div class="metric__rate">Delivery rate <strong>{{ deliveryRate }}</strong></div>
+          <div class="metric__value">{{ n(delivered) }}</div>
+          <div class="metric__rate">Delivery rate {{ deliveryRate }}</div>
         </div>
 
         <div class="metric">
           <div class="metric__top">
-            <span class="metric__label">Opens</span>
-            <a href="#" class="metric__view" @click.prevent="activeTab = 'opens'">
-              <b-icon icon="account-multiple-outline" size="is-small" /> View
-            </a>
+            <span class="metric__label">
+              Opens
+              <b-tooltip label="Unique contacts who opened this campaign.">
+                <b-icon icon="help-circle-outline" size="is-small" />
+              </b-tooltip>
+            </span>
+            <button type="button" class="metric__view" @click="activeTab = 'opens'">
+              <b-icon icon="account-outline" size="is-small" /> View
+            </button>
           </div>
-          <div class="metric__value">{{ $utils.niceNumber(opens) }}</div>
-          <div class="metric__rate">Open rate <strong>{{ openRate }}</strong></div>
+          <div class="metric__value">{{ n(uniqueOpens) }}</div>
+          <div class="metric__rate">Open rate {{ openRate }}</div>
         </div>
 
         <div class="metric">
           <div class="metric__top">
-            <span class="metric__label">Clicks</span>
-            <a href="#" class="metric__view" @click.prevent="activeTab = 'clicks'">
-              <b-icon icon="account-multiple-outline" size="is-small" /> View
-            </a>
+            <span class="metric__label">
+              Clicks
+              <b-tooltip label="Unique contacts who clicked a link.">
+                <b-icon icon="help-circle-outline" size="is-small" />
+              </b-tooltip>
+            </span>
+            <button type="button" class="metric__view" @click="activeTab = 'clicks'">
+              <b-icon icon="account-outline" size="is-small" /> View
+            </button>
           </div>
-          <div class="metric__value">{{ $utils.niceNumber(clicks) }}</div>
-          <div class="metric__rate">Click-through rate <strong>{{ clickRate }}</strong></div>
+          <div class="metric__value">{{ n(uniqueClicks) }}</div>
+          <div class="metric__rate">Click-through rate {{ clickRate }}</div>
         </div>
 
         <div class="metric">
@@ -114,135 +136,632 @@
             <span class="metric__label">Conversions</span>
           </div>
           <div class="metric__value">0</div>
-          <div class="metric__rate">Conversion rate <strong>0%</strong></div>
+          <div class="metric__rate">Conversion rate 0%</div>
         </div>
 
         <div class="metric">
           <div class="metric__top">
             <span class="metric__label">Unsubscribes</span>
-            <router-link
-              :to="{ name: 'bounces', query: { campaign_id: campaign.id } }"
-              class="metric__view"
-            >
-              <b-icon icon="account-multiple-outline" size="is-small" /> View
-            </router-link>
+            <button type="button" class="metric__view" @click="activeTab = 'unsubscribes'">
+              <b-icon icon="account-outline" size="is-small" /> View
+            </button>
           </div>
-          <div class="metric__value">{{ $utils.niceNumber(unsubscribes) }}</div>
-          <div class="metric__rate">Unsubscribe rate <strong>{{ unsubRate }}</strong></div>
+          <div class="metric__value">{{ n(unsubscribes) }}</div>
+          <div class="metric__rate">Unsubscribe rate {{ unsubRate }}</div>
         </div>
       </div>
 
       <h2 class="campaign-report__h2">Campaign audience</h2>
       <div class="campaign-report__audience">
-        <div class="audience__head">
-          <b-icon icon="plus-circle-outline" size="is-small" />
-          Included lists
-        </div>
-        <div v-if="audienceLists.length === 0" class="audience__empty">
-          No lists attached to this campaign.
-        </div>
-        <div
-          v-for="l in audienceLists"
-          :key="l.id"
-          class="audience__row"
+        <button
+          type="button"
+          class="audience__head"
+          :aria-expanded="audienceOpen ? 'true' : 'false'"
+          @click="audienceOpen = !audienceOpen"
         >
-          <div class="audience__name">#{{ l.id }} {{ l.name }}</div>
-          <div class="audience__count">{{ $utils.niceNumber(l.subscriberCount || 0) }} contacts</div>
-          <router-link
-            :to="{ name: 'subscribers_list', params: { listID: l.id } }"
-            class="audience__view"
+          <b-icon :icon="audienceOpen ? 'minus' : 'plus'" size="is-small" />
+          Included lists
+        </button>
+        <template v-if="audienceOpen">
+          <div v-if="audienceLists.length === 0" class="audience__empty">
+            No lists attached to this campaign.
+          </div>
+          <div
+            v-for="l in audienceLists"
+            :key="l.id"
+            class="audience__row"
           >
-            <b-icon icon="account-multiple-outline" size="is-small" /> View
-          </router-link>
-        </div>
-      </div>
-
-      <h2 class="campaign-report__h2">Timeline</h2>
-      <div class="campaign-report__timeline">
-        <div v-for="(ev, i) in timeline" :key="i" class="tl-item">
-          <div class="tl-icon">
-            <b-icon :icon="ev.icon" size="is-small" />
+            <div class="audience__name">{{ l.name }}</div>
+            <div class="audience__count">{{ n(l.subscriberCount || 0) }} contacts</div>
+            <router-link
+              :to="{ name: 'subscribers_list', params: { listID: l.id } }"
+              class="audience__view"
+            >
+              <b-icon icon="account-outline" size="is-small" /> View
+            </router-link>
           </div>
-          <div class="tl-body">
-            <div class="tl-title">{{ ev.title }}</div>
-            <div class="tl-desc">{{ ev.description }}</div>
-            <div class="tl-time">{{ ev.time }}</div>
-          </div>
-        </div>
-        <div v-if="timeline.length === 0" class="audience__empty">
-          No timeline events yet.
-        </div>
+        </template>
       </div>
     </div>
 
-    <!-- Other tabs -->
+    <!-- Deliverability -->
     <div v-else-if="activeTab === 'deliverability'" class="campaign-report__panel">
-      <div class="campaign-report__simple-card">
-        <div class="columns is-mobile">
-          <div class="column">
-            <div class="metric__label">Delivered</div>
-            <div class="metric__value">{{ $utils.niceNumber(delivered) }}</div>
-            <div class="metric__rate">{{ deliveryRate }}</div>
+      <div class="campaign-report__section-head">
+        <h2>Deliverability details</h2>
+      </div>
+
+      <div class="campaign-report__metrics campaign-report__metrics--6">
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Sent to</span>
           </div>
-          <div class="column">
-            <div class="metric__label">Bounces</div>
-            <div class="metric__value">{{ $utils.niceNumber(bounces) }}</div>
-            <div class="metric__rate">
-              <router-link :to="{ name: 'bounces', query: { campaign_id: campaign.id } }" class="metric__view">
-                View bounces
-              </router-link>
-            </div>
+          <div class="metric__value">{{ n(sentTo) }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Delivered</span>
+            <router-link
+              v-if="$can('subscribers:get_all', 'subscribers:get')"
+              :to="subscribersRoute"
+              class="metric__view"
+            >
+              <b-icon icon="account-outline" size="is-small" /> View
+            </router-link>
           </div>
-          <div class="column">
-            <div class="metric__label">To send</div>
-            <div class="metric__value">{{ $utils.niceNumber(toSend) }}</div>
+          <div class="metric__value">{{ n(delivered) }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Delivery rate</span>
           </div>
+          <div class="metric__value">{{ deliveryRate }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">
+              In Processing
+              <b-tooltip label="Emails still queued or sending.">
+                <b-icon icon="help-circle-outline" size="is-small" />
+              </b-tooltip>
+            </span>
+          </div>
+          <div class="metric__value">{{ n(inProcessing) }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">
+              Soft bounces
+              <b-tooltip label="Temporary delivery failures such as a full inbox.">
+                <b-icon icon="help-circle-outline" size="is-small" />
+              </b-tooltip>
+            </span>
+            <router-link
+              :to="{ name: 'bounces', query: { campaign_id: campaign.id, type: 'soft' } }"
+              class="metric__view"
+            >
+              <b-icon icon="account-outline" size="is-small" /> View
+            </router-link>
+          </div>
+          <div class="metric__value">{{ n(softBounces) }}</div>
+          <div class="metric__rate">{{ softRate }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">
+              Hard bounces
+              <b-tooltip label="Permanent delivery failures such as an invalid address.">
+                <b-icon icon="help-circle-outline" size="is-small" />
+              </b-tooltip>
+            </span>
+            <router-link
+              :to="{ name: 'bounces', query: { campaign_id: campaign.id, type: 'hard' } }"
+              class="metric__view"
+            >
+              <b-icon icon="account-outline" size="is-small" /> View
+            </router-link>
+          </div>
+          <div class="metric__value">{{ n(hardBounces) }}</div>
+          <div class="metric__rate">{{ hardRate }}</div>
         </div>
       </div>
+
+      <div class="campaign-report__section-head campaign-report__section-head--table">
+        <h2 class="campaign-report__inline-title">
+          Reasons for
+          <select v-model="bounceReasonType" class="campaign-report__select" aria-label="Bounce type">
+            <option value="soft">soft bounce</option>
+            <option value="hard">hard bounce</option>
+            <option value="complaint">complaint</option>
+          </select>
+          <b-tooltip :label="bounceReasonHelp">
+            <b-icon icon="help-circle-outline" size="is-small" />
+          </b-tooltip>
+        </h2>
+        <a
+          v-if="canExport"
+          :href="`/api/campaigns/${campaign.id}/report`"
+          class="campaign-report__export"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <b-icon icon="download-outline" size="is-small" /> Export
+        </a>
+      </div>
+
+      <div class="campaign-report__table-wrap">
+        <table class="campaign-report__table">
+          <thead>
+            <tr>
+              <th>Reason</th>
+              <th class="is-num">{{ bounceReasonLabel }}</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="bounceReasonRows.length === 0">
+              <td colspan="2" class="is-empty">No {{ bounceReasonLabel.toLowerCase() }} for this campaign.</td>
+            </tr>
+            <tr v-for="(row, i) in bounceReasonRows" :key="`${row.reason}-${i}`">
+              <td>{{ row.reason }}</td>
+              <td class="is-num">
+                <strong>{{ n(row.count) }}</strong>
+                <span class="sub">{{ pct(row.count, sentTo) }} of recipients</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="campaign-report__section-head campaign-report__section-head--table">
+        <h2 class="campaign-report__inline-title">
+          Deliverability breakdown by
+          <select v-model="breakdownBy" class="campaign-report__select" aria-label="Breakdown">
+            <option value="lists">lists</option>
+          </select>
+        </h2>
+        <a
+          v-if="canExport"
+          :href="`/api/campaigns/${campaign.id}/report`"
+          class="campaign-report__export"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <b-icon icon="download-outline" size="is-small" /> Export
+        </a>
+      </div>
+
+      <div class="campaign-report__table-wrap campaign-report__table-wrap--scroll">
+        <table class="campaign-report__table campaign-report__table--wide">
+          <thead>
+            <tr>
+              <th>List name</th>
+              <th class="is-num">Delivery rate</th>
+              <th class="is-num">Processing</th>
+              <th class="is-num">Deferred</th>
+              <th class="is-num">Soft bounces</th>
+              <th class="is-num">Hard bounces</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="audienceLists.length === 0">
+              <td colspan="6" class="is-empty">No lists attached to this campaign.</td>
+            </tr>
+            <tr v-for="l in audienceLists" :key="`del-${l.id}`">
+              <td>
+                <div class="cell-name">{{ l.name }}</div>
+                <div class="cell-meta">
+                  #{{ l.id }} · {{ n(l.subscriberCount || 0) }} contacts - {{ listShare(l) }} of all
+                </div>
+              </td>
+              <td class="is-num">
+                <strong>{{ deliveryRate }}</strong>
+                <span class="sub">{{ n(listStat(l, delivered)) }} contacts</span>
+              </td>
+              <td class="is-num">
+                <strong>{{ processingRate }}</strong>
+                <span class="sub">{{ n(listStat(l, inProcessing)) }} contact{{ inProcessing === 1 ? '' : 's' }}</span>
+              </td>
+              <td class="is-num">
+                <strong>0%</strong>
+                <span class="sub">0 contacts</span>
+              </td>
+              <td class="is-num">
+                <strong>{{ softRate }}</strong>
+                <span class="sub">{{ n(listStat(l, softBounces)) }} contacts</span>
+              </td>
+              <td class="is-num">
+                <strong>{{ hardRate }}</strong>
+                <span class="sub">{{ n(listStat(l, hardBounces)) }} contacts</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
     </div>
 
+    <!-- Opens -->
     <div v-else-if="activeTab === 'opens'" class="campaign-report__panel">
-      <div class="campaign-report__simple-card">
-        <div class="metric__value">{{ $utils.niceNumber(opens) }}</div>
-        <div class="metric__rate">Open rate {{ openRate }}</div>
-        <p class="mt-4">
-          <router-link
-            :to="{ name: 'campaignAnalytics', query: { id: campaign.id } }"
-            class="metric__view"
+      <div class="campaign-report__section-head">
+        <h2>Opens Details</h2>
+        <span class="hint">
+          Automated opens included
+          <b-tooltip label="Includes automated and privacy-proxy opens.">
+            <b-icon icon="help-circle-outline" size="is-small" />
+          </b-tooltip>
+        </span>
+      </div>
+
+      <div class="campaign-report__metrics campaign-report__metrics--4">
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Opens</span>
+            <router-link
+              :to="{ name: 'campaignAnalytics', query: { id: campaign.id } }"
+              class="metric__view"
+            >
+              <b-icon icon="account-outline" size="is-small" /> View
+            </router-link>
+          </div>
+          <div class="metric__value">{{ n(uniqueOpens) }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Open rate</span>
+          </div>
+          <div class="metric__value">{{ openRate }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Total opens</span>
+          </div>
+          <div class="metric__value">{{ n(totalOpens) }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">
+              Apple MPP opens
+              <b-tooltip label="Opens attributed to Apple Mail Privacy Protection are not tracked separately.">
+                <b-icon icon="help-circle-outline" size="is-small" />
+              </b-tooltip>
+            </span>
+          </div>
+          <div class="metric__value">0</div>
+        </div>
+      </div>
+
+      <div class="campaign-report__section-head campaign-report__section-head--table">
+        <h2 class="campaign-report__inline-title">
+          Opens breakdown by
+          <select v-model="breakdownBy" class="campaign-report__select" aria-label="Breakdown">
+            <option value="lists">lists</option>
+          </select>
+        </h2>
+        <div class="campaign-report__table-actions">
+          <span class="hint">Bot opens excluded.</span>
+          <a
+            v-if="canExport"
+            :href="`/api/campaigns/${campaign.id}/report`"
+            class="campaign-report__export"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            Open detailed analytics →
-          </router-link>
-        </p>
+            <b-icon icon="download-outline" size="is-small" /> Export
+          </a>
+        </div>
+      </div>
+
+      <div class="campaign-report__table-wrap">
+        <table class="campaign-report__table">
+          <thead>
+            <tr>
+              <th>List name</th>
+              <th class="is-num">Open rate</th>
+              <th class="is-num">Total opens</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="audienceLists.length === 0">
+              <td colspan="3" class="is-empty">No lists attached to this campaign.</td>
+            </tr>
+            <tr v-for="l in audienceLists" :key="`open-${l.id}`">
+              <td>
+                <div class="cell-name">{{ l.name }}</div>
+                <div class="cell-meta">
+                  #{{ l.id }} · {{ n(l.subscriberCount || 0) }} contacts - {{ listShare(l) }} of all
+                </div>
+              </td>
+              <td class="is-num">
+                <strong>{{ openRate }}</strong>
+                <span class="sub">{{ n(listStat(l, uniqueOpens)) }} opens</span>
+              </td>
+              <td class="is-num">
+                <strong>{{ totalOpenRate }}</strong>
+                <span class="sub">{{ n(listStat(l, totalOpens)) }} opens</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
+    <!-- Clicks -->
     <div v-else-if="activeTab === 'clicks'" class="campaign-report__panel">
-      <div class="campaign-report__simple-card">
-        <div class="metric__value">{{ $utils.niceNumber(clicks) }}</div>
-        <div class="metric__rate">Click-through rate {{ clickRate }}</div>
-        <p class="mt-4">
-          <router-link
-            :to="{ name: 'campaignAnalytics', query: { id: campaign.id } }"
-            class="metric__view"
+      <div class="campaign-report__section-head">
+        <h2>Clicks details</h2>
+        <span class="hint">
+          Bot clicks included
+          <b-tooltip label="Automated and bot clicks are included in campaign totals.">
+            <b-icon icon="help-circle-outline" size="is-small" />
+          </b-tooltip>
+        </span>
+      </div>
+
+      <div class="campaign-report__metrics campaign-report__metrics--4">
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Click-through rate</span>
+          </div>
+          <div class="metric__value">{{ clickRate }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">
+              Total clicks
+              <b-tooltip label="All click events, including repeats from the same contact.">
+                <b-icon icon="help-circle-outline" size="is-small" />
+              </b-tooltip>
+            </span>
+          </div>
+          <div class="metric__value">{{ n(totalClicks) }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Clicks</span>
+            <router-link
+              :to="{ name: 'campaignAnalytics', query: { id: campaign.id } }"
+              class="metric__view"
+            >
+              <b-icon icon="account-outline" size="is-small" /> View
+            </router-link>
+          </div>
+          <div class="metric__value">{{ n(uniqueClicks) }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">
+              Click-to-open rate
+              <b-tooltip label="Unique clicks divided by unique opens.">
+                <b-icon icon="help-circle-outline" size="is-small" />
+              </b-tooltip>
+            </span>
+          </div>
+          <div class="metric__value">{{ ctorRate }}</div>
+        </div>
+      </div>
+
+      <div class="campaign-report__section-head campaign-report__section-head--table">
+        <h2 class="campaign-report__inline-title">
+          Clicks breakdown by
+          <select v-model="breakdownBy" class="campaign-report__select" aria-label="Breakdown">
+            <option value="lists">lists</option>
+          </select>
+        </h2>
+        <div class="campaign-report__table-actions">
+          <span class="hint">Bot clicks are excluded</span>
+          <a
+            v-if="canExport"
+            :href="`/api/campaigns/${campaign.id}/report`"
+            class="campaign-report__export"
+            target="_blank"
+            rel="noopener noreferrer"
           >
-            Open detailed analytics →
-          </router-link>
-        </p>
+            <b-icon icon="download-outline" size="is-small" /> Export
+          </a>
+        </div>
+      </div>
+
+      <div class="campaign-report__table-wrap">
+        <table class="campaign-report__table">
+          <thead>
+            <tr>
+              <th>List name</th>
+              <th class="is-num">Clicks percentage</th>
+              <th class="is-num">Total clicks</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="audienceLists.length === 0">
+              <td colspan="3" class="is-empty">No lists attached to this campaign.</td>
+            </tr>
+            <tr v-for="l in audienceLists" :key="`click-${l.id}`">
+              <td>
+                <div class="cell-name">{{ l.name }}</div>
+                <div class="cell-meta">
+                  #{{ l.id }} · {{ n(l.subscriberCount || 0) }} contacts - {{ listShare(l) }} of all
+                </div>
+              </td>
+              <td class="is-num">
+                <strong>{{ clickRate }}</strong>
+                <span class="sub">{{ n(listStat(l, uniqueClicks)) }} clicks</span>
+              </td>
+              <td class="is-num">
+                <strong>{{ totalClickRate }}</strong>
+                <span class="sub">{{ n(listStat(l, totalClicks)) }} clicks</span>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
+    <!-- Conversions -->
     <div v-else-if="activeTab === 'conversions'" class="campaign-report__panel">
-      <div class="campaign-report__simple-card">
-        <div class="metric__value">0</div>
-        <div class="metric__rate">Conversion rate 0%</div>
-        <p class="has-text-grey mt-3">Conversions are not tracked in this installation.</p>
+      <div class="campaign-report__section-head">
+        <h2>Conversions details</h2>
+      </div>
+
+      <div class="campaign-report__metrics campaign-report__metrics--4">
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Conversions</span>
+          </div>
+          <div class="metric__value">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Conversion rate</span>
+          </div>
+          <div class="metric__value">0%</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Revenue</span>
+          </div>
+          <div class="metric__value">0</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Orders</span>
+          </div>
+          <div class="metric__value">0</div>
+        </div>
+      </div>
+
+      <div class="campaign-report__section-head campaign-report__section-head--table">
+        <h2 class="campaign-report__inline-title">
+          Conversions breakdown by
+          <select v-model="breakdownBy" class="campaign-report__select" aria-label="Breakdown">
+            <option value="lists">lists</option>
+          </select>
+        </h2>
+      </div>
+
+      <div class="campaign-report__table-wrap">
+        <table class="campaign-report__table">
+          <thead>
+            <tr>
+              <th>List name</th>
+              <th class="is-num">Conversions</th>
+              <th class="is-num">Conversion rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="audienceLists.length === 0">
+              <td colspan="3" class="is-empty">No lists attached to this campaign.</td>
+            </tr>
+            <tr v-for="l in audienceLists" :key="`conv-${l.id}`">
+              <td>
+                <div class="cell-name">{{ l.name }}</div>
+                <div class="cell-meta">
+                  #{{ l.id }} · {{ n(l.subscriberCount || 0) }} contacts - {{ listShare(l) }} of all
+                </div>
+              </td>
+              <td class="is-num">
+                <strong>0</strong>
+                <span class="sub">0 conversions</span>
+              </td>
+              <td class="is-num">
+                <strong>0%</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
 
+    <!-- Unsubscribes -->
     <div v-else-if="activeTab === 'unsubscribes'" class="campaign-report__panel">
-      <div class="campaign-report__simple-card">
-        <div class="metric__value">{{ $utils.niceNumber(unsubscribes) }}</div>
-        <div class="metric__rate">Unsubscribe rate {{ unsubRate }}</div>
+      <div class="campaign-report__section-head">
+        <h2>Unsubscribes details</h2>
+      </div>
+
+      <div class="campaign-report__metrics campaign-report__metrics--4">
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Unsubscribes</span>
+            <router-link
+              v-if="$can('subscribers:get_all', 'subscribers:get')"
+              :to="subscribersRoute"
+              class="metric__view"
+            >
+              <b-icon icon="account-outline" size="is-small" /> View
+            </router-link>
+          </div>
+          <div class="metric__value">{{ n(unsubscribes) }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Unsubscribe rate</span>
+          </div>
+          <div class="metric__value">{{ unsubRate }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Complaints</span>
+            <router-link
+              :to="{ name: 'bounces', query: { campaign_id: campaign.id, type: 'complaint' } }"
+              class="metric__view"
+            >
+              <b-icon icon="account-outline" size="is-small" /> View
+            </router-link>
+          </div>
+          <div class="metric__value">{{ n(complaints) }}</div>
+        </div>
+        <div class="metric">
+          <div class="metric__top">
+            <span class="metric__label">Complaint rate</span>
+          </div>
+          <div class="metric__value">{{ complaintRate }}</div>
+        </div>
+      </div>
+
+      <div class="campaign-report__section-head campaign-report__section-head--table">
+        <h2 class="campaign-report__inline-title">
+          Unsubscribes breakdown by
+          <select v-model="breakdownBy" class="campaign-report__select" aria-label="Breakdown">
+            <option value="lists">lists</option>
+          </select>
+        </h2>
+        <a
+          v-if="canExport"
+          :href="`/api/campaigns/${campaign.id}/report`"
+          class="campaign-report__export"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <b-icon icon="download-outline" size="is-small" /> Export
+        </a>
+      </div>
+
+      <div class="campaign-report__table-wrap">
+        <table class="campaign-report__table">
+          <thead>
+            <tr>
+              <th>List name</th>
+              <th class="is-num">Unsubscribes</th>
+              <th class="is-num">Unsubscribe rate</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-if="audienceLists.length === 0">
+              <td colspan="3" class="is-empty">No lists attached to this campaign.</td>
+            </tr>
+            <tr v-for="l in audienceLists" :key="`unsub-${l.id}`">
+              <td>
+                <div class="cell-name">{{ l.name }}</div>
+                <div class="cell-meta">
+                  #{{ l.id }} · {{ n(l.subscriberCount || 0) }} contacts - {{ listShare(l) }} of all
+                </div>
+              </td>
+              <td class="is-num">
+                <strong>{{ n(listStat(l, unsubscribes)) }}</strong>
+                <span class="sub">{{ n(listStat(l, unsubscribes)) }} contacts</span>
+              </td>
+              <td class="is-num">
+                <strong>{{ unsubRate }}</strong>
+              </td>
+            </tr>
+          </tbody>
+        </table>
       </div>
     </div>
   </section>
@@ -263,6 +782,21 @@ export default Vue.extend({
   data() {
     return {
       activeTab: 'overview',
+      audienceOpen: true,
+      breakdownBy: 'lists',
+      bounceReasonType: 'soft',
+      summary: {
+        uniqueOpens: 0,
+        totalOpens: 0,
+        uniqueClicks: 0,
+        totalClicks: 0,
+        unsubscribes: 0,
+        softBounces: 0,
+        hardBounces: 0,
+        complaints: 0,
+        bounces: 0,
+      },
+      bounceReasons: [],
       tabs: [
         { id: 'overview', label: 'Overview' },
         { id: 'deliverability', label: 'Deliverability' },
@@ -282,47 +816,116 @@ export default Vue.extend({
         && (this.campaign.sent || 0) > 0;
     },
 
-    delivered() {
+    sentTo() {
       const sent = Number(this.campaign.sent) || 0;
       const toSend = Number(this.campaign.toSend) || 0;
       return Math.max(sent, toSend);
     },
 
-    toSend() {
-      return this.campaign.toSend || this.campaign.sent || 0;
+    inProcessing() {
+      const sent = Number(this.campaign.sent) || 0;
+      const toSend = Number(this.campaign.toSend) || 0;
+      return Math.max(0, toSend - sent);
     },
 
-    opens() {
-      return Number(this.campaign.views) || Number(this.campaign.uniqueOpens) || 0;
+    softBounces() {
+      return Number(this.summary.softBounces) || 0;
     },
 
-    clicks() {
-      return Number(this.campaign.clicks) || Number(this.campaign.uniqueClicks) || 0;
+    hardBounces() {
+      return Number(this.summary.hardBounces) || 0;
     },
 
-    bounces() {
-      return this.campaign.bounces || 0;
+    complaints() {
+      return Number(this.summary.complaints) || 0;
+    },
+
+    delivered() {
+      return Math.max(0, this.sentTo - this.softBounces - this.hardBounces);
+    },
+
+    uniqueOpens() {
+      return Number(this.summary.uniqueOpens) || Number(this.campaign.views) || 0;
+    },
+
+    totalOpens() {
+      return Number(this.summary.totalOpens) || Number(this.campaign.views) || 0;
+    },
+
+    uniqueClicks() {
+      return Number(this.summary.uniqueClicks) || Number(this.campaign.clicks) || 0;
+    },
+
+    totalClicks() {
+      return Number(this.summary.totalClicks) || Number(this.campaign.clicks) || 0;
     },
 
     unsubscribes() {
-      // listmonk does not expose per-campaign unsubscribes on the campaign object.
-      return 0;
+      return Number(this.summary.unsubscribes) || 0;
     },
 
     deliveryRate() {
-      return this.pct(this.delivered, this.toSend);
+      return this.pct(this.delivered, this.sentTo);
+    },
+
+    processingRate() {
+      return this.pct(this.inProcessing, this.sentTo);
+    },
+
+    softRate() {
+      return this.pct(this.softBounces, this.sentTo);
+    },
+
+    hardRate() {
+      return this.pct(this.hardBounces, this.sentTo);
     },
 
     openRate() {
-      return this.pct(this.opens, this.delivered);
+      return this.pct(this.uniqueOpens, this.delivered);
+    },
+
+    totalOpenRate() {
+      return this.pct(this.totalOpens, this.delivered);
     },
 
     clickRate() {
-      return this.pct(this.clicks, this.delivered);
+      return this.pct(this.uniqueClicks, this.delivered);
+    },
+
+    totalClickRate() {
+      return this.pct(this.totalClicks, this.delivered);
+    },
+
+    ctorRate() {
+      return this.pct(this.uniqueClicks, this.uniqueOpens);
     },
 
     unsubRate() {
       return this.pct(this.unsubscribes, this.delivered);
+    },
+
+    complaintRate() {
+      return this.pct(this.complaints, this.sentTo);
+    },
+
+    bounceReasonLabel() {
+      if (this.bounceReasonType === 'hard') return 'Hard bounces';
+      if (this.bounceReasonType === 'complaint') return 'Complaints';
+      return 'Soft bounces';
+    },
+
+    bounceReasonHelp() {
+      if (this.bounceReasonType === 'hard') {
+        return 'Permanent failures such as unknown users or blocked domains.';
+      }
+      if (this.bounceReasonType === 'complaint') {
+        return 'Recipients who marked the campaign as spam.';
+      }
+      return 'Temporary failures such as a full mailbox or a timeout.';
+    },
+
+    bounceReasonRows() {
+      return (this.bounceReasons || []).filter((r) => r.type === this.bounceReasonType);
     },
 
     sentLabel() {
@@ -331,12 +934,12 @@ export default Vue.extend({
       if (!raw) return '';
       const d = dayjs(raw);
       if (c.status === 'finished' || c.status === 'running') {
-        return `Sent on ${d.format('MMM D, YYYY h:mm A')}`;
+        return `Sent on ${d.format('MMM D, YYYY HH:mm')}`;
       }
       if (c.status === 'scheduled' && c.sendAt) {
-        return `Scheduled for ${dayjs(c.sendAt).format('MMM D, YYYY h:mm A')}`;
+        return `Scheduled for ${dayjs(c.sendAt).format('MMM D, YYYY HH:mm')}`;
       }
-      return `${this.$t(`campaigns.status.${c.status}`)} · ${d.format('MMM D, YYYY h:mm A')}`;
+      return `${this.$t(`campaigns.status.${c.status}`)} · ${d.format('MMM D, YYYY HH:mm')}`;
     },
 
     audienceLists() {
@@ -352,59 +955,89 @@ export default Vue.extend({
       });
     },
 
-    timeline() {
-      const c = this.campaign;
-      const events = [];
-      const name = c.name || 'campaign';
+    audienceTotal() {
+      return this.audienceLists.reduce((sum, l) => sum + (Number(l.subscriberCount) || 0), 0);
+    },
 
-      if (c.status === 'finished' || (c.status === 'running' && c.sent > 0)) {
-        const when = c.updatedAt || c.startedAt;
-        events.push({
-          icon: 'send',
-          title: 'Sending completed',
-          description: `The campaign [${c.id}] ${name} has been sent.`,
-          time: when ? dayjs(when).format('MMM D, YYYY h:mm A') : '',
-        });
+    subscribersRoute() {
+      const first = this.audienceLists[0];
+      if (first) {
+        return { name: 'subscribers_list', params: { listID: first.id } };
       }
+      return { name: 'subscribers' };
+    },
+  },
 
-      if (c.sendAt) {
-        events.push({
-          icon: 'calendar',
-          title: 'Scheduled',
-          description: `The campaign [${c.id}] ${name} has been scheduled for ${dayjs(c.sendAt).format('MMM D, YYYY h:mm A')}.`,
-          time: c.createdAt ? dayjs(c.createdAt).format('MMM D, YYYY h:mm A') : '',
-        });
-      } else if (c.startedAt) {
-        events.push({
-          icon: 'rocket-launch-outline',
-          title: 'Sending started',
-          description: `The campaign [${c.id}] ${name} started sending.`,
-          time: dayjs(c.startedAt).format('MMM D, YYYY h:mm A'),
-        });
-      }
-
-      if (c.createdAt) {
-        events.push({
-          icon: 'pencil-outline',
-          title: 'Created',
-          description: `The campaign [${c.id}] ${name} was created.`,
-          time: dayjs(c.createdAt).format('MMM D, YYYY h:mm A'),
-        });
-      }
-
-      return events;
+  watch: {
+    'campaign.id': {
+      immediate: true,
+      handler(id) {
+        if (id) this.loadSummary(id);
+      },
     },
   },
 
   methods: {
+    n(num) {
+      return this.$utils.formatNumber(Number(num) || 0);
+    },
+
     pct(num, den) {
-      if (!den || den <= 0) return '—';
-      return `${((num / den) * 100).toFixed(2)}%`;
+      if (!den || den <= 0) return '0%';
+      const v = (Number(num) / den) * 100;
+      if (!v) return '0%';
+      return `${v.toFixed(2)}%`;
+    },
+
+    listShare(list) {
+      return this.pct(list.subscriberCount || 0, this.audienceTotal);
+    },
+
+    listStat(list, campaignValue) {
+      if (this.audienceLists.length <= 1) return Number(campaignValue) || 0;
+      const total = this.audienceTotal;
+      if (!total) return 0;
+      return Math.round(((Number(list.subscriberCount) || 0) / total) * (Number(campaignValue) || 0));
+    },
+
+    loadSummary(id) {
+      if (!this.$api.getCampaignReportSummary) return;
+      this.$api.getCampaignReportSummary(id).then((data) => {
+        const s = (data && data.summary) || {};
+        this.summary = {
+          uniqueOpens: Number(s.uniqueOpens) || 0,
+          totalOpens: Number(s.totalOpens) || 0,
+          uniqueClicks: Number(s.uniqueClicks) || 0,
+          totalClicks: Number(s.totalClicks) || 0,
+          unsubscribes: Number(s.unsubscribes) || 0,
+          softBounces: Number(s.softBounces) || 0,
+          hardBounces: Number(s.hardBounces) || 0,
+          complaints: Number(s.complaints) || 0,
+          bounces: Number(s.bounces) || 0,
+        };
+        this.bounceReasons = data.bounceReasons || [];
+      }).catch(() => {});
+    },
+
+    onShare() {
+      const url = window.location.href;
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(url).then(() => {
+          this.$utils.toast('Report link copied');
+        }).catch(() => {
+          this.$utils.toast('Unable to copy link', 'is-danger');
+        });
+        return;
+      }
+      this.$utils.toast(url);
     },
   },
 
   mounted() {
-    // Ensure lists are available for subscriber counts.
+    const { tab } = this.$route.query;
+    if (tab && this.tabs.some((t) => t.id === tab)) {
+      this.activeTab = tab;
+    }
     if (!this.lists || !this.lists.results || this.lists.results.length === 0) {
       this.$api.getLists({ per_page: 'all', minimal: true }).catch(() => {});
     }

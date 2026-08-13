@@ -1,6 +1,6 @@
 <template>
-  <section class="campaign bv-page">
-    <marketing-subnav />
+  <section class="campaign bv-page" :class="{ 'is-design-open': isDesignOpen, 'is-report': showReport }">
+    <marketing-subnav v-if="!isDesignOpen && !showReport" />
 
     <campaign-report
       v-if="showReport"
@@ -8,386 +8,28 @@
       @edit="goToEditor"
     />
 
-    <template v-else>
-    <header class="columns page-header">
-      <div class="column is-6">
-        <p v-if="isEditing && canViewReport">
-          <router-link
-            class="campaign-report__back-inline bv-link"
-            :to="{ name: 'campaign', params: { id: data.id }, query: { view: 'report' } }"
-          >
-            <b-icon icon="chart-box-outline" size="is-small" /> View report
-          </router-link>
-        </p>
-        <p v-if="isEditing && data.status" class="tags">
-          <b-tag v-if="isEditing" :class="data.status">
-            {{ $t(`campaigns.status.${data.status}`) }}
-          </b-tag>
-          <b-tag v-if="data.type === 'optin'" :class="data.type">
-            {{ $t('lists.optin') }}
-          </b-tag>
-          <span v-if="isEditing" class="has-text-grey-light is-size-7" :data-campaign-id="data.id">
-            {{ $t('globals.fields.id') }}: <copy-text :text="`${data.id}`" />
-            {{ $t('globals.fields.uuid') }}: <copy-text :text="data.uuid" />
-          </span>
-        </p>
-        <h4 v-if="isEditing" class="title is-4">
-          {{ data.name }}
-        </h4>
-        <h4 v-else class="title is-4">
-          {{ $t('campaigns.newCampaign') }}
-        </h4>
-        <p v-if="!isEditing" class="bv-page__lead">Create a new email campaign for your lists.</p>
-      </div>
-
-      <div class="column is-6">
-        <div v-if="canManage || canSend" class="buttons">
-          <b-field grouped v-if="isEditing && canEdit">
-            <b-field v-if="canManage" expanded>
-              <b-button expanded @click="() => onSubmit('update')" :loading="loading.campaigns" type="is-dark"
-                icon-left="content-save-outline" data-cy="btn-save" aria-keyshortcuts="ctrl+s" class="btn-new">
-                <span class="has-kbd">{{ $t('globals.buttons.saveChanges') }} <span class="kbd">Ctrl+S</span></span>
-              </b-button>
-            </b-field>
-            <b-field expanded v-if="canSend && canStart">
-              <b-button expanded @click="startCampaign" :loading="loading.campaigns" type="is-dark"
-                icon-left="rocket-launch-outline" data-cy="btn-start" class="btn-new">
-                {{ $t('campaigns.start') }}
-              </b-button>
-            </b-field>
-            <b-field expanded v-if="canSend && canSchedule">
-              <b-button expanded @click="startCampaign" :loading="loading.campaigns" type="is-dark"
-                icon-left="clock-start" data-cy="btn-schedule" class="btn-new">
-                {{ $t('campaigns.schedule') }}
-              </b-button>
-            </b-field>
-            <b-field expanded v-if="canSend && canUnSchedule">
-              <b-button expanded @click="$utils.confirm(null, unscheduleCampaign)" :loading="loading.campaigns"
-                type="is-dark" icon-left="clock-start" data-cy="btn-unschedule" class="btn-new">
-                {{ $t('campaigns.unSchedule') }}
-              </b-button>
-            </b-field>
-            <b-field v-if="$can('campaigns:get_analytics') && canDownloadReport">
-              <b-button tag="a" :href="`/api/campaigns/${data.id}/report`" target="_blank"
-                rel="noopener noreferrer" type="is-light" icon-left="cloud-download-outline"
-                data-cy="btn-campaign-report">
-                {{ $t('campaigns.downloadReport') }}
-              </b-button>
-            </b-field>
-          </b-field>
-        </div>
-      </div>
-    </header>
-
-    <b-loading :active="loading.campaigns" />
-
-    <b-tabs :animated="false" v-model="activeTab" @input="onTab">
-      <b-tab-item :label="$tc('globals.terms.campaign')" label-position="on-border" value="campaign"
-        icon="rocket-launch-outline">
-        <section class="wrap">
-          <div class="columns">
-            <div class="column is-7">
-              <form @submit.prevent="() => onSubmit(isNew ? 'create' : 'update')">
-                <b-field :label="$t('globals.fields.name')" label-position="on-border">
-                  <b-input :maxlength="200" :ref="'focus'" v-model="form.name" name="name" :disabled="!canEdit"
-                    :placeholder="$t('globals.fields.name')" required autofocus />
-                </b-field>
-
-                <b-field :label="$t('campaigns.subject')" label-position="on-border">
-                  <b-input :maxlength="5000" v-model="form.subject" name="subject" :disabled="!canEdit"
-                    :placeholder="$t('campaigns.subject')" required />
-                </b-field>
-
-                <b-field :label="$t('campaigns.fromAddress')" label-position="on-border">
-                  <b-input :maxlength="200" v-model="form.fromEmail" name="from_email" :disabled="!canEdit"
-                    :placeholder="$t('campaigns.fromAddressPlaceholder')" required />
-                </b-field>
-
-                <b-field :label="$t('campaigns.replyTo')" label-position="on-border"
-                  :message="$t('campaigns.replyToHelp')">
-                  <b-input :maxlength="200" v-model="form.replyTo" name="reply_to" :disabled="!canEdit"
-                    :placeholder="$t('campaigns.replyToPlaceholder')" />
-                </b-field>
-
-                <list-selector v-model="form.lists" :selected="form.lists" :all="lists.results" :disabled="!canEdit"
-                  :label="$t('globals.terms.lists')" :placeholder="$t('campaigns.sendToLists')" />
-
-                <div class="columns">
-                  <div class="column is-6">
-                    <b-field :label="$tc('globals.terms.messenger')" label-position="on-border">
-                      <b-select :placeholder="$tc('globals.terms.messenger')" v-model="form.messenger" name="messenger"
-                        :disabled="!canEdit" required expanded>
-                        <template v-if="emailMessengers.length > 1">
-                          <optgroup label="email">
-                            <option v-for="m in emailMessengers" :value="m" :key="m">
-                              {{ m }}
-                            </option>
-                          </optgroup>
-                        </template>
-                        <template v-else>
-                          <option value="email">email</option>
-                        </template>
-                        <option v-for="m in otherMessengers" :value="m" :key="m">{{ m }}</option>
-                      </b-select>
-                    </b-field>
-                  </div>
-                  <div class="column is-6">
-                    <b-field :label="$t('campaigns.format')" label-position="on-border" class="mr-4 mb-0">
-                      <b-select v-model="form.content.contentType" :disabled="!canEdit || isEditing" value="richtext"
-                        expanded>
-                        <option v-for="(name, f) in contentTypes" :key="f" name="format" :value="f"
-                          :data-cy="`check-${f}`">
-                          {{ name }}
-                        </option>
-                      </b-select>
-                    </b-field>
-                  </div>
-                </div>
-
-                <b-field :label="$t('globals.terms.tags')" label-position="on-border">
-                  <b-taginput v-model="form.tags" name="tags" :disabled="!canEdit" ellipsis icon="tag-outline"
-                    :placeholder="$t('globals.terms.tags')" />
-                </b-field>
-                <hr />
-
-                <div class="columns">
-                  <div class="column is-4">
-                    <b-field :label="$t('campaigns.sendLater')" data-cy="btn-send-later">
-                      <b-switch v-model="form.sendLater" :disabled="!canEdit" />
-                    </b-field>
-                  </div>
-                  <div class="column">
-                    <br />
-                    <b-field v-if="form.sendLater" data-cy="send_at"
-                      :message="form.sendAtDate ? $utils.duration(Date(), form.sendAtDate) : ''">
-                      <b-datetimepicker v-model="form.sendAtDate" :disabled="!canEdit" required editable mobile-native
-                        position="is-top-right" :placeholder="$t('campaigns.dateAndTime')" icon="calendar-clock"
-                        :timepicker="{ hourFormat: '24' }" :datetime-formatter="formatDateTime"
-                        horizontal-time-picker />
-                    </b-field>
-                  </div>
-                </div>
-
-                <div>
-                  <p class="has-text-right">
-                    <a href="#" @click.prevent="onShowHeaders" data-cy="btn-headers">
-                      <b-icon icon="plus" />{{ $t('settings.smtp.setCustomHeaders') }}
-                    </a>
-                  </p>
-                  <b-field v-if="form.headersStr !== '[]' || isHeadersVisible" label-position="on-border"
-                    :message="$t('campaigns.customHeadersHelp')">
-                    <b-input v-model="form.headersStr" name="headers" type="textarea"
-                      placeholder="[{&quot;X-Custom&quot;: &quot;value&quot;}, {&quot;X-Custom2&quot;: &quot;value&quot;}]"
-                      :disabled="!canEdit" />
-                  </b-field>
-                </div>
-                <hr />
-
-                <b-field v-if="isNew">
-                  <b-button native-type="submit" type="is-primary" :loading="loading.campaigns" data-cy="btn-continue">
-                    {{ $t('campaigns.continue') }}
-                  </b-button>
-                </b-field>
-              </form>
-            </div>
-            <div v-if="canManage" class="column is-4 is-offset-1">
-              <br />
-              <div class="box">
-                <h3 class="title is-size-6">
-                  {{ $t('campaigns.sendTest') }}
-                </h3>
-                <b-field :message="$t('campaigns.sendTestHelp')">
-                  <b-taginput v-model="form.testEmails" :before-adding="$utils.validateEmail" :disabled="isNew" ellipsis
-                    icon="email-outline" :placeholder="$t('campaigns.testEmails')" />
-                </b-field>
-                <b-field>
-                  <b-button @click="() => onSubmit('test')" :loading="loading.campaigns" :disabled="isNew"
-                    type="is-primary" icon-left="email-outline">
-                    {{ $t('campaigns.send') }}
-                  </b-button>
-                </b-field>
-              </div>
-            </div>
-          </div>
-        </section>
-      </b-tab-item><!-- campaign -->
-
-      <b-tab-item :label="$t('campaigns.content')" icon="text" :disabled="isNew" value="content">
-        <editor v-if="data.id" v-model="form.content" :id="data.id" :title="data.name" :disabled="!canEdit"
-          :templates="templates" :content-types="contentTypes" />
-
-        <div class="columns">
-          <div class="column is-6">
-            <p v-if="!isAttachFieldVisible" class="is-size-6 has-text-grey">
-              <a href="#" @click.prevent="onShowAttachField()" data-cy="btn-attach">
-                <b-icon icon="file-upload-outline" size="is-small" />
-                {{ $t('campaigns.addAttachments') }}
-              </a>
-            </p>
-
-            <b-field v-if="isAttachFieldVisible" :label="$t('campaigns.attachments')" label-position="on-border"
-              expanded data-cy="media">
-              <b-taginput v-model="form.media" name="media" ellipsis icon="tag-outline" ref="media" field="filename"
-                @focus="onOpenAttach" :disabled="!canEdit" />
-            </b-field>
-          </div>
-          <div class="column has-text-right">
-            <a href="https://listmonk.app/docs/templating/#template-expressions" target="_blank"
-              rel="noopener noreferer">
-              <b-icon icon="code" /> {{ $t('campaigns.templatingRef') }}</a>
-            <span v-if="canEdit && form.content.contentType !== 'plain'" class="is-size-6 has-text-grey ml-6">
-              <a v-if="form.altbody === null" href="#" @click.prevent="onAddAltBody">
-                <b-icon icon="text" size="is-small" /> {{ $t('campaigns.addAltText') }}
-              </a>
-              <a v-else href="#" @click.prevent="$utils.confirm(null, onRemoveAltBody)">
-                <b-icon icon="trash-can-outline" size="is-small" />
-                {{ $t('campaigns.removeAltText') }}
-              </a>
-            </span>
-          </div>
-        </div>
-
-        <div v-if="canEdit && form.content.contentType !== 'plain'" class="alt-body">
-          <b-input v-if="form.altbody !== null" v-model="form.altbody" type="textarea" :disabled="!canEdit" />
-        </div>
-      </b-tab-item><!-- content -->
-
-      <b-tab-item :label="$t('globals.terms.attribs')" icon="code" value="attribs" :disabled="isNew">
-        <section class="wrap">
-          <b-field :label="$t('globals.terms.attribs')" :message="$t('campaigns.attribsHelp')"
-            label-position="on-border">
-            <b-input v-model="form.attribsStr" type="textarea" :disabled="!canEdit" rows="15" />
-          </b-field>
-        </section>
-      </b-tab-item><!-- attribs -->
-
-      <b-tab-item :label="$t('campaigns.tracking')" icon="chart-timeline-variant" value="tracking" :disabled="isNew">
-        <section class="wrap">
-          <p class="mb-4 has-text-grey">{{ $t('campaigns.trackingHelp') }}</p>
-          <div class="columns">
-            <div class="column is-6">
-              <b-field :label="$t('campaigns.trackingEnabled')">
-                <b-switch v-model="form.tracking.enabled" :disabled="!canEdit" />
-              </b-field>
-              <b-field :label="$t('campaigns.trackingTrackViews')">
-                <b-switch v-model="form.tracking.track_views" :disabled="!canEdit || !form.tracking.enabled" />
-              </b-field>
-              <b-field :label="$t('campaigns.trackingTrackClicks')">
-                <b-switch v-model="form.tracking.track_clicks" :disabled="!canEdit || !form.tracking.enabled" />
-              </b-field>
-              <b-field :label="$t('campaigns.trackingIndividual')">
-                <b-select v-model="form.trackingIndividualMode" :disabled="!canEdit" expanded>
-                  <option value="default">{{ $t('campaigns.trackingIndividualDefault') }}</option>
-                  <option value="on">{{ $t('campaigns.trackingIndividualOn') }}</option>
-                  <option value="off">{{ $t('campaigns.trackingIndividualOff') }}</option>
-                </b-select>
-              </b-field>
-              <b-field :label="$t('campaigns.trackingNotes')" :message="$t('campaigns.trackingNotesHelp')"
-                label-position="on-border">
-                <b-input v-model="form.tracking.notes" type="textarea" :disabled="!canEdit" rows="3" />
-              </b-field>
-            </div>
-            <div class="column is-6">
-              <h4 class="title is-6">{{ $t('campaigns.trackingUtm') }}</h4>
-              <b-field label="utm_source" label-position="on-border">
-                <b-input v-model="form.tracking.utm_source" :disabled="!canEdit" />
-              </b-field>
-              <b-field label="utm_medium" label-position="on-border">
-                <b-input v-model="form.tracking.utm_medium" :disabled="!canEdit" />
-              </b-field>
-              <b-field label="utm_campaign" label-position="on-border">
-                <b-input v-model="form.tracking.utm_campaign" :disabled="!canEdit" />
-              </b-field>
-              <b-field label="utm_content" label-position="on-border">
-                <b-input v-model="form.tracking.utm_content" :disabled="!canEdit" />
-              </b-field>
-              <b-field label="utm_term" label-position="on-border">
-                <b-input v-model="form.tracking.utm_term" :disabled="!canEdit" />
-              </b-field>
-              <b-field :label="$t('campaigns.trackingCustomParams')" :message="$t('campaigns.trackingCustomParamsHelp')"
-                label-position="on-border">
-                <b-input v-model="form.trackingCustomParamsStr" type="textarea" :disabled="!canEdit" rows="4" />
-              </b-field>
-            </div>
-          </div>
-        </section>
-      </b-tab-item><!-- tracking -->
-
-      <b-tab-item :label="$t('campaigns.archive')" icon="newspaper-variant-outline" value="archive" :disabled="isNew">
-        <section class="wrap">
-          <div class="columns">
-            <div class="column is-4">
-              <b-field :label="$t('campaigns.archiveEnable')" data-cy="btn-archive"
-                :message="$t('campaigns.archiveHelp')">
-                <div class="columns">
-                  <div class="column">
-                    <b-switch data-cy="btn-archive" v-model="form.archive" :disabled="!canArchive" />
-                  </div>
-                  <div class="column is-12">
-                    <a :href="`${serverConfig.root_url}/archive/${data.uuid}`" target="_blank" rel="noopener noreferer"
-                      :class="{ 'has-text-grey-light': !form.archive }" aria-label="$t('campaigns.archive')">
-                      <b-icon icon="link-variant" />
-                    </a>
-                  </div>
-                </div>
-              </b-field>
-            </div>
-            <div class="column is-8">
-              <b-field grouped position="is-right">
-                <b-field v-if="!canEdit && canArchive">
-                  <b-button @click="onUpdateCampaignArchive" :loading="loading.campaigns" type="is-primary"
-                    icon-left="content-save-outline" data-cy="btn-save">
-                    {{ $t('globals.buttons.saveChanges') }}
-                  </b-button>
-                </b-field>
-              </b-field>
-            </div>
-          </div>
-
-          <div class="columns">
-            <div class="column is-6">
-              <b-field :label="$tc('globals.terms.template')" label-position="on-border">
-                <b-select :placeholder="$tc('globals.terms.template')" v-model="form.archiveTemplateId" name="template"
-                  :disabled="!canArchive || !form.archive || form.content.contentType === 'visual' || form.content.contentType === 'maily'" required>
-                  <template v-for="t in templates">
-                    <option v-if="t.type === 'campaign'" :value="t.id" :key="t.id">
-                      {{ t.name }}
-                    </option>
-                  </template>
-                </b-select>
-              </b-field>
-            </div>
-
-            <div class="column is-6">
-              <b-field grouped position="is-right">
-                <b-field v-if="form.archive && (!this.form.archiveMetaStr || this.form.archiveMetaStr === '{}')">
-                  <a class="button is-primary" href="#" @click.prevent="onFillArchiveMeta" aria-label="{}"><b-icon
-                      icon="code" /></a>
-                </b-field>
-                <b-field v-if="form.archive">
-                  <b-button @click="onToggleArchivePreview" type="is-primary" icon-left="file-find-outline"
-                    data-cy="btn-preview">
-                    {{ $t('campaigns.preview') }}
-                  </b-button>
-                </b-field>
-              </b-field>
-            </div>
-          </div>
-          <b-field>
-            <b-field :label="$t('campaigns.archiveSlug')" label-position="on-border"
-              :message="$t('campaigns.archiveSlugHelp')">
-              <b-input :maxlength="200" :ref="'focus'" v-model="form.archiveSlug" name="archive_slug"
-                data-cy="archive-slug" :disabled="!canArchive || !form.archive" />
-            </b-field>
-          </b-field>
-          <b-field :label="$t('campaigns.archiveMeta')" :message="$t('campaigns.archiveMetaHelp')"
-            label-position="on-border">
-            <b-input v-model="form.archiveMetaStr" name="archive_meta" type="textarea" data-cy="archive-meta"
-              :disabled="!canArchive || !form.archive" rows="20" />
-          </b-field>
-        </section>
-      </b-tab-item><!-- archive -->
-    </b-tabs>
+    <campaign-setup
+      v-else-if="showSetup"
+      :form="form"
+      :data="data"
+      :is-new="isNew"
+      :can-edit="canEdit"
+      :can-manage="canManage"
+      :can-send="canSend"
+      :can-un-schedule="canUnSchedule"
+      :loading="!!loading.campaigns"
+      :lists="allLists"
+      :templates="templates"
+      :content-types="contentTypes"
+      :from-email-default="serverConfig.from_email || ''"
+      @save="onSetupSave"
+      @ensure="onEnsureSaved"
+      @schedule="onSetupSchedule"
+      @unschedule="onUnschedule"
+      @test="onSubmit('test')"
+      @attach="isAttachModalOpen = true"
+      @design-open="isDesignOpen = $event"
+    />
 
     <b-modal scroll="keep" :aria-modal="true" :active.sync="isAttachModalOpen" :width="900">
       <div class="modal-card content" style="width: auto">
@@ -400,7 +42,6 @@
     <campaign-preview v-if="isPreviewingArchive" @close="onToggleArchivePreview" type="campaign" :id="data.id"
       :archive-meta="form.archiveMetaStr" :title="data.title" :content-type="data.contentType"
       :template-id="form.archiveTemplateId" is-post is-archive />
-    </template>
   </section>
 </template>
 
@@ -412,20 +53,16 @@ import { mapState } from 'vuex';
 
 import CampaignPreview from '../components/CampaignPreview.vue';
 import CampaignReport from '../components/CampaignReport.vue';
-import CopyText from '../components/CopyText.vue';
-import Editor from '../components/Editor.vue';
-import ListSelector from '../components/ListSelector.vue';
+import CampaignSetup from '../components/CampaignSetup.vue';
 import MarketingSubnav from '../components/MarketingSubnav.vue';
 import Media from './Media.vue';
 
 export default Vue.extend({
   components: {
-    ListSelector,
-    Editor,
     Media,
-    CopyText,
     CampaignPreview,
     CampaignReport,
+    CampaignSetup,
     MarketingSubnav,
   },
 
@@ -446,6 +83,7 @@ export default Vue.extend({
       isAttachFieldVisible: false,
       isAttachModalOpen: false,
       isPreviewingArchive: false,
+      isDesignOpen: false,
       activeTab: 'campaign',
 
       data: {},
@@ -483,6 +121,7 @@ export default Vue.extend({
         archiveMetaStr: '{}',
         archiveMeta: {},
         testEmails: [],
+        previewText: '',
         tracking: {
           enabled: true,
           track_views: true,
@@ -642,7 +281,7 @@ export default Vue.extend({
           this.form.headers = JSON.parse(this.form.headersStr);
         } catch (e) {
           this.$utils.toast(e.toString(), 'is-danger');
-          return;
+          return undefined;
         }
       } else {
         this.form.headers = [];
@@ -654,7 +293,7 @@ export default Vue.extend({
           this.form.archiveMeta = JSON.parse(this.form.archiveMetaStr);
         } catch (e) {
           this.$utils.toast(e.toString(), 'is-danger');
-          return;
+          return undefined;
         }
       }
 
@@ -670,29 +309,30 @@ export default Vue.extend({
 
             3000,
           );
-          return;
+          return undefined;
         }
       }
+      if (!attribs || typeof attribs !== 'object') attribs = {};
+      if (this.form.previewText) attribs.previewText = this.form.previewText;
+      else delete attribs.previewText;
       this.form.attribs = attribs;
+      this.form.attribsStr = JSON.stringify(attribs, null, 4);
 
       let trackingConfig = null;
       try {
         trackingConfig = this.buildTrackingConfig();
       } catch {
-        return;
+        return undefined;
       }
       this.form.tracking_config = trackingConfig;
 
       switch (typ) {
         case 'create':
-          this.createCampaign();
-          break;
+          return this.createCampaign();
         case 'test':
-          this.sendTest();
-          break;
+          return this.sendTest();
         default:
-          this.updateCampaign();
-          break;
+          return this.updateCampaign();
       }
     },
 
@@ -717,6 +357,7 @@ export default Vue.extend({
             templateId: data.templateId,
           },
         };
+        this.form.previewText = (data.attribs && data.attribs.previewText) || '';
         this.isAttachFieldVisible = this.form.media.length > 0;
 
         this.form.media = this.form.media.map((f) => {
@@ -781,10 +422,12 @@ export default Vue.extend({
         media: this.form.media.map((m) => m.id),
       };
 
-      this.$api.createCampaign(data).then((d) => {
-        this.$router.push({ name: 'campaign', hash: '#content', params: { id: d.id } });
+      return this.$api.createCampaign(data).then((d) => {
+        this.isNew = false;
+        this.isEditing = true;
+        this.$router.replace({ name: 'campaign', params: { id: d.id } });
+        return this.getCampaign(d.id);
       });
-      return false;
     },
 
     async updateCampaign(typ) {
@@ -859,32 +502,34 @@ export default Vue.extend({
     },
 
     // Starts or schedule a campaign.
-    startCampaign() {
+    startCampaign(opts) {
       if (!this.canStart && !this.canSchedule) {
         return;
       }
 
-      this.$utils.confirm(
-        null,
-        () => {
-          // First save the campaign.
-          this.updateCampaign().then(() => {
-            // Then start/schedule it.
-            let status = '';
-            if (this.canStart) {
-              status = 'running';
-            } else if (this.canSchedule) {
-              status = 'scheduled';
-            } else {
-              return;
-            }
+      const run = () => {
+        this.updateCampaign().then(() => {
+          let status = '';
+          if (this.canStart) {
+            status = 'running';
+          } else if (this.canSchedule) {
+            status = 'scheduled';
+          } else {
+            return;
+          }
 
-            this.$api.changeCampaignStatus(this.data.id, status).then(() => {
-              this.$router.push({ name: 'campaigns' });
-            });
+          this.$api.changeCampaignStatus(this.data.id, status).then(() => {
+            this.$router.push({ name: 'campaigns' });
           });
-        },
-      );
+        });
+      };
+
+      if (opts && opts.skipConfirm) {
+        run();
+        return;
+      }
+
+      this.$utils.confirm(null, run);
     },
 
     unscheduleCampaign() {
@@ -893,10 +538,86 @@ export default Vue.extend({
       });
     },
 
+    applyCreateQuery() {
+      const q = this.$route.query || {};
+      if (q.name) this.form.name = String(q.name);
+      if (q.subject) this.form.subject = String(q.subject);
+      if (q.messenger) {
+        this.form.messenger = String(q.messenger);
+      } else if (q.channel && q.channel !== 'email') {
+        const ch = String(q.channel).toLowerCase();
+        const messengers = (this.serverConfig && this.serverConfig.messengers) || [];
+        const found = messengers.find((m) => String(m).toLowerCase().indexOf(ch) > -1);
+        if (found) this.form.messenger = found;
+      }
+      if (q.tags) {
+        this.form.tags = String(q.tags).split(',').map((t) => t.trim()).filter(Boolean);
+      }
+    },
+
+    showSetupMissing() {
+      if (!this.form.name || !this.form.name.trim()) {
+        this.form.name = 'Untitled campaign';
+      }
+      if (!this.form.subject || !this.form.subject.trim()) {
+        this.$utils.toast('Add a subject before continuing.');
+        return true;
+      }
+      if (!this.form.lists || !this.form.lists.length) {
+        this.$utils.toast('Select recipients before continuing.');
+        return true;
+      }
+      return false;
+    },
+
+    ensureSaved() {
+      if (this.isNew) {
+        if (this.showSetupMissing()) return Promise.reject();
+        const created = this.onSubmit('create');
+        if (!created) return Promise.reject();
+        return created;
+      }
+      return this.updateCampaign();
+    },
+
+    onSetupSave(opts) {
+      if (this.isNew && !(opts && opts.createIfNew)) return;
+      if (this.isNew) {
+        if (this.showSetupMissing()) return;
+        this.onSubmit('create');
+        return;
+      }
+      this.onSubmit('update');
+    },
+
+    onEnsureSaved(cb) {
+      this.ensureSaved().then(() => {
+        if (typeof cb === 'function') cb();
+      }).catch(() => {});
+    },
+
+    onSetupSchedule(opts) {
+      if (opts && opts.sendNow) {
+        this.form.sendLater = false;
+        this.form.sendAtDate = null;
+      } else {
+        this.form.sendLater = true;
+        this.form.sendAtDate = opts && opts.at ? opts.at : this.form.sendAtDate;
+      }
+      this.ensureSaved().then(() => {
+        this.startCampaign({ skipConfirm: true });
+      }).catch(() => {});
+    },
+
+    onUnschedule() {
+      this.$utils.confirm(null, this.unscheduleCampaign);
+    },
+
     goToEditor() {
       this.$router.replace({
         name: 'campaign',
         params: { id: this.data.id },
+        query: { view: 'edit' },
         hash: this.$route.hash || '',
       });
     },
@@ -905,8 +626,47 @@ export default Vue.extend({
   computed: {
     ...mapState(['serverConfig', 'loading', 'lists', 'templates']),
 
+    newCampaignTitle() {
+      const q = this.$route.query || {};
+      if (q.template === 'automation' || q.template) {
+        return q.name || 'New automation';
+      }
+      if (q.channel === 'sms') return 'New SMS campaign';
+      if (q.channel === 'whatsapp') return 'New WhatsApp campaign';
+      if (q.channel === 'push') return 'New push campaign';
+      return this.$t('campaigns.newCampaign');
+    },
+
+    newCampaignLead() {
+      const q = this.$route.query || {};
+      const leads = {
+        welcome: 'Welcome automation — send a message when someone joins a list.',
+        abandoned_cart: 'Abandoned cart — follow up after a contact leaves items behind.',
+        marketing_activity: 'Marketing activity — follow up when contacts open or click.',
+        product_purchase: 'Product purchase — send a message after a purchase.',
+        anniversary: 'Anniversary — send messages for a special date or birthday.',
+        automation: 'Create an automation from scratch.',
+      };
+      if (q.template && leads[q.template]) return leads[q.template];
+      if (q.channel === 'sms') return 'Create a new SMS campaign.';
+      if (q.channel === 'whatsapp') return 'Create a new WhatsApp campaign.';
+      if (q.channel === 'push') return 'Create a new push notification campaign.';
+      return 'Create a new email campaign for your lists.';
+    },
+
+    showSetup() {
+      return !this.showReport;
+    },
+
+    allLists() {
+      return (this.lists && this.lists.results) || [];
+    },
+
     showReport() {
-      return this.isEditing && !!this.data.id && this.$route.query.view === 'report';
+      if (!this.data || !this.data.id) return false;
+      if (this.$route.query.view === 'edit') return false;
+      if (this.$route.query.view === 'report') return true;
+      return ['finished', 'cancelled', 'running'].indexOf(this.data.status) > -1;
     },
 
     canViewReport() {
@@ -1020,6 +780,8 @@ export default Vue.extend({
       this.isEditing = true;
     }
 
+    this.$api.getLists({ per_page: 'all', status: 'active' }).catch(() => {});
+
     // Get templates list.
     this.$api.getTemplates().then((data) => {
       if (data.length > 0) {
@@ -1039,6 +801,7 @@ export default Vue.extend({
       });
     } else {
       this.form.messenger = 'email';
+      this.applyCreateQuery();
     }
 
     this.$nextTick(() => {

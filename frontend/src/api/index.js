@@ -297,6 +297,11 @@ export const getCampaign = async (id) => http.get(`/api/campaigns/${id}`, {
   camelCase: (keyPath) => !keyPath.startsWith('.headers'),
 });
 
+export const getCampaignReportSummary = async (id) => http.get(
+  `/api/campaigns/${id}/report-summary`,
+  { loading: models.campaigns },
+);
+
 export const getCampaignStats = async () => http.get('/api/campaigns/running/stats', {});
 
 export const createCampaign = async (data) => http.post(

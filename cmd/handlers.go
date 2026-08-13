@@ -163,6 +163,7 @@ func initHTTPHandlers(e *echo.Echo, a *App) {
 		g.GET("/api/campaigns/running/stats", pm(a.GetRunningCampaignStats, "campaigns:get_all", "campaigns:get"))
 		g.GET("/api/campaigns/:id", pm(hasID(a.GetCampaign), "campaigns:get_all", "campaigns:get"))
 		g.GET("/api/campaigns/:id/report", pm(hasID(a.ExportCampaignReport), "campaigns:get_analytics"))
+		g.GET("/api/campaigns/:id/report-summary", pm(hasID(a.GetCampaignReportSummary), "campaigns:get_analytics", "campaigns:get_all", "campaigns:get"))
 		g.GET("/api/campaigns/analytics/records/:type", pm(a.GetCampaignAnalyticsRecords, "campaigns:get_analytics"))
 		g.GET("/api/campaigns/analytics/:type", pm(a.GetCampaignViewAnalytics, "campaigns:get_analytics"))
 		g.GET("/api/campaigns/:id/preview", pm(hasID(a.PreviewCampaign), "campaigns:get_all", "campaigns:get"))
@@ -317,6 +318,9 @@ func (a *App) AdminPage(c echo.Context) error {
 
 	b = bytes.ReplaceAll(b, []byte("asset_version"), []byte(a.cfg.AssetVersion))
 
+	c.Response().Header().Set("Cache-Control", "no-store, no-cache, must-revalidate")
+	c.Response().Header().Set("Pragma", "no-cache")
+	c.Response().Header().Set("Expires", "0")
 	return c.HTMLBlob(http.StatusOK, b)
 }
 

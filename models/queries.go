@@ -90,6 +90,8 @@ type Queries struct {
 	GetCampaignReportBounces   *sqlx.Stmt `query:"get-campaign-report-bounces"`
 	GetCampaignReportUnsubCount  *sqlx.Stmt `query:"get-campaign-report-unsub-count"`
 	GetCampaignReportUniqueCounts *sqlx.Stmt `query:"get-campaign-report-unique-counts"`
+	GetCampaignReportSummary      *sqlx.Stmt `query:"get-campaign-report-summary"`
+	GetCampaignReportBounceReasons *sqlx.Stmt `query:"get-campaign-report-bounce-reasons"`
 
 	NextCampaigns            *sqlx.Stmt `query:"next-campaigns"`
 	GetRunningCampaign       *sqlx.Stmt `query:"get-running-campaign"`

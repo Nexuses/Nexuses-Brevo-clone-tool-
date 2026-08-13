@@ -99,7 +99,12 @@
           </b-dropdown-item>
         </b-dropdown>
 
-        <button type="button" class="contacts-brevo__chip" @click.prevent="toggleAdvancedSearch">
+        <button
+          type="button"
+          class="contacts-brevo__chip"
+          :class="{ 'is-active': isFilterOpen || filters.length > 0 }"
+          @click.prevent="toggleFilterPanel"
+        >
           Add filter
           <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
             <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
@@ -132,7 +137,6 @@
               placeholder="Search"
               icon="magnify"
               ref="query"
-              :disabled="isSearchAdvanced"
               data-cy="search"
             />
           </b-field>
@@ -140,24 +144,77 @@
       </div>
     </div>
 
-    <div v-if="isSearchAdvanced" class="contacts-brevo__advanced mb-4">
-      <b-input v-model="queryParams.queryExp" @keydown.native.enter="onAdvancedQueryEnter" type="textarea"
-        ref="queryExp" placeholder="subscribers.name LIKE '%user%' or subscribers.status='blocklisted'"
-        data-cy="query" />
-      <div class="buttons mt-2">
-        <b-button type="is-primary" icon-left="magnify" @click="onSubmit" data-cy="btn-query">
-          {{ $t('subscribers.query') }}
-        </b-button>
-        <b-button @click.prevent="toggleAdvancedSearch" icon-left="cancel" data-cy="btn-query-reset">
-          {{ $t('subscribers.reset') }}
-        </b-button>
+    <div v-if="isFilterOpen" class="contacts-filter">
+      <div v-for="(f, idx) in filters" :key="f.id" class="contacts-filter__block">
+        <p v-if="idx > 0" class="contacts-filter__join-label">{{ f.join === 'or' ? 'Or' : 'And' }}</p>
+        <div class="contacts-filter__row">
+          <select v-model="f.field" class="contacts-filter__select" aria-label="Filter attribute" @change="onFilterFieldChange(f)">
+            <option v-for="field in filterFieldDefs" :key="field.key" :value="field.key">{{ field.label }}</option>
+          </select>
+          <select v-model="f.op" class="contacts-filter__select" aria-label="Filter operator">
+            <option v-for="op in operatorsFor(f)" :key="op.value" :value="op.value">{{ op.label }}</option>
+          </select>
+          <select
+            v-if="filterType(f) === 'list' && !isEmptyOp(f.op)"
+            v-model="f.value"
+            class="contacts-filter__select contacts-filter__select--wide"
+            aria-label="List"
+          >
+            <option value="">Select a list</option>
+            <option v-for="l in availableLists" :key="l.id" :value="String(l.id)">{{ l.name }}</option>
+          </select>
+          <select
+            v-else-if="filterType(f) === 'status' && !isEmptyOp(f.op)"
+            v-model="f.value"
+            class="contacts-filter__select"
+            aria-label="Subscription status"
+          >
+            <option value="subscribed">Subscribed</option>
+            <option value="blocklisted">Blocklisted</option>
+          </select>
+          <input
+            v-else-if="filterType(f) === 'date' && f.op === 'last_n_days'"
+            v-model="f.value"
+            class="contacts-filter__input contacts-filter__input--sm"
+            type="number"
+            min="1"
+            placeholder="Days"
+            aria-label="Number of days"
+          />
+          <input
+            v-else-if="filterType(f) === 'date' && !isEmptyOp(f.op)"
+            v-model="f.value"
+            class="contacts-filter__input"
+            type="date"
+            aria-label="Date"
+          />
+          <input
+            v-else-if="filterType(f) === 'text' && !isEmptyOp(f.op)"
+            v-model="f.value"
+            class="contacts-filter__input"
+            type="text"
+            :placeholder="'Enter ' + fieldLabel(f.field)"
+            aria-label="Filter value"
+            @keydown.enter.prevent="applyFilters"
+          />
+          <button type="button" class="contacts-filter__remove" aria-label="Remove filter" @click="removeFilter(idx)">
+            ×
+          </button>
+        </div>
+      </div>
+      <div class="contacts-filter__toolbar">
+        <button type="button" class="contacts-filter__link" @click="addFilter('and')">+ And</button>
+        <button type="button" class="contacts-filter__link" @click="addFilter('or')">+ Or</button>
+        <div class="contacts-filter__actions">
+          <button type="button" class="contacts-filter__clear" @click="clearFilters">Clear</button>
+          <button type="button" class="contacts-filter__search" @click="applyFilters">Search contacts</button>
+        </div>
       </div>
     </div>
 
     <b-table :data="subscribers.results ?? []" :loading="loading.subscribers" @check-all="onTableCheck"
-      @check="onTableCheck" :checked-rows.sync="bulk.checked" paginated backend-pagination pagination-position="bottom"
-      @page-change="onPageChange" :current-page="queryParams.page" :per-page="subscribers.perPage"
-      :total="subscribers.total" hoverable checkable backend-sorting @sort="onSort"
+      @check="onTableCheck" :checked-rows.sync="bulk.checked" :paginated="false"
+      hoverable checkable backend-sorting @sort="onSort"
       class="contacts-brevo__table">
       <template #top-left>
         <div class="actions">
@@ -191,9 +248,16 @@
         </a>
       </b-table-column>
 
-      <b-table-column v-if="isColumnVisible('subscribed')" v-slot="props" field="status" label="SUBSCRIBED"
-        header-class="cy-status">
+      <b-table-column
+        v-for="col in visibleColumnDefs"
+        :key="col.key"
+        v-slot="props"
+        :field="col.sortField || col.key"
+        :label="col.label"
+        :sortable="!!col.sortField"
+      >
         <span
+          v-if="col.key === 'subscribed'"
           class="contacts-brevo__sub-pill"
           :class="{ 'is-blocklisted': props.row.status === 'blocklisted' }"
         >
@@ -203,26 +267,12 @@
           </svg>
           Email
         </span>
-      </b-table-column>
-
-      <b-table-column v-if="isColumnVisible('email')" v-slot="props" field="email" label="EMAIL"
-        header-class="cy-email-col" sortable>
-        <span class="contacts-brevo__email" :title="props.row.email">{{ props.row.email }}</span>
-      </b-table-column>
-
-      <b-table-column v-if="isColumnVisible('landline')" v-slot="props" field="phone" label="LANDLINE_PHONE"
-        header-class="cy-phone">
-        <span class="contacts-brevo__cell">{{ contactPhone(props.row) }}</span>
-      </b-table-column>
-
-      <b-table-column v-if="isColumnVisible('lastChanged')" v-slot="props" field="updated_at" label="LAST CHANGED"
-        header-class="cy-updated" sortable>
-        <span class="contacts-brevo__cell">{{ formatBrevoDate(props.row.updatedAt) }}</span>
-      </b-table-column>
-
-      <b-table-column v-if="isColumnVisible('created')" v-slot="props" field="created_at" label="CREATED"
-        header-class="cy-created" sortable>
-        <span class="contacts-brevo__cell">{{ formatBrevoDate(props.row.createdAt) }}</span>
+        <span v-else-if="col.key === 'blocklisted'" class="contacts-brevo__cell">
+          {{ props.row.status === 'blocklisted' ? 'Yes' : 'No' }}
+        </span>
+        <span v-else class="contacts-brevo__cell" :title="columnDisplay(props.row, col.key)">
+          {{ columnDisplay(props.row, col.key) }}
+        </span>
       </b-table-column>
 
       <b-table-column v-slot="props" cell-class="actions" align="right" width="90">
@@ -242,6 +292,29 @@
         <empty-placeholder />
       </template>
     </b-table>
+
+    <div class="contacts-brevo__pager">
+      <div class="contacts-brevo__pager-meta">
+        <span>{{ pagerSummary }}</span>
+        <span class="contacts-brevo__pager-pages">Page {{ queryParams.page }} of {{ totalPages }}</span>
+      </div>
+      <div class="contacts-brevo__pager-controls">
+        <label class="contacts-brevo__pager-size">
+          Rows
+          <select :value="queryParams.perPage" aria-label="Rows per page" @change="onPerPageChange">
+            <option :value="20">20</option>
+            <option :value="50">50</option>
+            <option :value="100">100</option>
+          </select>
+        </label>
+        <button type="button" class="contacts-brevo__pager-btn" :disabled="queryParams.page <= 1" @click="goToPage(queryParams.page - 1)">
+          Previous
+        </button>
+        <button type="button" class="contacts-brevo__pager-btn" :disabled="queryParams.page >= totalPages" @click="goToPage(queryParams.page + 1)">
+          Next
+        </button>
+      </div>
+    </div>
 
     <b-modal scroll="keep" :aria-modal="true" :active.sync="isBulkListFormVisible" :width="500" class="has-overflow">
       <subscriber-bulk-list :num-subscribers="this.numSelectedSubscribers" @finished="bulkChangeLists" />
@@ -330,49 +403,90 @@
             </svg>
           </button>
         </header>
-        <div class="contacts-drawer__body">
+        <div class="contacts-drawer__body contacts-drawer__body--columns">
           <p class="contacts-drawer__help">
             Customize the Contact page, and choose the attributes you want to see as columns.
           </p>
+
+          <div class="contacts-attr-picker" ref="attrPicker">
+            <button type="button" class="contacts-attr-picker__trigger" @click.stop="toggleAttrPicker">
+              <span class="contacts-attr-picker__plus" aria-hidden="true">+</span>
+              Select attributes
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+              </svg>
+            </button>
+            <div v-if="isAttrPickerOpen" class="contacts-attr-picker__menu">
+              <label class="contacts-attr-picker__search">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                  <circle cx="11" cy="11" r="6.5" stroke="currentColor" stroke-width="1.8" />
+                  <path d="M16 16l4 4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" />
+                </svg>
+                <input v-model="attrSearch" type="search" placeholder="Search" aria-label="Search attributes" />
+              </label>
+              <ul class="contacts-attr-picker__list">
+                <li v-for="col in addableColumns" :key="col.key">
+                  <button type="button" class="contacts-attr-picker__item" @click="addColumnDraft(col.key)">
+                    <span class="contacts-attr-picker__add-icon" aria-hidden="true">+</span>
+                    {{ col.label }}
+                  </button>
+                </li>
+                <li v-if="!addableColumns.length" class="contacts-attr-picker__empty">No attributes found</li>
+              </ul>
+              <button type="button" class="contacts-attr-picker__edit" @click="onEditAttributes">
+                Edit &amp; create attributes
+                <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+                  <path d="M4.5 2.5H2.75A1.25 1.25 0 0 0 1.5 3.75v5.5A1.25 1.25 0 0 0 2.75 10.5h5.5A1.25 1.25 0 0 0 9.5 9.25V7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+                  <path d="M6.5 1.5H10.5V5.5M10.5 1.5L5.5 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </button>
+            </div>
+          </div>
+
           <ul class="contacts-columns-list">
-            <li v-for="col in columnOptions" :key="col.key" class="contacts-columns-list__item">
-              <span class="contacts-columns-list__drag" aria-hidden="true">⋮⋮</span>
+            <li
+              v-for="(col, idx) in columnOptions"
+              :key="col.key"
+              class="contacts-columns-list__item"
+              :class="{ 'is-dragging': dragIndex === idx }"
+              draggable="true"
+              @dragstart="onColumnDragStart(idx, $event)"
+              @dragover.prevent
+              @drop="onColumnDrop(idx)"
+            >
+              <span class="contacts-columns-list__drag" aria-hidden="true">
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="none">
+                  <circle cx="3" cy="2" r="1.15" fill="currentColor" />
+                  <circle cx="7" cy="2" r="1.15" fill="currentColor" />
+                  <circle cx="3" cy="8" r="1.15" fill="currentColor" />
+                  <circle cx="7" cy="8" r="1.15" fill="currentColor" />
+                  <circle cx="3" cy="14" r="1.15" fill="currentColor" />
+                  <circle cx="7" cy="14" r="1.15" fill="currentColor" />
+                </svg>
+              </span>
               <span class="contacts-columns-list__label">{{ col.label }}</span>
               <button
                 type="button"
                 class="contacts-columns-list__remove"
-                :aria-label="`Remove ${col.label}`"
+                :aria-label="'Remove ' + col.label"
                 @click="toggleColumnDraft(col.key)"
               >
                 ×
               </button>
             </li>
           </ul>
-          <div class="contacts-columns-add">
-            <b-dropdown>
-              <template #trigger>
-                <button type="button" class="contacts-columns-add__btn">
-                  <span aria-hidden="true">+</span> Select attributes
-                  <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-                    <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-                  </svg>
-                </button>
-              </template>
-              <b-dropdown-item
-                v-for="col in allColumnDefs"
-                :key="col.key"
-                @click="addColumnDraft(col.key)"
-              >
-                <span :class="{ 'has-text-grey': draftColumns.includes(col.key) }">
-                  {{ col.label }}
-                  <template v-if="draftColumns.includes(col.key)"> ✓</template>
-                </span>
-              </b-dropdown-item>
-            </b-dropdown>
-          </div>
+
+          <button type="button" class="contacts-columns-edit" @click="onEditAttributes">
+            Edit &amp; create attributes
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M4.5 2.5H2.75A1.25 1.25 0 0 0 1.5 3.75v5.5A1.25 1.25 0 0 0 2.75 10.5h5.5A1.25 1.25 0 0 0 9.5 9.25V7.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" />
+              <path d="M6.5 1.5H10.5V5.5M10.5 1.5L5.5 6.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+
           <footer class="contacts-drawer__foot">
             <button type="button" class="contacts-drawer__cancel" @click="closeColumnsDrawer">Cancel</button>
-            <button type="button" class="contacts-drawer__save" @click="saveColumns">Save</button>
+            <button type="button" class="contacts-drawer__save contacts-drawer__save--pill" @click="saveColumns">Save</button>
           </footer>
         </div>
       </aside>
@@ -401,12 +515,18 @@ export default Vue.extend({
       // Current subscriber item being edited.
       curItem: null,
       isSearchAdvanced: false,
+      isFilterOpen: false,
       isEditing: false,
       isFormVisible: false,
       isBulkListFormVisible: false,
       isCreateDrawerOpen: false,
       isColumnsDrawerOpen: false,
+      isAttrPickerOpen: false,
+      attrSearch: '',
+      dragIndex: null,
       isCreating: false,
+      filterSeq: 1,
+      filters: [],
 
       createForm: {
         firstname: '',
@@ -418,11 +538,36 @@ export default Vue.extend({
       },
 
       allColumnDefs: [
-        { key: 'subscribed', label: 'SUBSCRIBED' },
-        { key: 'email', label: 'EMAIL' },
-        { key: 'landline', label: 'LANDLINE_PHONE' },
-        { key: 'lastChanged', label: 'LAST CHANGED' },
-        { key: 'created', label: 'CREATION DATE' },
+        { key: 'subscribed', label: 'SUBSCRIBED', sortField: 'status' },
+        { key: 'blocklisted', label: 'BLOCKLISTED' },
+        { key: 'email', label: 'EMAIL', sortField: 'email' },
+        { key: 'firstname', label: 'FIRSTNAME' },
+        { key: 'lastname', label: 'LASTNAME' },
+        { key: 'sms', label: 'SMS' },
+        { key: 'whatsapp', label: 'WHATSAPP' },
+        { key: 'landline', label: 'LANDLINE_NUMBER' },
+        { key: 'extId', label: 'EXT_ID' },
+        { key: 'timezone', label: 'CONTACT_TIMEZONE' },
+        { key: 'jobTitle', label: 'JOB_TITLE' },
+        { key: 'company', label: 'COMPANY' },
+        { key: 'lastChanged', label: 'LAST CHANGED', sortField: 'updated_at' },
+        { key: 'created', label: 'CREATION DATE', sortField: 'created_at' },
+      ],
+      filterFieldDefs: [
+        { key: 'email', label: 'Email', type: 'text' },
+        { key: 'firstname', label: 'First name', type: 'text' },
+        { key: 'lastname', label: 'Last name', type: 'text' },
+        { key: 'sms', label: 'SMS', type: 'text' },
+        { key: 'whatsapp', label: 'WhatsApp', type: 'text' },
+        { key: 'landline', label: 'Landline number', type: 'text' },
+        { key: 'ext_id', label: 'EXT_ID', type: 'text' },
+        { key: 'timezone', label: 'Contact timezone', type: 'text' },
+        { key: 'job_title', label: 'Job title', type: 'text' },
+        { key: 'company', label: 'Company', type: 'text' },
+        { key: 'list', label: 'Member of a list', type: 'list' },
+        { key: 'created', label: 'Creation date', type: 'date' },
+        { key: 'updated', label: 'Edit date', type: 'date' },
+        { key: 'status', label: 'Email campaigns subscriptions', type: 'status' },
       ],
       visibleColumns: ['subscribed', 'email', 'landline', 'lastChanged', 'created'],
       draftColumns: [],
@@ -444,6 +589,7 @@ export default Vue.extend({
         // ID of the list the current subscriber view is filtered by.
         listID: null,
         page: 1,
+        perPage: 20,
         orderBy: 'id',
         order: 'desc',
         subStatus: null,
@@ -480,6 +626,278 @@ export default Vue.extend({
       const d = dayjs(raw);
       if (!d.isValid()) return '—';
       return d.format('DD/MM/YYYY');
+    },
+
+    toggleFilterPanel() {
+      this.isFilterOpen = !this.isFilterOpen;
+      if (this.isFilterOpen && this.filters.length === 0) {
+        this.addFilter('and');
+      }
+    },
+
+    newFilter(join) {
+      this.filterSeq += 1;
+      return {
+        id: this.filterSeq,
+        field: 'email',
+        op: 'contains',
+        value: '',
+        join: join || 'and',
+      };
+    },
+
+    addFilter(join) {
+      this.filters = [...this.filters, this.newFilter(join)];
+      this.isFilterOpen = true;
+    },
+
+    removeFilter(idx) {
+      const next = this.filters.slice();
+      next.splice(idx, 1);
+      this.filters = next;
+      if (!this.filters.length) {
+        this.isFilterOpen = false;
+        this.clearFilters();
+      }
+    },
+
+    clearFilters() {
+      this.filters = [];
+      this.queryParams.queryExp = '';
+      this.queryParams.page = 1;
+      this.isFilterOpen = false;
+      this.querySubscribers();
+    },
+
+    filterType(f) {
+      const def = this.filterFieldDefs.find((d) => d.key === f.field);
+      return (def && def.type) || 'text';
+    },
+
+    fieldLabel(key) {
+      const def = this.filterFieldDefs.find((d) => d.key === key);
+      return (def && def.label) || key;
+    },
+
+    isEmptyOp(op) {
+      return op === 'is_empty' || op === 'is_not_empty';
+    },
+
+    operatorsFor(f) {
+      const type = this.filterType(f);
+      if (type === 'list') {
+        return [
+          { value: 'is_member', label: 'is member of' },
+          { value: 'is_not_member', label: 'is not member of' },
+        ];
+      }
+      if (type === 'status') {
+        return [
+          { value: 'is', label: 'is' },
+          { value: 'is_not', label: 'is not' },
+        ];
+      }
+      if (type === 'date') {
+        return [
+          { value: 'on', label: 'on' },
+          { value: 'before', label: 'before' },
+          { value: 'after', label: 'after' },
+          { value: 'last_n_days', label: 'in the last # days' },
+          { value: 'is_empty', label: 'is empty' },
+          { value: 'is_not_empty', label: 'is not empty' },
+        ];
+      }
+      return [
+        { value: 'contains', label: 'contains' },
+        { value: 'not_contains', label: 'does not contain' },
+        { value: 'is', label: 'is' },
+        { value: 'is_not', label: 'is not' },
+        { value: 'starts_with', label: 'starts with' },
+        { value: 'ends_with', label: 'ends with' },
+        { value: 'is_empty', label: 'is empty' },
+        { value: 'is_not_empty', label: 'is not empty' },
+      ];
+    },
+
+    onFilterFieldChange(f) {
+      const idx = this.filters.indexOf(f);
+      if (idx < 0) return;
+      const ops = this.operatorsFor(f);
+      const next = {
+        ...f,
+        op: ops[0].value,
+        value: this.filterType(f) === 'status' ? 'subscribed' : '',
+      };
+      this.$set(this.filters, idx, next);
+    },
+
+    escapeSql(v) {
+      return String(v || '').replace(/'/g, "''");
+    },
+
+    attribCol(key) {
+      return `subscribers.attribs->>'${key}'`;
+    },
+
+    textSql(col, op, value) {
+      const v = this.escapeSql(value);
+      if (op === 'is') return `${col} ILIKE '${v}'`;
+      if (op === 'is_not') return `(${col} IS NULL OR ${col} NOT ILIKE '${v}')`;
+      if (op === 'contains') return `${col} ILIKE '%${v}%'`;
+      if (op === 'not_contains') return `(${col} IS NULL OR ${col} NOT ILIKE '%${v}%')`;
+      if (op === 'starts_with') return `${col} ILIKE '${v}%'`;
+      if (op === 'ends_with') return `${col} ILIKE '%${v}'`;
+      if (op === 'is_empty') return `(${col} IS NULL OR ${col} = '')`;
+      if (op === 'is_not_empty') return `(${col} IS NOT NULL AND ${col} <> '')`;
+      return 'TRUE';
+    },
+
+    dateSql(col, op, value) {
+      const v = this.escapeSql(value);
+      if (op === 'is_empty') return `${col} IS NULL`;
+      if (op === 'is_not_empty') return `${col} IS NOT NULL`;
+      if (op === 'last_n_days') {
+        const n = parseInt(value, 10);
+        if (!n || n < 1) return 'TRUE';
+        return `${col} >= NOW() - INTERVAL '${n} days'`;
+      }
+      if (!v) return 'TRUE';
+      if (op === 'on') return `${col}::date = '${v}'::date`;
+      if (op === 'before') return `${col}::date < '${v}'::date`;
+      if (op === 'after') return `${col}::date > '${v}'::date`;
+      return 'TRUE';
+    },
+
+    compileFilter(f) {
+      const type = this.filterType(f);
+      if (type === 'list') {
+        const id = parseInt(f.value, 10);
+        if (!id) return null;
+        const exists = `EXISTS (SELECT 1 FROM subscriber_lists sl WHERE sl.subscriber_id = subscribers.id AND sl.list_id = ${id})`;
+        return f.op === 'is_not_member' ? `NOT ${exists}` : exists;
+      }
+      if (type === 'status') {
+        const status = f.value === 'blocklisted' ? 'blocklisted' : 'enabled';
+        if (f.op === 'is_not') return `subscribers.status <> '${status}'`;
+        return `subscribers.status = '${status}'`;
+      }
+      if (type === 'date') {
+        const col = f.field === 'updated' ? 'subscribers.updated_at' : 'subscribers.created_at';
+        return this.dateSql(col, f.op, f.value);
+      }
+      const attribMap = {
+        firstname: 'firstname',
+        lastname: 'lastname',
+        sms: 'SMS',
+        whatsapp: 'whatsapp',
+        landline: 'landline_phone',
+        ext_id: 'EXT_ID',
+        timezone: 'CONTACT_TIMEZONE',
+        job_title: 'job_title',
+        company: 'company',
+      };
+      let col = 'subscribers.email';
+      if (f.field === 'email') col = 'subscribers.email';
+      else if (attribMap[f.field]) col = this.attribCol(attribMap[f.field]);
+      if (f.field === 'firstname' && f.op !== 'is_empty' && f.op !== 'is_not_empty') {
+        const a = this.textSql(this.attribCol('firstname'), f.op, f.value);
+        const n = this.textSql('subscribers.name', f.op, f.value);
+        return `(${a} OR ${n})`;
+      }
+      return this.textSql(col, f.op, f.value);
+    },
+
+    applyFilters() {
+      const parts = [];
+      this.filters.forEach((f) => {
+        const sql = this.compileFilter(f);
+        if (!sql || sql === 'TRUE') return;
+        if (!parts.length) {
+          parts.push(`(${sql})`);
+          return;
+        }
+        const join = f.join === 'or' ? 'OR' : 'AND';
+        parts.push(`${join} (${sql})`);
+      });
+      this.queryParams.queryExp = parts.join(' ');
+      this.queryParams.search = '';
+      this.queryParams.page = 1;
+      if (this.queryParams.queryExp && !this.$can('subscribers:sql_query')) {
+        this.$utils.toast('Your role needs the subscribers query permission to use filters.', 'is-danger');
+        return;
+      }
+      this.querySubscribers();
+    },
+
+    columnDisplay(row, key) {
+      if (key === 'email') return row.email || '—';
+      if (key === 'firstname') {
+        return this.$utils.subscriberAttrib(row.attribs, 'firstname') || (row.name || '').split(' ')[0] || '—';
+      }
+      if (key === 'lastname') {
+        const last = this.$utils.subscriberAttrib(row.attribs, 'lastname');
+        if (last) return last;
+        const parts = String(row.name || '').trim().split(/\s+/);
+        return parts.length > 1 ? parts.slice(1).join(' ') : '—';
+      }
+      if (key === 'sms') return this.$utils.subscriberAttrib(row.attribs, 'SMS') || this.$utils.subscriberAttrib(row.attribs, 'sms') || '—';
+      if (key === 'whatsapp') return this.$utils.subscriberAttrib(row.attribs, 'whatsapp') || '—';
+      if (key === 'landline') return this.contactPhone(row);
+      if (key === 'extId') return this.$utils.subscriberAttrib(row.attribs, 'EXT_ID') || this.$utils.subscriberAttrib(row.attribs, 'ext_id') || '—';
+      if (key === 'timezone') return this.$utils.subscriberAttrib(row.attribs, 'CONTACT_TIMEZONE') || this.$utils.subscriberAttrib(row.attribs, 'timezone') || '—';
+      if (key === 'jobTitle') return this.$utils.subscriberAttrib(row.attribs, 'job_title') || this.$utils.subscriberAttrib(row.attribs, 'JOB_TITLE') || '—';
+      if (key === 'company') return this.$utils.subscriberAttrib(row.attribs, 'company') || '—';
+      if (key === 'lastChanged') return this.formatBrevoDate(row.updatedAt);
+      if (key === 'created') return this.formatBrevoDate(row.createdAt);
+      return '—';
+    },
+
+    goToPage(p) {
+      const page = Math.min(Math.max(1, p), this.totalPages);
+      this.querySubscribers({ page });
+    },
+
+    onPerPageChange(e) {
+      const perPage = parseInt(e.target.value, 10) || 20;
+      this.querySubscribers({ page: 1, perPage });
+    },
+
+    toggleAttrPicker() {
+      this.isAttrPickerOpen = !this.isAttrPickerOpen;
+      if (this.isAttrPickerOpen) this.attrSearch = '';
+    },
+
+    onColumnDragStart(idx, e) {
+      this.dragIndex = idx;
+      if (e.dataTransfer) {
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(idx));
+      }
+    },
+
+    onColumnDrop(idx) {
+      if (this.dragIndex === null || this.dragIndex === idx) {
+        this.dragIndex = null;
+        return;
+      }
+      const next = [...this.draftColumns];
+      const [moved] = next.splice(this.dragIndex, 1);
+      next.splice(idx, 0, moved);
+      this.draftColumns = next;
+      this.dragIndex = null;
+    },
+
+    onEditAttributes() {
+      this.isAttrPickerOpen = false;
+      this.$utils.toast('Add custom fields on a contact profile. They can then be shown as columns.');
+    },
+
+    onDocClick(e) {
+      if (!this.isAttrPickerOpen) return;
+      const root = this.$refs.attrPicker;
+      if (root && !root.contains(e.target)) {
+        this.isAttrPickerOpen = false;
+      }
     },
 
     toggleAdvancedSearch() {
@@ -599,11 +1017,14 @@ export default Vue.extend({
 
     openColumnsDrawer() {
       this.draftColumns = [...this.visibleColumns];
+      this.attrSearch = '';
+      this.isAttrPickerOpen = false;
       this.isColumnsDrawerOpen = true;
     },
 
     closeColumnsDrawer() {
       this.isColumnsDrawerOpen = false;
+      this.isAttrPickerOpen = false;
     },
 
     isColumnVisible(key) {
@@ -669,7 +1090,7 @@ export default Vue.extend({
     },
 
     onPageChange(p) {
-      this.querySubscribers({ page: p });
+      this.goToPage(p);
     },
 
     onSort(field, direction) {
@@ -680,7 +1101,6 @@ export default Vue.extend({
     // in this.queryExp.
     onSimpleQueryInput(v) {
       const q = v.replace(/'/, "''").trim();
-      this.queryParams.queryExp = '';
       this.queryParams.page = 1;
       this.queryParams.search = q.toLowerCase();
     },
@@ -720,15 +1140,17 @@ export default Vue.extend({
         search: this.queryParams.search,
         query: this.queryParams.queryExp,
         page: this.queryParams.page,
+        per_page: this.queryParams.perPage,
         subscription_status: this.queryParams.subStatus,
         order_by: this.queryParams.orderBy,
         order: this.queryParams.order,
       };
 
-      if (this.queryParams.queryExp) {
-        delete qp.search;
-      } else {
+      if (!this.queryParams.queryExp) {
         delete qp.query;
+      }
+      if (!this.queryParams.search) {
+        delete qp.search;
       }
 
       this.$nextTick(() => {
@@ -898,6 +1320,10 @@ export default Vue.extend({
       return (this.lists && this.lists.results) || [];
     },
 
+    fullQueryExp() {
+      return this.queryParams.queryExp || '';
+    },
+
     importRoute() {
       if (this.currentList) {
         return { name: 'import', query: { list_id: this.currentList.id } };
@@ -906,7 +1332,39 @@ export default Vue.extend({
     },
 
     columnOptions() {
-      return this.allColumnDefs.filter((c) => this.draftColumns.includes(c.key));
+      return this.draftColumns
+        .map((key) => this.allColumnDefs.find((c) => c.key === key))
+        .filter(Boolean);
+    },
+
+    visibleColumnDefs() {
+      return this.visibleColumns
+        .map((key) => this.allColumnDefs.find((c) => c.key === key))
+        .filter(Boolean);
+    },
+
+    addableColumns() {
+      const q = (this.attrSearch || '').trim().toLowerCase();
+      return this.allColumnDefs.filter((c) => {
+        if (this.draftColumns.includes(c.key)) return false;
+        if (!q) return true;
+        return c.label.toLowerCase().indexOf(q) > -1 || c.key.toLowerCase().indexOf(q) > -1;
+      });
+    },
+
+    totalPages() {
+      const per = this.subscribers.perPage || this.queryParams.perPage || 20;
+      const total = this.subscribers.total || 0;
+      return Math.max(1, Math.ceil(total / per));
+    },
+
+    pagerSummary() {
+      const total = this.subscribers.total || 0;
+      const per = this.subscribers.perPage || this.queryParams.perPage || 20;
+      if (!total) return '0 contacts';
+      const start = ((this.queryParams.page - 1) * per) + 1;
+      const end = Math.min(this.queryParams.page * per, total);
+      return `Showing ${start}–${end} of ${this.$utils.formatNumber(total)} contacts`;
     },
   },
 
@@ -933,9 +1391,11 @@ export default Vue.extend({
 
   destroyed() {
     this.$root.$off('page.refresh', this.querySubscribers);
+    document.removeEventListener('click', this.onDocClick);
   },
 
   mounted() {
+    document.addEventListener('click', this.onDocClick);
     this.loadSavedColumns();
     this.fetchFilterLists();
 

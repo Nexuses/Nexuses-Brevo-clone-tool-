@@ -591,3 +591,33 @@ SELECT
     (SELECT COUNT(DISTINCT subscriber_id) FROM link_clicks WHERE campaign_id = $1 AND subscriber_id IS NOT NULL) AS unique_clicks,
     (SELECT COUNT(*) FROM bounces WHERE campaign_id = $1) AS bounces;
 
+-- name: get-campaign-report-summary
+SELECT
+    (SELECT COUNT(DISTINCT subscriber_id) FROM campaign_views WHERE campaign_id = $1 AND subscriber_id IS NOT NULL) AS unique_opens,
+    (SELECT COUNT(*) FROM campaign_views WHERE campaign_id = $1) AS total_opens,
+    (SELECT COUNT(DISTINCT subscriber_id) FROM link_clicks WHERE campaign_id = $1 AND subscriber_id IS NOT NULL) AS unique_clicks,
+    (SELECT COUNT(*) FROM link_clicks WHERE campaign_id = $1) AS total_clicks,
+    (SELECT COUNT(DISTINCT sl.subscriber_id)
+        FROM subscriber_lists sl
+        JOIN campaign_lists cl ON cl.list_id = sl.list_id
+        WHERE cl.campaign_id = $1 AND sl.status = 'unsubscribed') AS unsubscribes,
+    (SELECT COUNT(*) FROM bounces WHERE campaign_id = $1 AND type = 'soft') AS soft_bounces,
+    (SELECT COUNT(*) FROM bounces WHERE campaign_id = $1 AND type = 'hard') AS hard_bounces,
+    (SELECT COUNT(*) FROM bounces WHERE campaign_id = $1 AND type = 'complaint') AS complaints,
+    (SELECT COUNT(*) FROM bounces WHERE campaign_id = $1) AS bounces;
+
+-- name: get-campaign-report-bounce-reasons
+SELECT type,
+    COALESCE(
+        NULLIF(CASE WHEN jsonb_typeof(COALESCE(meta, '{}'::jsonb)) = 'object' THEN meta->>'error' END, ''),
+        NULLIF(CASE WHEN jsonb_typeof(COALESCE(meta, '{}'::jsonb)) = 'object' THEN meta->>'reason' END, ''),
+        NULLIF(CASE WHEN jsonb_typeof(COALESCE(meta, '{}'::jsonb)) = 'object' THEN meta->>'message' END, ''),
+        NULLIF(source, ''),
+        'Unknown - Other reasons'
+    ) AS reason,
+    COUNT(*) AS count
+FROM bounces
+WHERE campaign_id = $1
+GROUP BY type, reason
+ORDER BY count DESC;
+

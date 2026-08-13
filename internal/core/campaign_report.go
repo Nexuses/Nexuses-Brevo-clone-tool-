@@ -55,3 +55,26 @@ func (c *Core) GetCampaignReportData(id int) (CampaignReportData, error) {
 
 	return out, nil
 }
+
+// GetCampaignReportSummary returns lightweight totals for the campaign report UI.
+func (c *Core) GetCampaignReportSummary(id int) (models.CampaignReportSummary, error) {
+	var out models.CampaignReportSummary
+	if err := c.q.GetCampaignReportSummary.Get(&out, id); err != nil {
+		return out, echo.NewHTTPError(http.StatusInternalServerError,
+			c.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.campaign}", "error", pqErrMsg(err)))
+	}
+	return out, nil
+}
+
+// GetCampaignReportBounceReasons returns bounce reason totals for a campaign.
+func (c *Core) GetCampaignReportBounceReasons(id int) ([]models.CampaignReportBounceReason, error) {
+	var out []models.CampaignReportBounceReason
+	if err := c.q.GetCampaignReportBounceReasons.Select(&out, id); err != nil {
+		return out, echo.NewHTTPError(http.StatusInternalServerError,
+			c.i18n.Ts("globals.messages.errorFetching", "name", "{globals.terms.campaign}", "error", pqErrMsg(err)))
+	}
+	if out == nil {
+		out = []models.CampaignReportBounceReason{}
+	}
+	return out, nil
+}

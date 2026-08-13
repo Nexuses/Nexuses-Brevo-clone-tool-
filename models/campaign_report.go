@@ -45,3 +45,23 @@ type CampaignReportUniqueCounts struct {
 	UniqueClicks int `db:"unique_clicks" json:"unique_clicks"`
 	Bounces      int `db:"bounces" json:"bounces"`
 }
+
+// CampaignReportSummary is the JSON payload for the campaign report UI.
+type CampaignReportSummary struct {
+	UniqueOpens  int `db:"unique_opens" json:"unique_opens"`
+	TotalOpens   int `db:"total_opens" json:"total_opens"`
+	UniqueClicks int `db:"unique_clicks" json:"unique_clicks"`
+	TotalClicks  int `db:"total_clicks" json:"total_clicks"`
+	Unsubscribes int `db:"unsubscribes" json:"unsubscribes"`
+	SoftBounces  int `db:"soft_bounces" json:"soft_bounces"`
+	HardBounces  int `db:"hard_bounces" json:"hard_bounces"`
+	Complaints   int `db:"complaints" json:"complaints"`
+	Bounces      int `db:"bounces" json:"bounces"`
+}
+
+// CampaignReportBounceReason is an aggregated bounce reason row.
+type CampaignReportBounceReason struct {
+	Type   string `db:"type" json:"type"`
+	Reason string `db:"reason" json:"reason"`
+	Count  int    `db:"count" json:"count"`
+}

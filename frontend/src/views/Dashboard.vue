@@ -48,13 +48,14 @@
       <div class="home-brevo__planned">
         <div class="home-brevo__planned-head">
           <h2>Planned for {{ plannedLabel }}</h2>
-          <router-link
+          <button
             v-if="$can('campaigns:manage')"
-            :to="{ name: 'campaign', params: { id: 'new' } }"
+            type="button"
             class="home-brevo__btn-dark"
+            @click="openCreateModal('standard')"
           >
             Create campaign
-          </router-link>
+          </button>
         </div>
 
         <div v-if="plannedItems.length === 0" class="home-brevo__empty">
@@ -179,13 +180,14 @@
       <article class="home-brevo__card home-brevo__last-campaigns">
         <header class="home-brevo__card-head">
           <h2>Your last campaigns</h2>
-          <router-link
+          <button
             v-if="$can('campaigns:manage')"
-            :to="{ name: 'campaign', params: { id: 'new' } }"
+            type="button"
             class="home-brevo__link"
+            @click="openCreateModal('standard')"
           >
             Create a campaign
-          </router-link>
+          </button>
         </header>
         <div v-if="recentCampaigns.length === 0" class="home-brevo__empty">
           No campaigns yet.
@@ -247,13 +249,14 @@
             Strengthen connections with timely and tailored messages, from welcome
             SMS to abandoned cart and order confirmation emails.
           </p>
-          <router-link
+          <button
             v-if="$can('campaigns:manage')"
-            :to="{ name: 'campaign', params: { id: 'new' } }"
+            type="button"
             class="home-brevo__btn-dark"
+            @click="openCreateModal('automated')"
           >
             Create automation
-          </router-link>
+          </button>
         </div>
       </article>
     </section>
@@ -267,6 +270,19 @@
         @finished="onTaskFinished"
       />
     </b-modal>
+
+    <b-modal
+      :active.sync="isCreateOpen"
+      :width="760"
+      scroll="keep"
+      class="create-campaign-form-modal"
+    >
+      <create-campaign-modal
+        v-if="isCreateOpen"
+        :start-section="createModalSection"
+        @close="isCreateOpen = false"
+      />
+    </b-modal>
   </section>
 </template>
 
@@ -274,12 +290,13 @@
 import dayjs from 'dayjs';
 import Vue from 'vue';
 import { mapState } from 'vuex';
+import CreateCampaignModal from '../components/CreateCampaignModal.vue';
 import TaskForm, { loadTasks } from '../components/TaskForm.vue';
 
 export default Vue.extend({
   name: 'Home',
 
-  components: { TaskForm },
+  components: { TaskForm, CreateCampaignModal },
 
   data() {
     return {
@@ -294,6 +311,8 @@ export default Vue.extend({
       weekdays: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'],
       isTaskFormVisible: false,
       editingTask: null,
+      isCreateOpen: false,
+      createModalSection: 'standard',
     };
   },
 
@@ -395,6 +414,11 @@ export default Vue.extend({
 
     onTaskFinished() {
       this.tasks = loadTasks();
+    },
+
+    openCreateModal(section) {
+      this.createModalSection = section || 'standard';
+      this.isCreateOpen = true;
     },
 
     fetchData() {

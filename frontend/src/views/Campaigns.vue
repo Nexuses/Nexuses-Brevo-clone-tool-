@@ -6,37 +6,24 @@
       <div class="campaigns-brevo__title-row">
         <h1 class="campaigns-brevo__title">Campaigns</h1>
         <div class="campaigns-brevo__actions">
-          <button type="button" class="campaigns-brevo__btn campaigns-brevo__btn--outline">
+          <button type="button" class="campaigns-brevo__btn campaigns-brevo__btn--outline" @click="onCreateFolder">
             <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
               <path d="M2.5 4.5h4l1.2 1.5H13.5v6.5a1 1 0 01-1 1h-10a1 1 0 01-1-1V5.5a1 1 0 011-1z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" />
             </svg>
             Create folder
           </button>
-          <button type="button" class="campaigns-brevo__btn campaigns-brevo__btn--ai">
-            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-              <path
-                d="M8 2.5l.7 2.1L10.8 5.3 8.7 6.4 8 8.5l-.7-2.1L5.2 5.3l2.1-.7L8 2.5z"
-                fill="currentColor"
-              />
-              <path
-                d="M12.5 8.5l.45 1.35 1.35.45-1.35.45-.45 1.35-.45-1.35L10.7 10.3l1.35-.45.45-1.35z"
-                fill="currentColor"
-              />
-              <path
-                d="M4.2 9.8l.35 1.05L5.6 11.2l-1.05.35-.35 1.05-.35-1.05L2.8 11.2l1.05-.35.35-1.05z"
-                fill="currentColor"
-              />
-            </svg>
-            Generate campaign with AI
-          </button>
-          <router-link
+          <button
             v-if="$can('campaigns:manage')"
-            :to="{ name: 'campaign', params: { id: 'new' } }"
+            type="button"
             class="campaigns-brevo__btn campaigns-brevo__btn--primary"
             data-cy="btn-new"
+            @click="openCreateModal('standard')"
           >
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M6 2v8M2 6h8" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" />
+            </svg>
             Create campaign
-          </router-link>
+          </button>
         </div>
       </div>
 
@@ -49,6 +36,15 @@
 
     <div class="campaigns-brevo__controls">
       <div class="campaigns-brevo__toolbar">
+        <label class="campaigns-brevo__check">
+          <input
+            type="checkbox"
+            :checked="allVisibleChecked"
+            :indeterminate.prop="someVisibleChecked"
+            aria-label="Select all campaigns"
+            @change="toggleSelectAllVisible"
+          />
+        </label>
         <form @submit.prevent="getCampaigns" class="campaigns-brevo__search">
           <b-field>
             <b-input
@@ -62,18 +58,45 @@
             />
           </b-field>
         </form>
-        <button type="button" class="campaigns-brevo__chip">
-          All statuses
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
-        <button type="button" class="campaigns-brevo__chip">
-          Select tags
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
-          </svg>
-        </button>
+
+        <div class="campaigns-brevo__dd" ref="statusDd">
+          <button type="button" class="campaigns-brevo__chip" @click.stop="toggleStatusMenu">
+            {{ statusFilterLabel }}
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <ul v-if="statusMenuOpen" class="campaigns-brevo__menu">
+            <li v-for="opt in statusOptions" :key="opt.value || 'all'">
+              <button type="button" class="campaigns-brevo__menu-item" :class="{ 'is-active': queryParams.status === opt.value }" @click="setStatusFilter(opt.value)">
+                <span v-if="opt.dot" class="campaigns-brevo__menu-dot" :class="'is-' + opt.dot" />
+                {{ opt.label }}
+              </button>
+            </li>
+          </ul>
+        </div>
+
+        <div class="campaigns-brevo__dd" ref="tagDd">
+          <button type="button" class="campaigns-brevo__chip" @click.stop="toggleTagMenu">
+            {{ tagFilterLabel }}
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
+              <path d="M3 4.5L6 7.5L9 4.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+            </svg>
+          </button>
+          <ul v-if="tagMenuOpen" class="campaigns-brevo__menu">
+            <li>
+              <button type="button" class="campaigns-brevo__menu-item" :class="{ 'is-active': !queryParams.tag }" @click="setTagFilter(null)">
+                All tags
+              </button>
+            </li>
+            <li v-for="tag in availableTags" :key="tag">
+              <button type="button" class="campaigns-brevo__menu-item" :class="{ 'is-active': queryParams.tag === tag }" @click="setTagFilter(tag)">
+                {{ tag }}
+              </button>
+            </li>
+            <li v-if="!availableTags.length" class="campaigns-brevo__menu-empty">No tags yet</li>
+          </ul>
+        </div>
       </div>
     </div>
 
@@ -88,10 +111,12 @@
       </div>
       <div class="campaigns-brevo__pager" v-if="campaigns.total > 0">
         <span class="campaigns-brevo__pager-range">{{ pageRangeLabel }}</span>
-        <span class="campaigns-brevo__pager-pages">
-          <span class="campaigns-brevo__pager-current">{{ queryParams.page }}</span>
-          of {{ totalPages }} pages
-        </span>
+        <label class="campaigns-brevo__pager-jump">
+          <select :value="queryParams.page" aria-label="Page" @change="onPageSelect">
+            <option v-for="p in totalPages" :key="p" :value="p">{{ p }}</option>
+          </select>
+        </label>
+        <span class="campaigns-brevo__pager-pages">of {{ totalPages }} pages</span>
         <button
           type="button"
           class="campaigns-brevo__pager-btn"
@@ -138,11 +163,20 @@
       @sort="onSort"
     >
       <b-table-column v-slot="props" cell-class="bv-campaign-cell">
-        <div class="bv-campaign-card" :set="stats = getCampaignStats(props.row)">
+        <div
+          class="bv-campaign-card"
+          :class="{ 'is-clickable': true }"
+          :set="stats = getCampaignStats(props.row)"
+          role="link"
+          tabindex="0"
+          @click="openCampaign(props.row, $event)"
+          @keydown.enter.prevent="openCampaign(props.row, $event)"
+        >
           <div class="bv-campaign-card__main">
             <router-link
               class="bv-campaign-card__title"
-              :to="{ name: 'campaign', params: { id: props.row.id } }"
+              :to="campaignTarget(props.row)"
+              @click.native.stop
             >
               {{ props.row.name }}
             </router-link>
@@ -160,41 +194,54 @@
           <div class="bv-campaign-card__metrics">
             <div class="bv-metric">
               <span class="bv-metric__lbl">Recipients</span>
-              <strong class="bv-metric__val">{{ $utils.formatNumber(recipientsCount(stats)) }}</strong>
-              <span class="bv-metric__pct">{{ pctLabel(recipientsCount(stats), recipientsCount(stats)) }}</span>
+              <strong class="bv-metric__val">{{ metricOrDash(props.row, recipientsCount(stats)) }}</strong>
+              <span class="bv-metric__pct">{{ metricPctOrDash(props.row, recipientsCount(stats), recipientsCount(stats)) }}</span>
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Opens</span>
-              <strong class="bv-metric__val">{{ $utils.formatNumber(metricVal(stats, ['views', 'opens', 'uniqueOpens', 'unique_opens'])) }}</strong>
-              <span class="bv-metric__pct">{{ pctLabel(metricVal(stats, ['views', 'opens', 'uniqueOpens', 'unique_opens']), sentCount(stats)) }}</span>
+              <strong class="bv-metric__val">{{ metricOrDash(props.row, metricVal(stats, ['views', 'opens', 'uniqueOpens', 'unique_opens'])) }}</strong>
+              <span class="bv-metric__pct">{{ metricPctOrDash(props.row, metricVal(stats, ['views', 'opens', 'uniqueOpens', 'unique_opens']), sentCount(stats)) }}</span>
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Clicks</span>
-              <strong class="bv-metric__val">{{ $utils.formatNumber(metricVal(stats, ['clicks'])) }}</strong>
-              <span class="bv-metric__pct">{{ pctLabel(metricVal(stats, ['clicks']), sentCount(stats)) }}</span>
+              <strong class="bv-metric__val">{{ metricOrDash(props.row, metricVal(stats, ['clicks'])) }}</strong>
+              <span class="bv-metric__pct">{{ metricPctOrDash(props.row, metricVal(stats, ['clicks']), sentCount(stats)) }}</span>
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Unsubscribed</span>
-              <strong class="bv-metric__val">0</strong>
-              <span class="bv-metric__pct">0%</span>
+              <strong class="bv-metric__val">{{ hasMetrics(props.row) ? '0' : '—' }}</strong>
+              <span class="bv-metric__pct">{{ hasMetrics(props.row) ? '0%' : '' }}</span>
             </div>
             <div class="bv-metric">
               <span class="bv-metric__lbl">Conversions</span>
               <strong class="bv-metric__val">—</strong>
-              <span class="bv-metric__pct">0%</span>
+              <span class="bv-metric__pct">{{ hasMetrics(props.row) ? '0%' : '' }}</span>
             </div>
           </div>
 
-          <div class="bv-campaign-card__actions">
+          <div class="bv-campaign-card__actions" @click.stop>
             <router-link
+              v-if="isEditableCampaign(props.row)"
+              class="bv-campaign-card__edit"
+              :to="campaignTarget(props.row)"
+              data-cy="btn-campaign-edit"
+              aria-label="Edit"
+            >
+              <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+                <path d="M3.5 12.8l8.4-8.4 2.7 2.7-8.4 8.4H3.5v-2.7z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" />
+                <path d="M10.6 5.7l1.7 1.7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+              </svg>
+            </router-link>
+            <router-link
+              v-else
               class="bv-campaign-card__report"
-              :to="{ name: 'campaign', params: { id: props.row.id }, query: { view: 'report' } }"
+              :to="campaignTarget(props.row)"
               data-cy="btn-campaign-view-report"
               aria-label="Report"
             >
               <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
-                <path d="M3.5 12.5V9.5M7.5 12.5V6.5M11.5 12.5V8M14.5 12.5V4.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" />
-                <path d="M3 14.5h12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" />
+                <path d="M3 13.5l3.2-3.2 2.3 2.3L15 6" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
+                <path d="M12 6h3v3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" />
               </svg>
             </router-link>
 
@@ -344,6 +391,19 @@
       :title="previewItem.name"
       @close="closePreview"
     />
+
+    <b-modal
+      :active.sync="isCreateOpen"
+      :width="760"
+      scroll="keep"
+      class="create-campaign-form-modal"
+    >
+      <create-campaign-modal
+        v-if="isCreateOpen"
+        :start-section="createModalSection"
+        @close="isCreateOpen = false"
+      />
+    </b-modal>
   </section>
 </template>
 
@@ -352,12 +412,14 @@ import dayjs from 'dayjs';
 import Vue from 'vue';
 import { mapState } from 'vuex';
 import CampaignPreview from '../components/CampaignPreview.vue';
+import CreateCampaignModal from '../components/CreateCampaignModal.vue';
 import EmptyPlaceholder from '../components/EmptyPlaceholder.vue';
 import MarketingSubnav from '../components/MarketingSubnav.vue';
 
 export default Vue.extend({
   components: {
     CampaignPreview,
+    CreateCampaignModal,
     EmptyPlaceholder,
     MarketingSubnav,
   },
@@ -365,15 +427,31 @@ export default Vue.extend({
   data() {
     return {
       previewItem: null,
+      isCreateOpen: false,
+      createModalSection: 'standard',
       queryParams: {
         page: 1,
         query: '',
+        status: '',
+        tag: null,
         orderBy: 'created_at',
         order: 'desc',
       },
       pollID: null,
       campaignStatsData: {},
       searchDebounce: null,
+      statusMenuOpen: false,
+      tagMenuOpen: false,
+      knownTags: [],
+      statusOptions: [
+        { value: '', label: 'All statuses' },
+        { value: 'draft', label: 'Draft', dot: 'draft' },
+        { value: 'finished', label: 'Sent', dot: 'sent' },
+        { value: 'scheduled', label: 'Scheduled', dot: 'scheduled' },
+        { value: 'running', label: 'Running', dot: 'running' },
+        { value: 'paused', label: 'Suspended', dot: 'suspended' },
+        { value: 'cancelled', label: 'Archived', dot: 'archived' },
+      ],
 
       // Table bulk row selection states.
       bulk: {
@@ -384,6 +462,11 @@ export default Vue.extend({
   },
 
   methods: {
+    openCreateModal(section) {
+      this.createModalSection = section || 'standard';
+      this.isCreateOpen = true;
+    },
+
     // Campaign statuses.
     canStart(c) {
       return c.status === 'draft' && !c.sendAt;
@@ -460,10 +543,10 @@ export default Vue.extend({
 
     statusLabel(c) {
       if (c.status === 'finished') return 'Sent';
-      if (c.status === 'running') return 'Sending';
+      if (c.status === 'running') return 'Running';
       if (c.status === 'scheduled') return 'Scheduled';
-      if (c.status === 'paused') return 'Paused';
-      if (c.status === 'cancelled') return 'Cancelled';
+      if (c.status === 'paused') return 'Suspended';
+      if (c.status === 'cancelled') return 'Archived';
       return 'Draft';
     },
 
@@ -477,19 +560,112 @@ export default Vue.extend({
       if (!d || !d.isValid()) return '';
       const when = d.format('MMM D, YYYY h:mm A');
 
-      if (c.status === 'finished') {
-        return `Sent on ${when}`;
-      }
+      if (c.status === 'finished') return `Sent on ${when}`;
       if (c.status === 'scheduled' && c.sendAt) {
         return `Scheduled for ${dayjs(c.sendAt).format('MMM D, YYYY h:mm A')}`;
       }
-      if (c.status === 'running') {
-        return when;
-      }
-      if (c.status === 'paused' || c.status === 'cancelled' || c.status === 'draft') {
-        return when;
-      }
+      if (c.status === 'running') return when;
+      if (c.status === 'draft') return `Last edited ${when}`;
+      if (c.status === 'paused' || c.status === 'cancelled') return `Last edited ${when}`;
       return when;
+    },
+
+    hasMetrics(c) {
+      return ['finished', 'running', 'paused', 'cancelled'].indexOf(c.status) > -1;
+    },
+
+    metricOrDash(c, val) {
+      if (!this.hasMetrics(c)) return '—';
+      return this.$utils.formatNumber(val || 0);
+    },
+
+    metricPctOrDash(c, num, den) {
+      if (!this.hasMetrics(c)) return '';
+      return this.pctLabel(num, den);
+    },
+
+    isEditableCampaign(c) {
+      return c.status === 'draft' || c.status === 'scheduled' || c.status === 'paused';
+    },
+
+    isReportCampaign(c) {
+      return c.status === 'finished' || c.status === 'cancelled' || c.status === 'running';
+    },
+
+    campaignTarget(c) {
+      if (this.isReportCampaign(c)) {
+        return { name: 'campaign', params: { id: c.id }, query: { view: 'report' } };
+      }
+      return { name: 'campaign', params: { id: c.id } };
+    },
+
+    openCampaign(c, e) {
+      if (e && e.target && e.target.closest) {
+        if (e.target.closest('.bv-campaign-card__actions, .checkbox-cell, input, button, .dropdown, a')) {
+          return;
+        }
+      }
+      this.$router.push(this.campaignTarget(c));
+    },
+
+    onCreateFolder() {
+      this.$utils.toast('Campaign folders coming soon');
+    },
+
+    toggleStatusMenu() {
+      this.tagMenuOpen = false;
+      this.statusMenuOpen = !this.statusMenuOpen;
+    },
+
+    toggleTagMenu() {
+      this.statusMenuOpen = false;
+      this.tagMenuOpen = !this.tagMenuOpen;
+    },
+
+    setStatusFilter(status) {
+      this.queryParams.status = status || '';
+      this.queryParams.page = 1;
+      this.statusMenuOpen = false;
+      this.getCampaigns();
+    },
+
+    setTagFilter(tag) {
+      this.queryParams.tag = tag;
+      this.queryParams.page = 1;
+      this.tagMenuOpen = false;
+      this.getCampaigns();
+    },
+
+    toggleSelectAllVisible(e) {
+      if (e.target.checked) {
+        this.bulk.checked = [...(this.campaigns.results || [])];
+      } else {
+        this.bulk.checked = [];
+        this.bulk.all = false;
+      }
+    },
+
+    onPageSelect(e) {
+      this.onPageChange(parseInt(e.target.value, 10) || 1);
+    },
+
+    onDocClick(e) {
+      if (this.statusMenuOpen && this.$refs.statusDd && !this.$refs.statusDd.contains(e.target)) {
+        this.statusMenuOpen = false;
+      }
+      if (this.tagMenuOpen && this.$refs.tagDd && !this.$refs.tagDd.contains(e.target)) {
+        this.tagMenuOpen = false;
+      }
+    },
+
+    rememberTags(rows) {
+      const next = new Set(this.knownTags);
+      (rows || []).forEach((c) => {
+        (c.tags || []).forEach((t) => {
+          if (t) next.add(t);
+        });
+      });
+      this.knownTags = Array.from(next).sort();
     },
 
     onSearchInput() {
@@ -522,12 +698,21 @@ export default Vue.extend({
     },
 
     getCampaigns() {
-      this.$api.getCampaigns({
+      const params = {
         page: this.queryParams.page,
         query: this.queryParams.query.replace(/[^\p{L}\p{N}\s]/gu, ' '),
         order_by: this.queryParams.orderBy,
         order: this.queryParams.order,
         no_body: true,
+      };
+      if (this.queryParams.status) {
+        params.status = this.queryParams.status;
+      }
+      if (this.queryParams.tag) {
+        params.tag = this.queryParams.tag;
+      }
+      this.$api.getCampaigns(params).then((data) => {
+        this.rememberTags((data && data.results) || this.campaigns.results || []);
       });
     },
 
@@ -685,6 +870,29 @@ export default Vue.extend({
       return this.bulk.all ? this.campaigns.total : this.bulk.checked.length;
     },
 
+    allVisibleChecked() {
+      const rows = this.campaigns.results || [];
+      return rows.length > 0 && this.bulk.checked.length === rows.length;
+    },
+
+    someVisibleChecked() {
+      const rows = this.campaigns.results || [];
+      return this.bulk.checked.length > 0 && this.bulk.checked.length < rows.length;
+    },
+
+    statusFilterLabel() {
+      const opt = this.statusOptions.find((o) => o.value === this.queryParams.status);
+      return (opt && opt.label) || 'All statuses';
+    },
+
+    tagFilterLabel() {
+      return this.queryParams.tag || 'Select tags';
+    },
+
+    availableTags() {
+      return this.knownTags;
+    },
+
     totalPages() {
       const per = this.campaigns.perPage || 20;
       const total = this.campaigns.total || 0;
@@ -706,11 +914,17 @@ export default Vue.extend({
   },
 
   mounted() {
+    document.addEventListener('click', this.onDocClick);
     this.getCampaigns();
     this.pollStats();
+    if (this.$route.query.create) {
+      const section = this.$route.query.section === 'automated' ? 'automated' : 'standard';
+      this.openCreateModal(section);
+    }
   },
 
   destroyed() {
+    document.removeEventListener('click', this.onDocClick);
     clearInterval(this.pollID);
     clearTimeout(this.searchDebounce);
     this.$root.$off('page.refresh', this.getCampaigns);

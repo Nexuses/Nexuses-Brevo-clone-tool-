@@ -686,6 +686,28 @@ func (a *App) GetCampaignAnalyticsRecords(c echo.Context) error {
 	}})
 }
 
+// GetCampaignReportSummary returns JSON totals for the campaign report UI.
+func (a *App) GetCampaignReportSummary(c echo.Context) error {
+	id, err := strconv.Atoi(c.Param("id"))
+	if err != nil || id <= 0 {
+		return echo.NewHTTPError(http.StatusBadRequest, a.i18n.Ts("globals.messages.invalidID"))
+	}
+
+	summary, err := a.core.GetCampaignReportSummary(id)
+	if err != nil {
+		return err
+	}
+	reasons, err := a.core.GetCampaignReportBounceReasons(id)
+	if err != nil {
+		return err
+	}
+
+	return c.JSON(http.StatusOK, okResp{map[string]any{
+		"summary":        summary,
+		"bounce_reasons": reasons,
+	}})
+}
+
 // ExportCampaignReport streams an XLSX campaign result report.
 func (a *App) ExportCampaignReport(c echo.Context) error {
 	id, err := strconv.Atoi(c.Param("id"))
