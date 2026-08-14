@@ -6691,15 +6691,21 @@ section.lists {
       margin-bottom: 0;
     }
 
+    .control.has-icons-left {
+      display: block;
+    }
+
     .input,
     .control .input {
       border-radius: 6px !important;
       border-color: $c-border !important;
       min-height: 36px !important;
       height: 36px !important;
+      line-height: 34px !important;
       font-size: 13px !important;
       box-shadow: none !important;
       background: #fff !important;
+      padding-left: 34px !important;
 
       &:focus {
         border-color: $c-purple !important;
@@ -6707,8 +6713,16 @@ section.lists {
       }
     }
 
-    .icon {
+    // Buefy sizes the icon for its default 40px input; the search box is 36px,
+    // so pin the icon to the field's own box to keep it centred on the text.
+    .control.has-icons-left .icon,
+    .control.has-icons-left .icon.is-left {
+      top: 0;
+      left: 0;
+      width: 34px;
+      height: 36px;
       color: $c-muted;
+      pointer-events: none;
     }
   }
 
@@ -9974,6 +9988,11 @@ section.campaign.bv-page {
     &.is-wide {
       width: min(860px, 100%);
     }
+
+    &.is-preview-test {
+      width: min(960px, 100%);
+      overflow: hidden;
+    }
   }
 
   &__head {
@@ -10013,6 +10032,85 @@ section.campaign.bv-page {
     @media (max-width: 720px) {
       grid-template-columns: 1fr;
     }
+  }
+
+  &__split.is-preview-test {
+    grid-template-columns: minmax(0, 1fr) 340px;
+    align-items: start;
+    gap: 1.75rem;
+    padding-bottom: 1.25rem;
+
+    @media (max-width: 860px) {
+      grid-template-columns: minmax(0, 1fr);
+    }
+  }
+
+  &__test {
+    min-width: 0;
+
+    .taginput .taginput-container {
+      min-height: 44px;
+      padding: 0.3rem 0.5rem;
+      align-items: center;
+      border-radius: 8px;
+    }
+
+    // The icon is absolutely positioned inside the inner control, so the input's
+    // left padding has to match the icon's width or the two overlap.
+    .taginput .taginput-container .autocomplete {
+      .control.has-icons-left .icon.is-left,
+      .icon.is-left {
+        top: 0;
+        left: 0;
+        width: 2rem;
+        height: 100%;
+        color: #9ca3af;
+        pointer-events: none;
+      }
+
+      input {
+        padding: 0 0.5rem 0 2rem !important;
+        height: 32px !important;
+        min-height: 32px !important;
+        line-height: 32px !important;
+        border: 0;
+        box-shadow: none;
+        font-size: 0.95rem;
+      }
+    }
+
+    .taginput .tag {
+      margin: 0.15rem 0.35rem 0.15rem 0;
+    }
+  }
+
+  // The email body is authored at ~600px, so scale it down to fit the
+  // column instead of clipping it behind scrollbars.
+  &__preview {
+    position: relative;
+    width: 340px;
+    height: 460px;
+    border: 1px solid #e5e7eb;
+    border-radius: 10px;
+    background: #fff;
+    overflow: hidden;
+
+    @media (max-width: 860px) {
+      width: 100%;
+      max-width: 340px;
+    }
+  }
+
+  &__preview-frame {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 640px;
+    height: 866px;
+    border: 0;
+    background: #fff;
+    transform: scale(0.53);
+    transform-origin: top left;
   }
 
   &__foot {

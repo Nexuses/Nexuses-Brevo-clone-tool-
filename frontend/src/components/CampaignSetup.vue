@@ -519,13 +519,13 @@
     <!-- Preview & Test modal -->
     <div v-if="panel === 'previewTest'" class="campaign-brevo-modal" role="dialog" aria-modal="true" aria-labelledby="pt-title">
       <button type="button" class="campaign-brevo-modal__backdrop" aria-label="Close" @click="closePanel" />
-      <div class="campaign-brevo-modal__card is-wide">
+      <div class="campaign-brevo-modal__card is-wide is-preview-test">
         <header class="campaign-brevo-modal__head">
           <h2 id="pt-title">Preview &amp; Test</h2>
           <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
         </header>
-        <div class="campaign-brevo-modal__body campaign-brevo-modal__split">
-          <div>
+        <div class="campaign-brevo-modal__body campaign-brevo-modal__split is-preview-test">
+          <div class="campaign-brevo-modal__test">
             <p class="campaign-brevo__hint">Send a test to check rendering before scheduling.</p>
             <b-taginput
               v-model="form.testEmails"
@@ -545,13 +545,14 @@
             </button>
             <p v-if="isNew" class="campaign-brevo__hint mt-2">Save the campaign first to send a test.</p>
           </div>
-          <iframe
-            v-if="campaignId"
-            class="campaign-brevo__preview is-tall"
-            :src="previewSrc"
-            title="Campaign preview"
-            sandbox="allow-scripts"
-          />
+          <div v-if="campaignId" class="campaign-brevo-modal__preview">
+            <iframe
+              class="campaign-brevo-modal__preview-frame"
+              :src="previewSrc"
+              title="Campaign preview"
+              sandbox="allow-scripts"
+            />
+          </div>
         </div>
       </div>
     </div>
