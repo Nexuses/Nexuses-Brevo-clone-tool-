@@ -292,6 +292,14 @@ export const getCampaigns = async (params) => http.get('/api/campaigns', {
   camelCase: (keyPath) => !keyPath.startsWith('.results.*.headers'),
 });
 
+// Same endpoint as getCampaigns, but does not write the shared Vuex store.
+// Use this for filtered/paginated Campaigns page queries to avoid races.
+export const queryCampaigns = async (params) => http.get('/api/campaigns', {
+  params,
+  loading: models.campaigns,
+  camelCase: (keyPath) => !keyPath.startsWith('.results.*.headers'),
+});
+
 export const getCampaign = async (id) => http.get(`/api/campaigns/${id}`, {
   loading: models.campaigns,
   camelCase: (keyPath) => !keyPath.startsWith('.headers'),

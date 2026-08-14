@@ -13,9 +13,11 @@
         <b-datepicker
           v-model="dateRange"
           range
+          position="is-bottom-left"
           placeholder="Select date range"
           icon="calendar-clock"
           :editable="false"
+          :mobile-modal="false"
           @input="onDateChange"
         />
       </div>

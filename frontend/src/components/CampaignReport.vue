@@ -1,8 +1,17 @@
 <template>
   <section class="campaign-report" data-ui="brevo-report">
     <header class="campaign-report__top">
-      <router-link :to="{ name: 'campaigns' }" class="campaign-report__back" aria-label="Back">
-        <b-icon icon="arrow-left" />
+      <router-link :to="{ name: 'campaigns' }" class="campaign-report__back" aria-label="Back to campaigns">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+          <path
+            d="M11.5 4.5L7 9l4.5 4.5"
+            stroke="currentColor"
+            stroke-width="1.7"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          />
+        </svg>
+        <span>Back</span>
       </router-link>
 
       <div class="campaign-report__thumb" aria-hidden="true">
@@ -14,7 +23,10 @@
           tabindex="-1"
         />
         <div v-else class="campaign-report__thumb-inner">
-          <b-icon icon="email-outline" size="is-large" />
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+            <rect x="3" y="5" width="18" height="14" rx="2" stroke="currentColor" stroke-width="1.5" />
+            <path d="M3.5 7l8.5 6 8.5-6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" />
+          </svg>
         </div>
       </div>
 
@@ -41,20 +53,49 @@
       </div>
 
       <div class="campaign-report__actions">
-        <button type="button" class="campaign-report__icon-btn" aria-label="Share" @click="onShare">
-          <b-icon icon="share-variant-outline" />
+        <button
+          type="button"
+          class="campaign-report__icon-btn"
+          aria-label="Copy report link"
+          title="Copy report link"
+          @click="onShare"
+        >
+          <svg width="18" height="18" viewBox="0 0 18 18" fill="none" aria-hidden="true">
+            <rect
+              x="6.25"
+              y="6.25"
+              width="8.5"
+              height="8.5"
+              rx="1.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+            />
+            <path
+              d="M4.5 11.75H3.75A1.5 1.5 0 012.25 10.25V3.75A1.5 1.5 0 013.75 2.25h6.5A1.5 1.5 0 0111.75 3.75V4.5"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+            />
+          </svg>
         </button>
-        <b-button
+        <a
           v-if="canExport"
-          tag="a"
+          class="campaign-report__export-btn"
           :href="`/api/campaigns/${campaign.id}/report`"
           target="_blank"
           rel="noopener noreferrer"
-          type="is-light"
-          icon-left="download-outline"
         >
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path
+              d="M8 2.5v7M5 7l3 3 3-3M3 12.5h10"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            />
+          </svg>
           Export report
-        </b-button>
+        </a>
       </div>
     </header>
 

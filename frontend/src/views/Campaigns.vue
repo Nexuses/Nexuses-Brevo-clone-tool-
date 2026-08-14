@@ -39,13 +39,15 @@
         <form @submit.prevent="getCampaigns" class="campaigns-brevo__search">
           <b-field>
             <b-input
-              v-model="queryParams.query"
+              :value="queryParams.query"
               name="query"
               expanded
               placeholder="Search for a campaign"
               icon="magnify"
               ref="query"
+              data-cy="query"
               @input="onSearchInput"
+              @keyup.native.enter="getCampaigns"
             />
           </b-field>
         </form>
@@ -418,6 +420,12 @@ export default Vue.extend({
       previewItem: null,
       isCreateOpen: false,
       createModalSection: 'standard',
+      campaigns: {
+        results: [],
+        total: 0,
+        perPage: 20,
+        page: 1,
+      },
       queryParams: {
         page: 1,
         query: '',
@@ -429,6 +437,7 @@ export default Vue.extend({
       pollID: null,
       campaignStatsData: {},
       searchDebounce: null,
+      campaignsSearchReqId: 0,
       statusMenuOpen: false,
       tagMenuOpen: false,
       knownTags: [],
@@ -665,7 +674,8 @@ export default Vue.extend({
       this.knownTags = Array.from(next).sort();
     },
 
-    onSearchInput() {
+    onSearchInput(value) {
+      this.queryParams.query = value == null ? '' : String(value);
       clearTimeout(this.searchDebounce);
       this.searchDebounce = setTimeout(() => {
         this.queryParams.page = 1;
@@ -695,21 +705,36 @@ export default Vue.extend({
     },
 
     getCampaigns() {
+      const cleanedQuery = (this.queryParams.query || '')
+        .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
       const params = {
         page: this.queryParams.page,
-        query: this.queryParams.query.replace(/[^\p{L}\p{N}\s]/gu, ' '),
         order_by: this.queryParams.orderBy,
         order: this.queryParams.order,
         no_body: true,
       };
+      if (cleanedQuery) {
+        params.query = cleanedQuery;
+      }
       if (this.queryParams.status) {
         params.status = this.queryParams.status;
       }
       if (this.queryParams.tag) {
         params.tag = this.queryParams.tag;
       }
-      this.$api.getCampaigns(params).then((data) => {
-        this.rememberTags((data && data.results) || this.campaigns.results || []);
+      const reqId = (this.campaignsSearchReqId || 0) + 1;
+      this.campaignsSearchReqId = reqId;
+      this.$api.queryCampaigns(params).then((data) => {
+        if (reqId !== this.campaignsSearchReqId) return;
+        this.campaigns = data || {
+          results: [],
+          total: 0,
+          perPage: 20,
+          page: 1,
+        };
+        this.rememberTags((data && data.results) || []);
       });
     },
 
@@ -847,7 +872,10 @@ export default Vue.extend({
           params.id = this.bulk.checked.map((c) => c.id);
         } else {
           // 'All' is selected, delete by query.
-          params.query = this.queryParams.query.replace(/[^\p{L}\p{N}\s]/gu, ' ');
+          params.query = (this.queryParams.query || '')
+            .replace(/[^\p{L}\p{N}\s]/gu, ' ')
+            .replace(/\s+/g, ' ')
+            .trim();
           params.all = this.bulk.all;
         }
 
@@ -871,7 +899,7 @@ export default Vue.extend({
   },
 
   computed: {
-    ...mapState(['campaigns', 'loading']),
+    ...mapState(['loading']),
 
     numSelectedCampaigns() {
       return this.bulk.all ? this.campaigns.total : this.bulk.checked.length;

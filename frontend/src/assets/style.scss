@@ -1182,7 +1182,7 @@ $bv-home-purple: #635BFF;
 $bv-home-purple-hover: #5249E8;
 $bv-home-cream: #FDFBF7;
 $bv-home-cream-border: #EDE8DF;
-$bv-home-bg: #F7F8FA;
+$bv-home-bg: #FFFFFF;
 $bv-home-text: #1A1C21;
 $bv-home-muted: #63666A;
 $bv-home-border: #E5E7EB;
@@ -1793,18 +1793,18 @@ section.home-brevo {
 /* Soft page background when home is active */
 .main:has(> .home-brevo),
 .main:has(.home-brevo) {
-  background: $bv-home-bg !important;
+  background: #FFFFFF !important;
 }
 
 /* Brevo-style campaign report */
 .main:has(.campaign.is-report),
 .main:has(.campaign-report) {
-  background: #F7F8F9 !important;
+  background: #FFFFFF !important;
 }
 
 section.campaign.bv-page.is-report {
   max-width: none;
-  background: #F7F8F9;
+  background: #FFFFFF;
   margin: -32px -40px -40px;
   padding: 24px 32px 48px;
   min-height: calc(100vh - 4rem);
@@ -1823,12 +1823,27 @@ section.campaign-report {
   }
 
   .campaign-report__back {
-    color: #5B4EE5;
-    margin-top: 0.35rem;
     display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    margin-top: 0.35rem;
+    padding: 0.35rem 0.55rem 0.35rem 0.3rem;
+    border-radius: 8px;
+    color: #5B4EE5;
+    font-size: 0.875rem;
+    font-weight: 600;
+    line-height: 1;
+    text-decoration: none;
+    white-space: nowrap;
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
 
     &:hover {
       color: darken(#5B4EE5, 8%);
+      background: rgba(91, 78, 229, 0.08);
     }
   }
 
@@ -1869,15 +1884,56 @@ section.campaign-report {
     border-radius: 8px;
     width: 40px;
     height: 40px;
+    padding: 0;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    color: $bv-grey-700;
+    color: #4B5563;
     cursor: pointer;
+    flex-shrink: 0;
+
+    svg {
+      display: block;
+      width: 18px;
+      height: 18px;
+    }
+
+    .icon,
+    .mdi {
+      display: none !important;
+    }
 
     &:hover {
       border-color: #5B4EE5;
       color: #5B4EE5;
+      background: #FAFAFF;
+    }
+  }
+
+  .campaign-report__export-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    height: 40px;
+    padding: 0 0.9rem;
+    border: 1px solid $bv-grey-200;
+    border-radius: 8px;
+    background: $white;
+    color: #374151;
+    font-size: 0.875rem;
+    font-weight: 600;
+    text-decoration: none;
+    white-space: nowrap;
+
+    svg {
+      display: block;
+      flex-shrink: 0;
+    }
+
+    &:hover {
+      border-color: #5B4EE5;
+      color: #5B4EE5;
+      background: #FAFAFF;
     }
   }
 
@@ -2781,9 +2837,47 @@ section.lists {
 
 /* Marketing — Statistics & Templates */
 .statistics-page {
+  overflow: visible;
+
+  .statistics-brevo__header {
+    overflow: visible;
+    position: relative;
+    z-index: 20;
+  }
+
   .stats-date-range {
     max-width: 320px;
-    margin: 0.5rem 0 1.25rem;
+    margin: 0;
+    flex-shrink: 0;
+    position: relative;
+    z-index: 25;
+    overflow: visible;
+
+    .datepicker,
+    .dropdown,
+    .control,
+    .field {
+      overflow: visible;
+    }
+
+    .dropdown-menu {
+      left: auto !important;
+      right: 0 !important;
+      top: calc(100% + 4px) !important;
+      min-width: max-content;
+      z-index: 40;
+    }
+
+    .datepicker-header,
+    .datepicker-content,
+    .dropdown-content {
+      overflow: visible;
+    }
+
+    .datepicker-content {
+      display: flex;
+      flex-wrap: nowrap;
+    }
   }
 
   .stats-summary {
@@ -4539,7 +4633,7 @@ section.lists {
 }
 
 .main:has(.contacts-brevo) {
-  background: #F7F8F9 !important;
+  background: #FFFFFF !important;
   padding-top: 0.5rem !important;
 }
 
@@ -6736,7 +6830,7 @@ section.lists {
 }
 
 .main:has(.campaigns-brevo) {
-  background: #F9FAFB !important;
+  background: #FFFFFF !important;
 
   .campaigns-brevo .b-table.bv-campaigns-table,
   .campaigns-brevo .bv-campaigns-table {
@@ -8757,8 +8851,11 @@ section.settings.bv-page {
   }
 }
 
-.main:has(.settings-brevo) {
-  background: #F7F8F9 !important;
+.main:has(.settings-brevo),
+.main:has(.statistics-page),
+.main:has(.statistics-brevo) {
+  background: #FFFFFF !important;
+  overflow: visible !important;
 }
 
 .settings-brevo {
@@ -9150,7 +9247,7 @@ section.campaign.bv-page {
 
 .main:has(.campaign.is-setup),
 .main:has(.campaign-brevo:not(.is-design)) {
-  background: #F7F8F9 !important;
+  background: #FFFFFF !important;
   padding-top: 20px !important;
 }
 
@@ -10252,7 +10349,7 @@ section.campaign.bv-page {
 .main:has(.templates-brevo),
 .main:has(.roles-brevo),
 .main:has(.users-brevo) {
-  background: #F9FAFB !important;
+  background: #FFFFFF !important;
 }
 
 .users-brevo__table .bv-link,
