@@ -11,6 +11,12 @@
         :maxlength="300" required type="url" pattern="https?://.*" />
     </b-field>
 
+    <b-field :label="$t('settings.general.trackingURL')" label-position="on-border"
+      :message="$t('settings.general.trackingURLHelp')">
+      <b-input v-model="data['app.tracking_url']" name="app.tracking_url"
+        placeholder="https://tracking.example.com" :maxlength="300" type="url" pattern="https?://.*" />
+    </b-field>
+
     <div class="columns">
       <div class="column is-6">
         <b-field :label="$t('settings.general.logoURL')" label-position="on-border"

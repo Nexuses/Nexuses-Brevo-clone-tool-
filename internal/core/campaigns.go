@@ -202,6 +202,7 @@ func (c *Core) CreateCampaign(o models.Campaign, listIDs []int, mediaIDs []int) 
 		pq.Array(mediaIDs),
 		o.BodySource,
 		o.ReplyTo,
+		o.TrackingDomainID,
 	); err != nil {
 		if err == sql.ErrNoRows {
 			return models.Campaign{}, echo.NewHTTPError(http.StatusBadRequest, c.i18n.T("campaigns.noSubs"))
@@ -498,6 +499,9 @@ func (c *Core) RegisterCampaignView(campUUID, subUUID string) error {
 func (c *Core) GetLinkURL(linkUUID string) (string, error) {
 	var url string
 	if err := c.q.GetLinkURL.Get(&url, linkUUID); err != nil {
+		if err == sql.ErrNoRows {
+			return "", echo.NewHTTPError(http.StatusNotFound, c.i18n.Ts("public.invalidLink"))
+		}
 		c.log.Printf("error getting link URL: %s", err)
 		return "", echo.NewHTTPError(http.StatusInternalServerError, c.i18n.Ts("public.errorProcessingRequest"))
 	}
@@ -509,7 +513,7 @@ func (c *Core) RegisterCampaignLinkClick(linkUUID, campUUID, subUUID string) (st
 	var url string
 	if err := c.q.RegisterLinkClick.Get(&url, linkUUID, campUUID, subUUID); err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Column == "link_id" {
-			return "", echo.NewHTTPError(http.StatusBadRequest, c.i18n.Ts("public.invalidLink"))
+			return "", echo.NewHTTPError(http.StatusNotFound, c.i18n.Ts("public.invalidLink"))
 		}
 
 		c.log.Printf("error registering link click: %s", err)

@@ -15,6 +15,7 @@ import (
 	"github.com/Masterminds/sprig/v3"
 	"github.com/knadh/listmonk/internal/i18n"
 	"github.com/knadh/listmonk/internal/notifs"
+	"github.com/knadh/listmonk/internal/trackingdomain"
 	"github.com/knadh/listmonk/models"
 	"golang.org/x/text/cases"
 	"golang.org/x/text/language"
@@ -132,6 +133,7 @@ type Config struct {
 	ViewTrackURL          string
 	ArchiveURL            string
 	RootURL               string
+	TrackingURL           string
 	UnsubHeader           bool
 
 	// Interval to scan the DB for active campaign checkpoints.
@@ -356,7 +358,7 @@ func (m *Manager) TemplateFuncs(c *models.Campaign) template.FuncMap {
 				subUUID = dummyUUID
 			}
 
-			return m.trackLink(msg.Campaign.ApplyTrackingParams(url), msg.Campaign.UUID, subUUID)
+			return m.trackLink(msg.Campaign.ApplyTrackingParams(url), msg.Campaign, subUUID)
 		},
 		"TrackView": func(msg *CampaignMessage) template.HTML {
 			if m.cfg.DisableTracking || !msg.Campaign.TrackViews(m.cfg.DisableTracking) {
@@ -368,8 +370,9 @@ func (m *Manager) TemplateFuncs(c *models.Campaign) template.FuncMap {
 				subUUID = dummyUUID
 			}
 
+			base := m.trackingBase(msg.Campaign)
 			return template.HTML(fmt.Sprintf(`<img src="%s" alt="" />`,
-				fmt.Sprintf(m.cfg.ViewTrackURL, msg.Campaign.UUID, subUUID)))
+				trackingdomain.ViewTrackPath(base, msg.Campaign.UUID, subUUID)))
 		},
 		"UnsubscribeURL": func(msg *CampaignMessage) string {
 			return msg.unsubURL
@@ -587,19 +590,33 @@ func (m *Manager) getCurrentCampaigns() ([]int64, []int64) {
 	return ids, counts
 }
 
+// trackingBase returns the click/view tracking base URL for a campaign.
+func (m *Manager) trackingBase(c *models.Campaign) string {
+	var verified string
+	if c != nil && c.TrackingDomain.Valid {
+		verified = c.TrackingDomain.String
+	}
+	return trackingdomain.ResolveTrackingBase(verified, m.cfg.TrackingURL, m.cfg.RootURL)
+}
+
 // trackLink register a URL and return its UUID to be used in message templates
 // for tracking links.
-func (m *Manager) trackLink(url, campUUID, subUUID string) string {
+func (m *Manager) trackLink(url string, c *models.Campaign, subUUID string) string {
 	if m.cfg.DisableTracking || url == "" {
 		return url
 	}
 
 	url = strings.ReplaceAll(url, "&amp;", "&")
+	base := m.trackingBase(c)
+	campUUID := ""
+	if c != nil {
+		campUUID = c.UUID
+	}
 
 	m.linksMut.RLock()
 	if uu, ok := m.links[url]; ok {
 		m.linksMut.RUnlock()
-		return fmt.Sprintf(m.cfg.LinkTrackURL, uu, campUUID, subUUID)
+		return trackingdomain.LinkTrackPath(base, uu, campUUID, subUUID)
 	}
 	m.linksMut.RUnlock()
 
@@ -616,7 +633,7 @@ func (m *Manager) trackLink(url, campUUID, subUUID string) string {
 	m.links[url] = uu
 	m.linksMut.Unlock()
 
-	return fmt.Sprintf(m.cfg.LinkTrackURL, uu, campUUID, subUUID)
+	return trackingdomain.LinkTrackPath(base, uu, campUUID, subUUID)
 }
 
 // sendNotif sends a notification to registered admin e-mails.

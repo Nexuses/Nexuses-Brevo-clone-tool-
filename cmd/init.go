@@ -49,6 +49,7 @@ import (
 	"github.com/knadh/listmonk/internal/messenger/postback"
 	"github.com/knadh/listmonk/internal/notifs"
 	"github.com/knadh/listmonk/internal/subimporter"
+	"github.com/knadh/listmonk/internal/trackingdomain"
 	"github.com/knadh/listmonk/models"
 	"github.com/knadh/stuffbin"
 	"github.com/labstack/echo/v4"
@@ -67,6 +68,7 @@ const (
 // UrlConfig contains various URL constants used in the app.
 type UrlConfig struct {
 	RootURL      string `koanf:"root_url"`
+	TrackingURL  string `koanf:"tracking_url"`
 	LogoURL      string `koanf:"logo_url"`
 	FaviconURL   string `koanf:"favicon_url"`
 	LoginURL     string `koanf:"login_url"`
@@ -456,12 +458,35 @@ func initSettings(query string, db *sqlx.DB, ko *koanf.Koanf) {
 
 func initUrlConfig(ko *koanf.Koanf) *UrlConfig {
 	root := strings.TrimSuffix(ko.String("app.root_url"), "/")
+	trackingRaw := ko.String("app.tracking_url")
+
+	// DB settings are loaded after the normal environment provider. Read these
+	// deployment variables explicitly so operators can override the persisted
+	// default without hardcoding a production hostname in the application.
+	if value := strings.TrimSpace(os.Getenv("PLATFORM_TRACKING_DOMAIN")); value != "" {
+		trackingRaw = value
+	} else if value := strings.TrimSpace(os.Getenv("LISTMONK_app__tracking_url")); value != "" {
+		trackingRaw = value
+	} else if value := strings.TrimSpace(os.Getenv("LISTMONK_APP__TRACKING_URL")); value != "" {
+		trackingRaw = value
+	}
+
+	tracking, err := trackingdomain.NormalizeTrackingURL(trackingRaw)
+	if err != nil {
+		lo.Fatalf("invalid app.tracking_url: %v", err)
+	}
+	// Platform/default tracking base falls back to root_url when empty.
+	trackBase := tracking
+	if trackBase == "" {
+		trackBase = root
+	}
 
 	return &UrlConfig{
-		RootURL:    root,
-		LogoURL:    ko.String("app.logo_url"),
-		FaviconURL: ko.String("app.favicon_url"),
-		LoginURL:   path.Join(uriAdmin, "/login"),
+		RootURL:     root,
+		TrackingURL: tracking,
+		LogoURL:     ko.String("app.logo_url"),
+		FaviconURL:  ko.String("app.favicon_url"),
+		LoginURL:    path.Join(uriAdmin, "/login"),
 
 		// Static URLS.
 		// url.com/subscription/{campaign_uuid}/{subscriber_uuid}
@@ -470,8 +495,8 @@ func initUrlConfig(ko *koanf.Koanf) *UrlConfig {
 		// url.com/subscription/optin/{subscriber_uuid}
 		OptinURL: fmt.Sprintf("%s/subscription/optin/%%s?%%s", root),
 
-		// url.com/link/{campaign_uuid}/{subscriber_uuid}/{link_uuid}
-		LinkTrackURL: fmt.Sprintf("%s/link/%%s/%%s/%%s", root),
+		// Platform click/view tracking (custom domains override per-campaign in the manager).
+		LinkTrackURL: fmt.Sprintf("%s/link/%%s/%%s/%%s", trackBase),
 
 		// url.com/link/{campaign_uuid}/{subscriber_uuid}
 		MessageURL: fmt.Sprintf("%s/campaign/%%s/%%s", root),
@@ -479,8 +504,7 @@ func initUrlConfig(ko *koanf.Koanf) *UrlConfig {
 		// url.com/archive
 		ArchiveURL: root + "/archive",
 
-		// url.com/campaign/{campaign_uuid}/{subscriber_uuid}/px.png
-		ViewTrackURL: fmt.Sprintf("%s/campaign/%%s/%%s/px.png", root),
+		ViewTrackURL: fmt.Sprintf("%s/campaign/%%s/%%s/px.png", trackBase),
 	}
 }
 
@@ -606,6 +630,7 @@ func initCampaignManager(msgrs []manager.Messenger, q *models.Queries, u *UrlCon
 		MessageURL:            u.MessageURL,
 		ArchiveURL:            u.ArchiveURL,
 		RootURL:               u.RootURL,
+		TrackingURL:           u.TrackingURL,
 		UnsubHeader:           ko.Bool("privacy.unsubscribe_header"),
 		SlidingWindow:         ko.Bool("app.message_sliding_window"),
 		SlidingWindowDuration: ko.Duration("app.message_sliding_window_duration"),

@@ -178,6 +178,15 @@
         :label="$t('menu.settings')"
       />
       <b-menu-item
+        v-if="$can('settings:get')"
+        :to="{ name: 'trackingDomains' }"
+        tag="router-link"
+        :active="activeItem.trackingDomains || activeItem.senderAdd || activeItem.trackingDomainAdd"
+        data-cy="tracking-domains"
+        icon="link-variant"
+        :label="$t('menu.sendersDomains')"
+      />
+      <b-menu-item
         v-if="$can('settings:maintain')"
         :to="{ name: 'maintenance' }"
         tag="router-link"

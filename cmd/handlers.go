@@ -115,6 +115,11 @@ func initHTTPHandlers(e *echo.Echo, a *App) {
 		g.GET("/api/events", pm(a.EventStream, "settings:get"))
 		g.GET("/api/about", a.GetAboutInfo)
 
+		g.GET("/api/tracking-domains", pm(a.GetTrackingDomains, "settings:get"))
+		g.POST("/api/tracking-domains", pm(a.CreateTrackingDomain, "settings:manage"))
+		g.POST("/api/tracking-domains/:id/verify", pm(hasID(a.VerifyTrackingDomain), "settings:manage"))
+		g.DELETE("/api/tracking-domains/:id", pm(hasID(a.DeleteTrackingDomain), "settings:manage"))
+
 		g.GET("/api/subscribers", pm(a.QuerySubscribers, "subscribers:get_all", "subscribers:get"))
 		g.GET("/api/subscribers/:id", pm(hasID(a.GetSubscriber), "subscribers:get_all", "subscribers:get"))
 		g.GET("/api/subscribers/:id/activity", pm(hasID(a.GetSubscriberActivity), "subscribers:get_all", "subscribers:get"))

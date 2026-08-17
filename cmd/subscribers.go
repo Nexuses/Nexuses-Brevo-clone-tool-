@@ -260,10 +260,42 @@ func (a *App) CreateSubscriber(c echo.Context) error {
 	// Insert the subscriber into the DB.
 	sub, _, err := a.core.InsertSubscriber(req.Subscriber, listIDs, nil, req.PreconfirmSubs, false)
 	if err != nil {
-		return err
+		// The e-mail is already registered. When the creation is scoped to lists, treat it
+		// as a subscription request and add the existing subscriber to those lists instead
+		// of rejecting the request.
+		if len(listIDs) == 0 || !isEmailConflict(err) {
+			return err
+		}
+
+		existing, gErr := a.core.GetSubscriber(0, "", req.Subscriber.Email)
+		if gErr != nil {
+			return err
+		}
+
+		subStatus := models.SubscriptionStatusUnconfirmed
+		if req.PreconfirmSubs {
+			subStatus = models.SubscriptionStatusConfirmed
+		}
+		if aErr := a.core.AddSubscriptions([]int{existing.ID}, listIDs, subStatus); aErr != nil {
+			return aErr
+		}
+
+		out, gErr := a.core.GetSubscriber(existing.ID, "", "")
+		if gErr != nil {
+			return gErr
+		}
+
+		return c.JSON(http.StatusOK, okResp{out})
 	}
 
 	return c.JSON(http.StatusOK, okResp{sub})
+}
+
+// isEmailConflict tells whether the given error is the "e-mail already exists" conflict
+// raised while inserting a subscriber.
+func isEmailConflict(err error) bool {
+	he, ok := err.(*echo.HTTPError)
+	return ok && he.Code == http.StatusConflict
 }
 
 // UpdateSubscriber handles modification of a subscriber.

@@ -23,6 +23,7 @@ import (
 	"github.com/knadh/listmonk/internal/messenger/cloudflare"
 	"github.com/knadh/listmonk/internal/messenger/email"
 	"github.com/knadh/listmonk/internal/notifs"
+	"github.com/knadh/listmonk/internal/trackingdomain"
 	"github.com/knadh/listmonk/models"
 	"github.com/labstack/echo/v4"
 )
@@ -155,6 +156,11 @@ func (a *App) UpdateSettings(c echo.Context) error {
 
 	// Always remove the trailing slash from the app root URL.
 	set.AppRootURL = strings.TrimRight(set.AppRootURL, "/")
+	trackingURL, err := trackingdomain.NormalizeTrackingURL(set.AppTrackingURL)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+	}
+	set.AppTrackingURL = trackingURL
 
 	// Bounce boxes.
 	for i, s := range set.BounceBoxes {

@@ -213,7 +213,13 @@
               <b-radio v-model="form.mode" name="file-mode" native-value="subscribe" data-cy="check-subscribe">
                 {{ $t('import.subscribe') }}
               </b-radio>
-              <b-radio v-model="form.mode" name="file-mode" native-value="blocklist" data-cy="check-blocklist">
+              <b-radio
+                v-model="form.mode"
+                name="file-mode"
+                native-value="blocklist"
+                data-cy="check-blocklist"
+                :disabled="isListScopedImport"
+              >
                 {{ $t('import.blocklist') }}
               </b-radio>
             </div>
@@ -937,16 +943,24 @@ export default Vue.extend({
       const ids = this.$utils.parseQueryIDs(this.$route.query.list_id);
       if (ids.length === 0) return;
 
-      const apply = () => {
-        if (!this.lists.results) return;
-        this.form.lists = this.lists.results.filter((l) => ids.indexOf(l.id) > -1);
+      this.form.mode = 'subscribe';
+
+      const apply = (data) => {
+        const available = (data && data.results) || [];
+        const selected = available.filter((l) => ids.indexOf(l.id) > -1);
+        const existing = this.form.lists.filter((l) => ids.indexOf(l.id) === -1);
+        this.form.lists = [...existing, ...selected];
       };
 
-      if (this.lists.results && this.lists.results.length) {
-        apply();
-      } else {
-        this.$api.getLists({ minimal: true, per_page: 'all', status: 'active' }).then(apply);
+      const cached = (this.lists && this.lists.results) || [];
+      if (ids.every((id) => cached.some((l) => l.id === id))) {
+        apply({ results: cached });
+        return;
       }
+
+      // The global list store may only contain one paginated page. Always fetch
+      // all active lists when the route's target is missing from that cache.
+      this.$api.getLists({ minimal: true, per_page: 'all', status: 'active' }).then(apply);
     },
 
     onUpload() {
@@ -961,7 +975,7 @@ export default Vue.extend({
         this.form.file = new File([csv], 'paste-import.csv', { type: 'text/csv' });
       }
 
-      if (this.form.mode === 'subscribe' && this.form.overwriteSubStatus) {
+      if (this.effectiveMode === 'subscribe' && this.form.overwriteSubStatus) {
         this.$utils.confirm(this.$t('import.subscribeWarning'), this.onSubmit, this.resetForm);
         return;
       }
@@ -974,10 +988,13 @@ export default Vue.extend({
 
       const params = new FormData();
       params.set('params', JSON.stringify({
-        mode: this.form.mode,
+        mode: this.effectiveMode,
         subscription_status: this.form.subStatus,
         delim: this.form.delim,
-        lists: this.form.lists.map((l) => l.id),
+        // A list supplied by "Import users to this list" is authoritative. This
+        // guarantees that existing contacts and newly created contacts are both
+        // subscribed to the list even if the selector's cached data was stale.
+        lists: this.effectiveListIDs,
         overwrite_userinfo: this.form.overwriteUserInfo,
         overwrite_subscription_status: this.form.overwriteSubStatus,
       }));
@@ -996,16 +1013,33 @@ export default Vue.extend({
   computed: {
     ...mapState(['lists']),
 
+    targetListIDs() {
+      return this.$utils.parseQueryIDs(this.$route.query.list_id);
+    },
+
+    isListScopedImport() {
+      return this.targetListIDs.length > 0;
+    },
+
+    effectiveMode() {
+      return this.isListScopedImport ? 'subscribe' : this.form.mode;
+    },
+
     canSubmitFile() {
       if (this.fileStep < 3) return false;
-      if (this.form.mode === 'subscribe' && this.form.lists.length === 0) return false;
+      if (this.effectiveMode === 'subscribe' && this.effectiveListIDs.length === 0) return false;
       return !!this.form.file;
     },
 
     canSubmitPaste() {
       if (!this.pasteChecked) return false;
-      if (this.form.mode === 'subscribe' && this.form.lists.length === 0) return false;
+      if (this.effectiveMode === 'subscribe' && this.effectiveListIDs.length === 0) return false;
       return this.pasteRows.length > 0 && this.pasteHeaders.some((h) => this.guessMappedField(h) === 'email');
+    },
+
+    effectiveListIDs() {
+      const selected = this.form.lists.map((l) => l.id);
+      return Array.from(new Set([...selected, ...this.targetListIDs]));
     },
 
     hasPasteData() {

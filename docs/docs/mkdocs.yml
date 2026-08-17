@@ -52,6 +52,7 @@ nav:
     - "Messengers": "messengers.md"
     - "Archives": "archives.md"
     - "Internationalization": "i18n.md"
+    - "Custom Tracking Domains": custom-tracking-domains.md
     - "Integrating with external systems": external-integration.md
     - "User roles and permissions": roles-and-permissions.md
     - "OIDC SSO": oidc.md

@@ -156,6 +156,24 @@ const routes = [
     component: () => import('../views/Settings.vue'),
   },
   {
+    path: '/settings/tracking-domains',
+    name: 'trackingDomains',
+    meta: { title: 'menu.sendersDomains', group: 'settings' },
+    component: () => import('../views/TrackingDomains.vue'),
+  },
+  {
+    path: '/settings/tracking-domains/senders/add',
+    name: 'senderAdd',
+    meta: { title: 'menu.sendersDomains', group: 'settings' },
+    component: () => import('../views/SenderAdd.vue'),
+  },
+  {
+    path: '/settings/tracking-domains/domains/add',
+    name: 'trackingDomainAdd',
+    meta: { title: 'menu.sendersDomains', group: 'settings' },
+    component: () => import('../views/TrackingDomainAdd.vue'),
+  },
+  {
     path: '/settings/logs',
     name: 'logs',
     meta: { title: 'logs.title', group: 'settings' },

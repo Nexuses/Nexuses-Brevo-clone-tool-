@@ -27,7 +27,8 @@ WITH tpl AS (
 camp AS (
     INSERT INTO campaigns (uuid, type, name, subject, from_email, reply_to, body, altbody,
         content_type, send_at, headers, attribs, tags, messenger, template_id, to_send,
-        max_subscriber_id, archive, archive_slug, archive_template_id, archive_meta, tracking_config, body_source)
+        max_subscriber_id, archive, archive_slug, archive_template_id, archive_meta, tracking_config, body_source,
+        tracking_domain_id)
         SELECT $1, $2, $3, $4, $5, $23,
             -- body
             COALESCE(NULLIF($6, ''), (SELECT body FROM tpl), ''),
@@ -43,7 +44,8 @@ camp AS (
             $19,
             COALESCE($20, '{}'::JSONB),
             -- body_source
-            COALESCE($22, (SELECT body_source FROM tpl))
+            COALESCE($22, (SELECT body_source FROM tpl)),
+            $24
         RETURNING id
 ),
 med AS (
@@ -92,12 +94,14 @@ ORDER BY %order% OFFSET $7 LIMIT (CASE WHEN $8 < 1 THEN NULL ELSE $8 END);
 
 -- name: get-campaign
 SELECT campaigns.*,
-    COALESCE(templates.body, (SELECT body FROM templates WHERE is_default = true LIMIT 1), '') AS template_body
+    COALESCE(templates.body, (SELECT body FROM templates WHERE is_default = true LIMIT 1), '') AS template_body,
+    CASE WHEN ctd.status = 'verified' THEN ctd.domain ELSE NULL END AS tracking_domain
     FROM campaigns
     LEFT JOIN templates ON (
         CASE WHEN $4 = 'default' THEN templates.id = campaigns.template_id
         ELSE templates.id = campaigns.archive_template_id END
     )
+    LEFT JOIN custom_tracking_domains ctd ON ctd.id = campaigns.tracking_domain_id
     WHERE CASE
             WHEN $1 > 0 THEN campaigns.id = $1
             WHEN $3 != '' THEN campaigns.archive_slug = $3
@@ -142,11 +146,21 @@ bounces AS (
     SELECT campaign_id, COUNT(campaign_id) as num FROM bounces
     WHERE campaign_id = ANY($1)
     GROUP BY campaign_id
+),
+-- Unsubscribes are counted the same way as the campaign report summary: distinct
+-- subscribers of the campaign's lists that have since unsubscribed from them.
+unsubs AS (
+    SELECT cl.campaign_id, COUNT(DISTINCT sl.subscriber_id) AS num
+    FROM subscriber_lists sl
+    JOIN campaign_lists cl ON cl.list_id = sl.list_id
+    WHERE cl.campaign_id = ANY($1) AND sl.status = 'unsubscribed'
+    GROUP BY cl.campaign_id
 )
 SELECT id as campaign_id,
     COALESCE(v.num, 0) AS views,
     COALESCE(c.num, 0) AS clicks,
     COALESCE(b.num, 0) AS bounces,
+    COALESCE(u.num, 0) AS unsubscribes,
     COALESCE(l.lists, '[]') AS lists,
     COALESCE(m.media, '[]') AS media
 FROM (SELECT id FROM UNNEST($1) AS id) x
@@ -155,10 +169,12 @@ LEFT JOIN media AS m ON (m.campaign_id = id)
 LEFT JOIN views AS v ON (v.campaign_id = id)
 LEFT JOIN clicks AS c ON (c.campaign_id = id)
 LEFT JOIN bounces AS b ON (b.campaign_id = id)
+LEFT JOIN unsubs AS u ON (u.campaign_id = id)
 ORDER BY ARRAY_POSITION($1, id);
 
 -- name: get-campaign-for-preview
 SELECT campaigns.*, COALESCE(templates.body, '') AS template_body,
+CASE WHEN ctd.status = 'verified' THEN ctd.domain ELSE NULL END AS tracking_domain,
 (
 	SELECT COALESCE(ARRAY_TO_JSON(ARRAY_AGG(l)), '[]') FROM (
 		SELECT COALESCE(campaign_lists.list_id, 0) AS id,
@@ -168,6 +184,7 @@ SELECT campaigns.*, COALESCE(templates.body, '') AS template_body,
 ) AS lists
 FROM campaigns
 LEFT JOIN templates ON (templates.id = (CASE WHEN $2=0 THEN campaigns.template_id ELSE $2 END))
+LEFT JOIN custom_tracking_domains ctd ON ctd.id = campaigns.tracking_domain_id
 WHERE campaigns.id = $1;
 
 -- name: get-campaign-status
@@ -188,10 +205,13 @@ SELECT EXISTS (
 -- a campaign. This is used to fetch and slice subscribers for the campaign in next-campaign-subscribers.
 WITH camps AS (
     -- Get all running campaigns and their template bodies (if the template's deleted, the default template body instead)
-    SELECT campaigns.*, COALESCE(templates.body, (SELECT body FROM templates WHERE is_default = true LIMIT 1), '') AS template_body
+    SELECT campaigns.*,
+           COALESCE(templates.body, (SELECT body FROM templates WHERE is_default = true LIMIT 1), '') AS template_body,
+           CASE WHEN ctd.status = 'verified' THEN ctd.domain ELSE NULL END AS tracking_domain
     FROM campaigns
     LEFT JOIN templates ON (templates.id = campaigns.template_id)
-    WHERE (status='running' OR (status='scheduled' AND NOW() >= campaigns.send_at))
+    LEFT JOIN custom_tracking_domains ctd ON ctd.id = campaigns.tracking_domain_id
+    WHERE (campaigns.status='running' OR (campaigns.status='scheduled' AND NOW() >= campaigns.send_at))
     AND NOT(campaigns.id = ANY($1::INT[]))
 ),
 campLists AS (

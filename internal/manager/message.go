@@ -24,6 +24,7 @@ func (m *Manager) NewCampaignMessage(c *models.Campaign, s models.Subscriber) (C
 	if err := msg.render(); err != nil {
 		return msg, err
 	}
+	m.rewriteMessageLinks(&msg)
 
 	return msg, nil
 }

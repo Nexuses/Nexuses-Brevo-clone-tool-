@@ -6,6 +6,7 @@ import "gopkg.in/volatiletech/null.v6"
 type Settings struct {
 	AppSiteName                   string   `json:"app.site_name"`
 	AppRootURL                    string   `json:"app.root_url"`
+	AppTrackingURL                string   `json:"app.tracking_url"`
 	AppLogoURL                    string   `json:"app.logo_url"`
 	AppFaviconURL                 string   `json:"app.favicon_url"`
 	AppFromEmail                  string   `json:"app.from_email"`
@@ -81,23 +82,23 @@ type Settings struct {
 	UploadS3Expiry             string   `json:"upload.s3.expiry"`
 
 	SMTP []struct {
-		Name              string              `json:"name"`
-		UUID              string              `json:"uuid"`
-		Enabled           bool                `json:"enabled"`
-		Host              string              `json:"host"`
-		HelloHostname     string              `json:"hello_hostname"`
-		Port              int                 `json:"port"`
-		AuthProtocol      string              `json:"auth_protocol"`
-		Username          string              `json:"username"`
-		Password          string              `json:"password,omitempty"`
-		EmailHeaders      []map[string]string `json:"email_headers"`
-		MaxConns          int                 `json:"max_conns"`
-		MaxMsgRetries     int                 `json:"max_msg_retries"`
-		MsgRetryDelay     string              `json:"msg_retry_delay"`
-		IdleTimeout       string              `json:"idle_timeout"`
-		WaitTimeout       string              `json:"wait_timeout"`
-		TLSType           string              `json:"tls_type"`
-		TLSSkipVerify     bool                `json:"tls_skip_verify"`
+		Name          string              `json:"name"`
+		UUID          string              `json:"uuid"`
+		Enabled       bool                `json:"enabled"`
+		Host          string              `json:"host"`
+		HelloHostname string              `json:"hello_hostname"`
+		Port          int                 `json:"port"`
+		AuthProtocol  string              `json:"auth_protocol"`
+		Username      string              `json:"username"`
+		Password      string              `json:"password,omitempty"`
+		EmailHeaders  []map[string]string `json:"email_headers"`
+		MaxConns      int                 `json:"max_conns"`
+		MaxMsgRetries int                 `json:"max_msg_retries"`
+		MsgRetryDelay string              `json:"msg_retry_delay"`
+		IdleTimeout   string              `json:"idle_timeout"`
+		WaitTimeout   string              `json:"wait_timeout"`
+		TLSType       string              `json:"tls_type"`
+		TLSSkipVerify bool                `json:"tls_skip_verify"`
 	} `json:"smtp"`
 
 	Messengers []struct {

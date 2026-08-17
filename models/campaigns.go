@@ -62,6 +62,10 @@ type Campaign struct {
 	ArchiveTemplateID null.Int        `db:"archive_template_id" json:"archive_template_id"`
 	ArchiveMeta       json.RawMessage `db:"archive_meta" json:"archive_meta"`
 	TrackingConfig    json.RawMessage `db:"tracking_config" json:"tracking_config"`
+	TrackingDomainID  null.Int        `db:"tracking_domain_id" json:"tracking_domain_id"`
+
+	// TrackingDomain is the verified custom tracking hostname joined when status=verified.
+	TrackingDomain null.String `db:"tracking_domain" json:"tracking_domain,omitempty"`
 
 	// TemplateBody is joined in from templates by the next-campaigns query.
 	TemplateBody        string             `db:"template_body" json:"-"`
@@ -87,10 +91,11 @@ type Campaign struct {
 
 // CampaignMeta contains fields tracking a campaign's progress.
 type CampaignMeta struct {
-	CampaignID int `db:"campaign_id" json:"-"`
-	Views      int `db:"views" json:"views"`
-	Clicks     int `db:"clicks" json:"clicks"`
-	Bounces    int `db:"bounces" json:"bounces"`
+	CampaignID   int `db:"campaign_id" json:"-"`
+	Views        int `db:"views" json:"views"`
+	Clicks       int `db:"clicks" json:"clicks"`
+	Bounces      int `db:"bounces" json:"bounces"`
+	Unsubscribes int `db:"unsubscribes" json:"unsubscribes"`
 
 	// This is a list of {list_id, name} pairs unlike Subscriber.Lists[]
 	// because lists can be deleted after a campaign is finished, resulting
@@ -132,6 +137,7 @@ func (camps Campaigns) LoadStats(stmt *sqlx.Stmt) error {
 			camps[i].Views = c.Views
 			camps[i].Clicks = c.Clicks
 			camps[i].Bounces = c.Bounces
+			camps[i].Unsubscribes = c.Unsubscribes
 			camps[i].Media = c.Media
 		}
 	}

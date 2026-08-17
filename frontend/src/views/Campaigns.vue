@@ -383,7 +383,7 @@
 
     <b-modal
       :active.sync="isCreateOpen"
-      :width="840"
+      :width="980"
       scroll="keep"
       class="create-campaign-form-modal"
     >

@@ -458,6 +458,16 @@ export const updateSettingsByKey = async (key, data) => http.put(
   { loading: models.settings },
 );
 
+export const updateAppFromEmail = (fromEmail) => http.put(
+  '/api/settings/app.from_email',
+  JSON.stringify(fromEmail),
+  {
+    loading: models.settings,
+    headers: { 'Content-Type': 'application/json' },
+    transformRequest: [(body) => body],
+  },
+);
+
 export const testSMTP = async (data) => http.post(
   '/api/settings/smtp/test',
   data,
@@ -468,6 +478,29 @@ export const testCloudflare = async (data) => http.post(
   '/api/settings/cloudflare/test',
   data,
   { loading: models.settings, disableToast: true },
+);
+
+// Custom tracking domains.
+export const getTrackingDomains = async () => http.get(
+  '/api/tracking-domains',
+  { loading: models.trackingDomains },
+);
+
+export const createTrackingDomain = async (data) => http.post(
+  '/api/tracking-domains',
+  data,
+  { loading: models.trackingDomains },
+);
+
+export const verifyTrackingDomain = async (id) => http.post(
+  `/api/tracking-domains/${id}/verify`,
+  {},
+  { loading: models.trackingDomains },
+);
+
+export const deleteTrackingDomain = async (id) => http.delete(
+  `/api/tracking-domains/${id}`,
+  { loading: models.trackingDomains },
 );
 
 export const getLogs = async () => http.get(

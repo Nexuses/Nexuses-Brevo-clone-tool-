@@ -291,6 +291,15 @@ func (a *App) CreateCampaign(c echo.Context) error {
 		o.ArchiveTemplateID = o.TemplateID
 	}
 
+	// Assign the creating user's most recently verified custom tracking domain, if any.
+	// Never trust tracking_domain_id from the request body. Existing campaigns keep null.
+	o.TrackingDomainID = null.Int{}
+	if tdID, err := a.core.GetLatestVerifiedTrackingDomainID(user.ID); err != nil {
+		return err
+	} else if tdID > 0 {
+		o.TrackingDomainID = null.Int{Int: tdID, Valid: true}
+	}
+
 	out, err := a.core.CreateCampaign(o.Campaign, o.ListIDs, o.MediaIDs)
 	if err != nil {
 		return err

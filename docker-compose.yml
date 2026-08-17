@@ -45,6 +45,7 @@ services:
       LISTMONK_db__max_open: 25
       LISTMONK_db__max_idle: 25
       LISTMONK_db__max_lifetime: 300s
+      PLATFORM_TRACKING_DOMAIN: ${PLATFORM_TRACKING_DOMAIN:-}
       TZ: Etc/UTC
       LISTMONK_ADMIN_USER: ${LISTMONK_ADMIN_USER:-}
       LISTMONK_ADMIN_PASSWORD: ${LISTMONK_ADMIN_PASSWORD:-}

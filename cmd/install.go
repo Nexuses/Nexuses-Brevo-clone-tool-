@@ -289,6 +289,7 @@ func installCampaign(campTplID, archiveTplID int, q *models.Queries) {
 		nil,
 		nil,
 		"",
+		nil,
 	); err != nil {
 		lo.Fatalf("error creating sample campaign: %v", err)
 	}

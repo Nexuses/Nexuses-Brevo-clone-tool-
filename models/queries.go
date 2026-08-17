@@ -71,26 +71,26 @@ type Queries struct {
 
 	// These two queries are read as strings and based on settings.individual_tracking=on/off,
 	// are interpolated and copied to view and click counts. Same query, different tables.
-	GetCampaignAnalyticsCounts string     `query:"get-campaign-analytics-counts"`
-	GetCampaignViewCounts      *sqlx.Stmt `query:"get-campaign-view-counts"`
-	GetCampaignClickCounts     *sqlx.Stmt `query:"get-campaign-click-counts"`
-	GetCampaignLinkCounts      *sqlx.Stmt `query:"get-campaign-link-counts"`
+	GetCampaignAnalyticsCounts     string     `query:"get-campaign-analytics-counts"`
+	GetCampaignViewCounts          *sqlx.Stmt `query:"get-campaign-view-counts"`
+	GetCampaignClickCounts         *sqlx.Stmt `query:"get-campaign-click-counts"`
+	GetCampaignLinkCounts          *sqlx.Stmt `query:"get-campaign-link-counts"`
 	QueryCampaignViewRecordsCount  *sqlx.Stmt `query:"query-campaign-view-records-count"`
-	QueryCampaignViewRecords         *sqlx.Stmt `query:"query-campaign-view-records"`
-	QueryCampaignClickRecordsCount   *sqlx.Stmt `query:"query-campaign-click-records-count"`
-	QueryCampaignClickRecords        *sqlx.Stmt `query:"query-campaign-click-records"`
-	GetCampaignBounceCounts    *sqlx.Stmt `query:"get-campaign-bounce-counts"`
-	DeleteCampaignViews        *sqlx.Stmt `query:"delete-campaign-views"`
-	DeleteCampaignLinkClicks   *sqlx.Stmt `query:"delete-campaign-link-clicks"`
-	ExportCampaignViews        *sqlx.Stmt `query:"export-campaign-views"`
-	ExportCampaignLinkClicks   *sqlx.Stmt `query:"export-campaign-link-clicks"`
-	GetCampaignReportAudience  *sqlx.Stmt `query:"get-campaign-report-audience"`
-	GetCampaignReportViewStats *sqlx.Stmt `query:"get-campaign-report-view-stats"`
-	GetCampaignReportClickStats *sqlx.Stmt `query:"get-campaign-report-click-stats"`
-	GetCampaignReportBounces   *sqlx.Stmt `query:"get-campaign-report-bounces"`
-	GetCampaignReportUnsubCount  *sqlx.Stmt `query:"get-campaign-report-unsub-count"`
-	GetCampaignReportUniqueCounts *sqlx.Stmt `query:"get-campaign-report-unique-counts"`
-	GetCampaignReportSummary      *sqlx.Stmt `query:"get-campaign-report-summary"`
+	QueryCampaignViewRecords       *sqlx.Stmt `query:"query-campaign-view-records"`
+	QueryCampaignClickRecordsCount *sqlx.Stmt `query:"query-campaign-click-records-count"`
+	QueryCampaignClickRecords      *sqlx.Stmt `query:"query-campaign-click-records"`
+	GetCampaignBounceCounts        *sqlx.Stmt `query:"get-campaign-bounce-counts"`
+	DeleteCampaignViews            *sqlx.Stmt `query:"delete-campaign-views"`
+	DeleteCampaignLinkClicks       *sqlx.Stmt `query:"delete-campaign-link-clicks"`
+	ExportCampaignViews            *sqlx.Stmt `query:"export-campaign-views"`
+	ExportCampaignLinkClicks       *sqlx.Stmt `query:"export-campaign-link-clicks"`
+	GetCampaignReportAudience      *sqlx.Stmt `query:"get-campaign-report-audience"`
+	GetCampaignReportViewStats     *sqlx.Stmt `query:"get-campaign-report-view-stats"`
+	GetCampaignReportClickStats    *sqlx.Stmt `query:"get-campaign-report-click-stats"`
+	GetCampaignReportBounces       *sqlx.Stmt `query:"get-campaign-report-bounces"`
+	GetCampaignReportUnsubCount    *sqlx.Stmt `query:"get-campaign-report-unsub-count"`
+	GetCampaignReportUniqueCounts  *sqlx.Stmt `query:"get-campaign-report-unique-counts"`
+	GetCampaignReportSummary       *sqlx.Stmt `query:"get-campaign-report-summary"`
 	GetCampaignReportBounceReasons *sqlx.Stmt `query:"get-campaign-report-bounce-reasons"`
 
 	NextCampaigns            *sqlx.Stmt `query:"next-campaigns"`
@@ -119,6 +119,14 @@ type Queries struct {
 	CreateLink        *sqlx.Stmt `query:"create-link"`
 	GetLinkURL        *sqlx.Stmt `query:"get-link-url"`
 	RegisterLinkClick *sqlx.Stmt `query:"register-link-click"`
+
+	GetTrackingDomains                        *sqlx.Stmt `query:"get-tracking-domains"`
+	GetTrackingDomain                         *sqlx.Stmt `query:"get-tracking-domain"`
+	CreateTrackingDomain                      *sqlx.Stmt `query:"create-tracking-domain"`
+	UpdateTrackingDomainVerification          *sqlx.Stmt `query:"update-tracking-domain-verification"`
+	DeleteTrackingDomain                      *sqlx.Stmt `query:"delete-tracking-domain"`
+	GetTrackingDomainBlockingCampaignStatuses *sqlx.Stmt `query:"get-tracking-domain-blocking-campaign-statuses"`
+	GetLatestVerifiedTrackingDomainID         *sqlx.Stmt `query:"get-latest-verified-tracking-domain-id"`
 
 	GetSettings         *sqlx.Stmt `query:"get-settings"`
 	UpdateSettings      *sqlx.Stmt `query:"update-settings"`

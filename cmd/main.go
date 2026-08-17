@@ -26,6 +26,7 @@ import (
 	"github.com/knadh/listmonk/internal/media"
 	"github.com/knadh/listmonk/internal/messenger/email"
 	"github.com/knadh/listmonk/internal/subimporter"
+	"github.com/knadh/listmonk/internal/trackingdomain"
 	"github.com/knadh/listmonk/models"
 	"github.com/knadh/paginator"
 	"github.com/knadh/stuffbin"
@@ -33,25 +34,26 @@ import (
 
 // App contains the "global" shared components, controllers and fields.
 type App struct {
-	cfg        *Config
-	urlCfg     *UrlConfig
-	fs         stuffbin.FileSystem
-	db         *sqlx.DB
-	queries    *models.Queries
-	core       *core.Core
-	manager    *manager.Manager
-	messengers []manager.Messenger
-	emailMsgr  manager.Messenger
-	importer   *subimporter.Importer
-	auth       *auth.Auth
-	media      media.Store
-	bounce     *bounce.Manager
-	captcha    *captcha.Captcha
-	i18n       *i18n.I18n
-	pg         *paginator.Paginator
-	events     *events.Events
-	log        *log.Logger
-	bufLog     *buflog.BufLog
+	cfg         *Config
+	urlCfg      *UrlConfig
+	fs          stuffbin.FileSystem
+	db          *sqlx.DB
+	queries     *models.Queries
+	core        *core.Core
+	manager     *manager.Manager
+	trackingDNS trackingdomain.CNAMEResolver
+	messengers  []manager.Messenger
+	emailMsgr   manager.Messenger
+	importer    *subimporter.Importer
+	auth        *auth.Auth
+	media       media.Store
+	bounce      *bounce.Manager
+	captcha     *captcha.Captcha
+	i18n        *i18n.I18n
+	pg          *paginator.Paginator
+	events      *events.Events
+	log         *log.Logger
+	bufLog      *buflog.BufLog
 
 	about         about
 	fnOptinNotify func(models.Subscriber, []int) (int, error)
@@ -264,24 +266,25 @@ func main() {
 	// =========================================================================
 	// Initialize the App{} with all the global shared components, controllers and fields.
 	app := &App{
-		cfg:        cfg,
-		urlCfg:     urlCfg,
-		fs:         fs,
-		db:         db,
-		queries:    queries,
-		core:       core,
-		manager:    mgr,
-		messengers: msgrs,
-		emailMsgr:  emailMsgr,
-		importer:   importer,
-		auth:       auth,
-		media:      media,
-		bounce:     bounce,
-		captcha:    initCaptcha(),
-		i18n:       i18n,
-		log:        lo,
-		events:     evStream,
-		bufLog:     bufLog,
+		cfg:         cfg,
+		urlCfg:      urlCfg,
+		fs:          fs,
+		db:          db,
+		queries:     queries,
+		core:        core,
+		manager:     mgr,
+		trackingDNS: &trackingdomain.NetResolver{Timeout: trackingdomain.DefaultDNSTimeout},
+		messengers:  msgrs,
+		emailMsgr:   emailMsgr,
+		importer:    importer,
+		auth:        auth,
+		media:       media,
+		bounce:      bounce,
+		captcha:     initCaptcha(),
+		i18n:        i18n,
+		log:         lo,
+		events:      evStream,
+		bufLog:      bufLog,
 
 		pg: paginator.New(paginator.Opt{
 			DefaultPerPage: 20,

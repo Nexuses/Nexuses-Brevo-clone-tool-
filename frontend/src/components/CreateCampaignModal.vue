@@ -1,5 +1,5 @@
 <template>
-  <div class="create-campaign-modal">
+  <div class="create-campaign-modal" data-cy="create-campaign-modal">
     <header class="create-campaign-modal__head">
       <h2>Create a campaign</h2>
       <button type="button" class="create-campaign-modal__close" aria-label="Close" @click="$emit('close')">
@@ -23,44 +23,62 @@
             @click="onStandard(ch.id)"
           >
             <span class="create-campaign-modal__channel-icon" aria-hidden="true">
-              <svg v-if="ch.id === 'email'" width="36" height="28" viewBox="0 0 36 28" fill="none">
-                <rect x="4" y="6" width="24" height="16" rx="2" fill="#fff" stroke="#7BC9A6" stroke-width="1.6" />
-                <path d="M4 8l12 8 12-8" stroke="#7BC9A6" stroke-width="1.6" fill="none" />
-                <rect x="18" y="12" width="14" height="12" rx="1.5" fill="#E8F7EC" stroke="#0B996E" stroke-width="1.4" />
-                <path d="M21 17h8M21 20h5" stroke="#0B996E" stroke-width="1.3" stroke-linecap="round" />
+              <svg v-if="ch.id === 'email'" width="54" height="42" viewBox="0 0 54 42" fill="none">
+                <rect x="26" y="2" width="22" height="26" rx="2.5" fill="#fff" stroke="#0B996E" stroke-width="1.7" />
+                <path d="M30.5 10h13M30.5 15h9" stroke="#0B996E" stroke-width="1.6" stroke-linecap="round" />
+                <path d="M4 12h32v24H4V12z" fill="#E9F8EE" stroke="#0B996E" stroke-width="1.8" />
+                <path d="M4 12l16 11.5L36 12" fill="#fff" stroke="#0B996E" stroke-width="1.8" stroke-linejoin="round" />
               </svg>
-              <svg v-else-if="ch.id === 'sms'" width="32" height="28" viewBox="0 0 32 28" fill="none">
-                <rect x="3" y="4" width="26" height="16" rx="8" fill="#fff" stroke="#9B8CFF" stroke-width="1.6" />
-                <circle cx="11" cy="12" r="1.6" fill="#7BC9A6" />
-                <circle cx="16" cy="12" r="1.6" fill="#7BC9A6" />
-                <circle cx="21" cy="12" r="1.6" fill="#7BC9A6" />
-                <path d="M10 20l-4 5 7-3" fill="#fff" stroke="#9B8CFF" stroke-width="1.4" stroke-linejoin="round" />
+              <svg v-else-if="ch.id === 'sms'" width="48" height="42" viewBox="0 0 48 42" fill="none">
+                <path d="M8 6h28a8 8 0 018 8v8a8 8 0 01-8 8H18l-10 8v-8H8a8 8 0 01-8-8v-8a8 8 0 018-8z"
+                  fill="#7BC9A6" />
+                <circle cx="16" cy="20" r="2.2" fill="#fff" />
+                <circle cx="24" cy="20" r="2.2" fill="#fff" />
+                <circle cx="32" cy="20" r="2.2" fill="#fff" />
               </svg>
-              <svg v-else-if="ch.id === 'whatsapp'" width="30" height="30" viewBox="0 0 30 30" fill="none">
-                <circle cx="15" cy="15" r="12" fill="#25D366" />
-                <path d="M9.2 20.6l.9-3.2A7 7 0 1118.8 21l3.1.9-3.4-.6a7 7 0 01-9.3-.7z" fill="#fff" />
+              <svg v-else-if="ch.id === 'whatsapp'" width="42" height="42" viewBox="0 0 42 42" fill="none">
+                <circle cx="21" cy="21" r="19" fill="#25D366" />
+                <path
+                  fill="#fff"
+                  d="M13.2 29.4l.8-3A9 9 0 1124.8 30l3.2.9-3.5-.6a9 9 0 01-11.3-.9z"
+                />
+                <path
+                  fill="#25D366"
+                  d="M21 14.2c-3.9 0-7 3.1-7 7 0 1.3.4 2.5 1 3.5l-.7 2.6 2.7-.7c1 .6 2.1.9 3.3.9 3.9 0 7-3.1 7-7s-3.1-7.3-7.3-7.3z"
+                />
               </svg>
-              <svg v-else-if="ch.id === 'push'" width="34" height="28" viewBox="0 0 34 28" fill="none">
-                <rect x="3" y="6" width="22" height="16" rx="2" fill="#fff" stroke="#D4B483" stroke-width="1.5" />
-                <path d="M3 10h22" stroke="#D4B483" stroke-width="1.4" />
-                <circle cx="6.5" cy="8" r="0.9" fill="#D4B483" />
-                <circle cx="9.2" cy="8" r="0.9" fill="#D4B483" />
-                <rect x="18" y="3" width="13" height="10" rx="2" fill="#E8F7EC" stroke="#0B996E" stroke-width="1.4" />
-                <path d="M24.5 6.2a2.2 2.2 0 012.2 2.2c0 1.4.6 2.1.6 2.1h-5.6s.6-.7.6-2.1a2.2 2.2 0 012.2-2.2z"
-                  fill="#fff" stroke="#0B996E" stroke-width="1.2" />
-                <circle cx="24.5" cy="12.2" r="0.8" fill="#0B996E" />
+              <svg v-else-if="ch.id === 'push'" width="52" height="42" viewBox="0 0 52 42" fill="none">
+                <rect x="2" y="10" width="32" height="24" rx="3" fill="#fff" stroke="#C9B48A" stroke-width="1.6" />
+                <path d="M2 16h32" stroke="#C9B48A" stroke-width="1.5" />
+                <circle cx="7" cy="13" r="1.1" fill="#C9B48A" />
+                <circle cx="11" cy="13" r="1.1" fill="#C9B48A" />
+                <rect x="26" y="3" width="24" height="18" rx="4" fill="#E9F8EE" stroke="#0B996E" stroke-width="1.6" />
+                <path d="M38 8.2a3.4 3.4 0 013.4 3.4c0 2.1.9 3.2.9 3.2h-8.6s.9-1.1.9-3.2A3.4 3.4 0 0138 8.2z"
+                  fill="#fff" stroke="#0B996E" stroke-width="1.4" />
+                <circle cx="38" cy="17.6" r="1" fill="#0B996E" />
               </svg>
-              <svg v-else width="34" height="28" viewBox="0 0 34 28" fill="none">
-                <rect x="2" y="5" width="24" height="18" rx="2" fill="#fff" stroke="#7EB6D9" stroke-width="1.5" />
-                <rect x="10" y="9" width="20" height="14" rx="2" fill="#E8F7EC" stroke="#0B996E" stroke-width="1.5" />
-                <path d="M26.5 12.2h2.2M27.6 11.1v2.2" stroke="#0B996E" stroke-width="1.3" stroke-linecap="round" />
-                <path d="M14 15h10M14 18h7" stroke="#0B996E" stroke-width="1.3" stroke-linecap="round" />
+              <svg v-else width="52" height="42" viewBox="0 0 52 42" fill="none">
+                <rect x="2" y="6" width="34" height="26" rx="3" fill="#fff" stroke="#8BB8D6" stroke-width="1.6" />
+                <path d="M2 12h34" stroke="#8BB8D6" stroke-width="1.5" />
+                <rect x="16" y="14" width="34" height="22" rx="3.5" fill="#E9F8EE" stroke="#0B996E" stroke-width="1.7" />
+                <path d="M44 20h4M46 18v4" stroke="#0B996E" stroke-width="1.6" stroke-linecap="round" />
+                <path d="M22 24h20M22 29h14" stroke="#0B996E" stroke-width="1.5" stroke-linecap="round" />
               </svg>
             </span>
             <span class="create-campaign-modal__channel-label">
               {{ ch.label }}
               <span v-if="ch.badge === 'activate'" class="create-campaign-modal__badge">Activate</span>
-              <span v-else-if="ch.badge === 'crown'" class="create-campaign-modal__crown" aria-hidden="true">♛</span>
+              <svg
+                v-else-if="ch.badge === 'crown'"
+                class="create-campaign-modal__crown"
+                width="14"
+                height="12"
+                viewBox="0 0 14 12"
+                aria-hidden="true"
+              >
+                <path d="M1.2 10.4h11.6L11.6 4.2 9 6.6 7 1.6 5 6.6 2.4 4.2z" fill="#E8B923" />
+                <rect x="1.1" y="10.1" width="11.8" height="1.5" rx="0.5" fill="#D4A017" />
+              </svg>
             </span>
           </button>
         </div>
@@ -86,7 +104,7 @@
           class="create-campaign-modal__ai-teaser"
           @click="aiOpen = true"
         >
-          Start with a sentence. we'll build your automation
+          Start with a sentence, we'll build your automation
         </button>
 
         <template v-else>
@@ -288,7 +306,7 @@ export default Vue.extend({
       standardChannels: [
         { id: 'email', label: 'Email', badge: '' },
         { id: 'sms', label: 'SMS', badge: '' },
-        { id: 'whatsapp', label: 'WhatsApp', badge: '' },
+        { id: 'whatsapp', label: 'WhatsApp', badge: 'crown' },
         { id: 'push', label: 'Push', badge: 'activate' },
         { id: 'popup', label: 'Pop-up', badge: 'crown' },
       ],
@@ -338,7 +356,6 @@ export default Vue.extend({
   mounted() {
     document.addEventListener('click', this.onDocClick);
     if (this.startSection === 'automated') {
-      this.aiOpen = true;
       this.$nextTick(() => {
         if (this.$refs.automated && this.$refs.automated.scrollIntoView) {
           this.$refs.automated.scrollIntoView({ block: 'start' });

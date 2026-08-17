@@ -231,6 +231,7 @@ DROP INDEX IF EXISTS idx_settings_key; CREATE INDEX idx_settings_key ON settings
 INSERT INTO settings (key, value) VALUES
     ('app.site_name', '"Nexuses"'),
     ('app.root_url', '"http://localhost:9000"'),
+    ('app.tracking_url', '""'),
     ('app.favicon_url', '""'),
     ('app.from_email', '"Nexuses <noreply@nexuses.in>"'),
     ('app.logo_url', '""'),
@@ -352,6 +353,27 @@ CREATE TABLE users (
     created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
     updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );
+
+-- custom tracking domains (owned by authenticated users)
+DROP TABLE IF EXISTS custom_tracking_domains CASCADE;
+CREATE TABLE custom_tracking_domains (
+    id               SERIAL PRIMARY KEY,
+    user_id          INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+    domain           TEXT NOT NULL UNIQUE,
+    status           TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'verified', 'failed')),
+    dns_record_type  TEXT NOT NULL DEFAULT 'CNAME',
+    dns_record_name  TEXT NOT NULL DEFAULT '',
+    dns_record_value TEXT NOT NULL DEFAULT '',
+    verified_at      TIMESTAMP WITH TIME ZONE NULL,
+    last_error       TEXT NOT NULL DEFAULT '',
+    created_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    updated_at       TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+DROP INDEX IF EXISTS idx_ctd_user_id; CREATE INDEX idx_ctd_user_id ON custom_tracking_domains(user_id);
+DROP INDEX IF EXISTS idx_ctd_status; CREATE INDEX idx_ctd_status ON custom_tracking_domains(status);
+
+-- campaigns.tracking_domain_id (added after custom_tracking_domains exists)
+ALTER TABLE campaigns ADD COLUMN IF NOT EXISTS tracking_domain_id INTEGER NULL REFERENCES custom_tracking_domains(id) ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- user sessions
 DROP TABLE IF EXISTS sessions CASCADE;

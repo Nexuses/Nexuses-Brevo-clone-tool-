@@ -10,15 +10,18 @@ Variables defined in config.toml can also be provided as environment variables p
 
 Supported variables:
 
-| **Environment variable**       | Example value  |
-| ------------------------------ | -------------- |
-| `LISTMONK_app__address`        | "0.0.0.0:9000" |
-| `LISTMONK_db__host`            | db             |
-| `LISTMONK_db__port`            | 9432           |
-| `LISTMONK_db__user`            | listmonk       |
-| `LISTMONK_db__password`        | listmonk       |
-| `LISTMONK_db__database`        | listmonk       |
-| `LISTMONK_db__ssl_mode`        | disable        |
+| **Environment variable**         | Example value                |
+| -------------------------------- | ---------------------------- |
+| `LISTMONK_app__address`          | "0.0.0.0:9000"               |
+| `LISTMONK_app__tracking_url`     | "https://t.platform.example" |
+| `LISTMONK_db__host`              | db                           |
+| `LISTMONK_db__port`              | 9432                         |
+| `LISTMONK_db__user`              | listmonk                     |
+| `LISTMONK_db__password`          | listmonk                     |
+| `LISTMONK_db__database`          | listmonk                     |
+| `LISTMONK_db__ssl_mode`          | disable                      |
+
+`LISTMONK_app__tracking_url` sets the platform tracking base (`app.tracking_url`). See [Custom Tracking Domains](custom-tracking-domains.md).
 
 
 ### Customizing system templates
@@ -47,6 +50,8 @@ When configuring auth proxies and web application firewalls, use this table.
 | `GET`       | `/public/*`           | Static files for HTML subscription pages      |
 | `POST`      | `/webhooks/service/*` | Bounce webhook endpoints for AWS and Sendgrid |
 | `GET`       | `/uploads/*`          | The file upload path configured in media settings |
+
+For customer tracking hostnames that CNAME to the platform, expose only `/link/*` and `/campaign/*` on those hosts and keep `/admin` and `/api` on the main site. See [Custom Tracking Domains](custom-tracking-domains.md).
 
 
 ## Media uploads
