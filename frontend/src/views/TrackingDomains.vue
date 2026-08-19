@@ -178,6 +178,13 @@
                   <strong class="sdd-table__name" data-cy="domain-name">
                     {{ displayDomainName(d) }}
                   </strong>
+                  <span
+                    v-if="normalizeHost(d.domain) !== baseDomainFor(d)"
+                    class="sdd-table__tracking-host"
+                    :title="`Tracking host: ${normalizeHost(d.domain)}`"
+                  >
+                    {{ normalizeHost(d.domain) }}
+                  </span>
                 </td>
                 <td>
                   <span
@@ -523,12 +530,10 @@ export default Vue.extend({
     },
 
     displayDomainName(d) {
-      const base = this.baseDomainFor(d);
-      const host = this.normalizeHost(d.domain);
-      if (d.status === 'verified' || host !== base) {
-        return host;
-      }
-      return base;
+      // Always show the registered base domain in the list.
+      // The full tracking host (e.g. emailtrack.eguardian.in) is shown
+      // only inside the expanded DNS configuration panel.
+      return this.baseDomainFor(d) || this.normalizeHost(d.domain);
     },
 
     onDeleteDomain(d) {

@@ -10948,6 +10948,15 @@ section.campaign.bv-page {
   .sdd-table__name {
     font-size: 0.9375rem;
     color: #111827;
+    display: block;
+  }
+
+  .sdd-table__tracking-host {
+    display: block;
+    margin-top: 0.15rem;
+    font-size: 0.75rem;
+    color: $bv-muted;
+    font-family: "Menlo", "Consolas", monospace;
   }
 
   .sdd-table__config td {
