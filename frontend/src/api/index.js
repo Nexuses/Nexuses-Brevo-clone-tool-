@@ -492,9 +492,9 @@ export const createTrackingDomain = async (data) => http.post(
   { loading: models.trackingDomains },
 );
 
-export const verifyTrackingDomain = async (id) => http.post(
+export const verifyTrackingDomain = async (id, data = {}) => http.post(
   `/api/tracking-domains/${id}/verify`,
-  {},
+  data,
   { loading: models.trackingDomains },
 );
 

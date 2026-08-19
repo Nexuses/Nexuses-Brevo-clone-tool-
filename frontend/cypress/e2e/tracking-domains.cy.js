@@ -1,12 +1,27 @@
 const pageURL = '/admin/settings/tracking-domains';
 const domainsURL = `${pageURL}?tab=domains`;
 
-const pendingDomain = {
+const baseDomain = {
   id: 1,
-  domain: 'click.example.com',
+  domain: 'example.com',
+  base_domain: 'example.com',
   status: 'pending',
   dns_record_type: 'CNAME',
-  dns_record_name: 'click.example.com',
+  dns_record_name: '@',
+  dns_record_value: 'tracking.myplatform.com',
+  verified_at: null,
+  last_error: '',
+  created_at: '2026-01-01T10:00:00Z',
+  updated_at: '2026-01-01T10:00:00Z',
+};
+
+const pendingDomain = {
+  id: 2,
+  domain: 'click.example.com',
+  base_domain: 'example.com',
+  status: 'pending',
+  dns_record_type: 'CNAME',
+  dns_record_name: 'click',
   dns_record_value: 'tracking.myplatform.com',
   verified_at: null,
   last_error: '',
@@ -32,17 +47,38 @@ const mockAPI = () => {
   }).as('getDomains');
 
   cy.intercept('POST', '/api/tracking-domains', (req) => {
-    expect(req.body.domain).to.equal(pendingDomain.domain);
-    domains = [pendingDomain];
-    req.reply({ body: { data: pendingDomain } });
+    if (req.body.tracking_host) {
+      expect(req.body.domain).to.equal('example.com');
+      expect(req.body.tracking_host).to.equal(pendingDomain.domain);
+      domains = [pendingDomain];
+      req.reply({ body: { data: pendingDomain } });
+      return;
+    }
+    expect(req.body.domain).to.equal('example.com');
+    domains = [baseDomain];
+    req.reply({ body: { data: baseDomain } });
   }).as('addDomain');
 
   cy.intercept('POST', '/api/tracking-domains/1/verify', (req) => {
+    expect(req.body.domain).to.equal('emailtrack.example.com');
+    const verified = {
+      ...baseDomain,
+      domain: 'emailtrack.example.com',
+      dns_record_name: 'emailtrack',
+      status: 'verified',
+      verified_at: '2026-01-02T10:00:00Z',
+    };
+    domains = [verified];
+    req.reply({ body: { data: { ...verified, verified: true, message: 'Domain verified.' } } });
+  }).as('verifyBaseDomain');
+
+  cy.intercept('POST', '/api/tracking-domains/2/verify', (req) => {
+    expect(req.body.domain).to.equal(pendingDomain.domain);
     domains = [verifiedDomain];
     req.reply({ body: { data: { ...verifiedDomain, verified: true, message: 'Domain verified.' } } });
   }).as('verifyDomain');
 
-  cy.intercept('DELETE', '/api/tracking-domains/1', (req) => {
+  cy.intercept('DELETE', '/api/tracking-domains/*', (req) => {
     domains = [];
     req.reply({ body: { data: true } });
   }).as('deleteDomain');
@@ -71,7 +107,7 @@ describe('Senders and domains', () => {
     cy.get('.sdd-wizard__cancel').should('contain', 'Cancel');
   });
 
-  it('Adds a domain', () => {
+  it('Adds a domain with branded subdomain', () => {
     mockAPI();
     cy.loginAndVisit(domainsURL);
     cy.wait('@getDomains');
@@ -79,7 +115,7 @@ describe('Senders and domains', () => {
     cy.get('[data-cy=btn-header-add]').click();
     cy.get('[data-cy=domain]').type('example.com');
     cy.get('[data-cy=btn-continue]').click();
-    cy.get('[data-cy=subdomain]').should('have.value', 'click');
+    cy.get('[data-cy=subdomain]').type('click');
     cy.get('[data-cy=btn-continue]').click();
     cy.get('[data-cy=btn-continue]').click();
     cy.get('[data-cy=btn-add]').click();
@@ -90,7 +126,37 @@ describe('Senders and domains', () => {
     cy.get('[data-cy=status]').should('contain', 'Not authenticated');
   });
 
-  it('Verifies a domain', () => {
+  it('Adds a base domain without branded subdomain', () => {
+    mockAPI();
+    cy.loginAndVisit(domainsURL);
+    cy.wait('@getDomains');
+
+    cy.get('[data-cy=btn-header-add]').click();
+    cy.get('[data-cy=domain]').type('example.com');
+    cy.get('[data-cy=btn-continue]').click();
+    cy.get('[data-cy=btn-skip-subdomain]').click();
+    cy.wait('@addDomain');
+    cy.wait('@getDomains');
+
+    cy.get('[data-cy=domain-name]').should('contain', 'example.com');
+    cy.get('[data-cy=status]').should('contain', 'Not authenticated');
+  });
+
+  it('Verifies a base domain with tracking host at authentication', () => {
+    domains = [baseDomain];
+    mockAPI();
+    cy.loginAndVisit(domainsURL);
+    cy.wait('@getDomains');
+
+    cy.get('[data-cy=btn-verify]').click();
+    cy.get('[data-cy=tracking-host]').type('emailtrack.example.com');
+    cy.get('.btn-new').contains('Verify DNS').click();
+    cy.wait('@verifyBaseDomain');
+
+    cy.get('[data-cy=status]').should('contain', 'Authenticated');
+  });
+
+  it('Verifies a domain with preset tracking host', () => {
     domains = [pendingDomain];
     mockAPI();
     cy.loginAndVisit(domainsURL);

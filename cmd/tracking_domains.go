@@ -27,21 +27,35 @@ func (a *App) GetTrackingDomains(c echo.Context) error {
 	return c.JSON(http.StatusOK, okResp{out})
 }
 
-// CreateTrackingDomain registers a pending custom tracking domain for the authenticated user.
+// CreateTrackingDomain registers a base domain and optional branded tracking subdomain.
 // Any user_id in the request body is ignored.
 func (a *App) CreateTrackingDomain(c echo.Context) error {
 	var req struct {
-		Domain string `json:"domain"`
-		UserID int    `json:"user_id"` // ignored; ownership comes from auth
+		Domain       string `json:"domain"`
+		TrackingHost string `json:"tracking_host"`
+		UserID       int    `json:"user_id"` // ignored; ownership comes from auth
 	}
 	if err := c.Bind(&req); err != nil {
 		return err
 	}
 
-	domain, err := trackingdomain.NormalizeDomain(req.Domain)
+	baseDomain, err := trackingdomain.NormalizeDomain(req.Domain)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, err.Error())
 	}
+
+	trackingHost := baseDomain
+	if req.TrackingHost != "" {
+		trackingHost, err = trackingdomain.NormalizeDomain(req.TrackingHost)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		if !trackingdomain.IsUnderBase(trackingHost, baseDomain) {
+			return echo.NewHTTPError(http.StatusBadRequest, "tracking host must belong to the registered domain")
+		}
+	}
+
+	dnsName := trackingdomain.DNSHostLabel(trackingHost, baseDomain)
 
 	user := auth.GetUser(c)
 	ownerID := trackingdomain.OwnerIDFromAuth(user.ID, req.UserID)
@@ -52,7 +66,7 @@ func (a *App) CreateTrackingDomain(c echo.Context) error {
 			"app.tracking_url (or app.root_url) must be configured as the CNAME target")
 	}
 
-	out, err := a.core.CreateTrackingDomain(ownerID, domain, domain, expected)
+	out, err := a.core.CreateTrackingDomain(ownerID, trackingHost, baseDomain, dnsName, expected)
 	if err != nil {
 		return err
 	}
@@ -60,17 +74,54 @@ func (a *App) CreateTrackingDomain(c echo.Context) error {
 }
 
 // VerifyTrackingDomain performs DNS CNAME verification for a user-owned domain.
+// A tracking hostname can be supplied at verify time for base-only registrations.
 func (a *App) VerifyTrackingDomain(c echo.Context) error {
 	id := getID(c)
 	user := auth.GetUser(c)
+
+	var req struct {
+		Domain string `json:"domain"`
+	}
+	if err := c.Bind(&req); err != nil {
+		return err
+	}
 
 	td, err := a.core.GetTrackingDomain(id, user.ID)
 	if err != nil {
 		return err
 	}
 
+	baseDomain := td.BaseDomain
+	if baseDomain == "" {
+		baseDomain = td.Domain
+	}
+
+	verifyHost := td.Domain
+	if req.Domain != "" && td.Status != models.TrackingDomainStatusVerified {
+		newHost, err := trackingdomain.NormalizeDomain(req.Domain)
+		if err != nil {
+			return echo.NewHTTPError(http.StatusBadRequest, err.Error())
+		}
+		if !trackingdomain.IsUnderBase(newHost, baseDomain) {
+			return echo.NewHTTPError(http.StatusBadRequest, "tracking host must belong to the registered domain")
+		}
+		if newHost == baseDomain {
+			return echo.NewHTTPError(http.StatusBadRequest,
+				"enter a tracking subdomain such as emailtrack."+baseDomain)
+		}
+		dnsName := trackingdomain.DNSHostLabel(newHost, baseDomain)
+		td, err = a.core.UpdateTrackingDomainHost(id, user.ID, newHost, dnsName)
+		if err != nil {
+			return err
+		}
+		verifyHost = newHost
+	} else if verifyHost == baseDomain && td.Status != models.TrackingDomainStatusVerified {
+		return echo.NewHTTPError(http.StatusBadRequest,
+			"enter a tracking subdomain such as emailtrack."+baseDomain+" before verifying DNS")
+	}
+
 	expected := trackingdomain.ExpectedCNAMETarget(a.urlCfg.TrackingURL, a.urlCfg.RootURL)
-	res := trackingdomain.VerifyCNAME(context.Background(), a.trackingDNS, td.Domain, expected)
+	res := trackingdomain.VerifyCNAME(context.Background(), a.trackingDNS, verifyHost, expected)
 
 	lastErr := ""
 	if res.Status != trackingdomain.StatusVerified {

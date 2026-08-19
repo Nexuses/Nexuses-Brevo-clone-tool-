@@ -123,6 +123,7 @@ type Queries struct {
 	GetTrackingDomains                        *sqlx.Stmt `query:"get-tracking-domains"`
 	GetTrackingDomain                         *sqlx.Stmt `query:"get-tracking-domain"`
 	CreateTrackingDomain                      *sqlx.Stmt `query:"create-tracking-domain"`
+	UpdateTrackingDomainHost                  *sqlx.Stmt `query:"update-tracking-domain-host"`
 	UpdateTrackingDomainVerification          *sqlx.Stmt `query:"update-tracking-domain-verification"`
 	DeleteTrackingDomain                      *sqlx.Stmt `query:"delete-tracking-domain"`
 	GetTrackingDomainBlockingCampaignStatuses *sqlx.Stmt `query:"get-tracking-domain-blocking-campaign-statuses"`

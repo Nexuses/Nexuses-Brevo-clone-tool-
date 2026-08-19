@@ -472,13 +472,13 @@ section {
       align-items: center;
       justify-content: center;
       cursor: pointer;
-      color: #6B7280;
-      flex-shrink: 0;
+    color: #635BFF;
+    flex-shrink: 0;
 
-      &:hover {
-        background: #F3F4F6;
-        color: #111827;
-      }
+    &:hover {
+      background: #F3F4F6;
+      color: #5249E8;
+    }
     }
   }
 
@@ -9278,7 +9278,7 @@ section.campaign.bv-page {
 }
 
 .campaign-brevo {
-  max-width: 880px;
+  max-width: 920px;
   margin: 0 auto 2.5rem;
   font-family: "Inter", "Figtree", "Helvetica Neue", sans-serif;
   color: #111827;
@@ -9324,6 +9324,14 @@ section.campaign.bv-page {
     align-items: center;
     gap: 8px;
     min-width: 0;
+
+    .campaign-brevo__icon-btn {
+      color: #635BFF;
+
+      &:hover {
+        color: #5249E8;
+      }
+    }
   }
 
   &__back {
@@ -9464,7 +9472,7 @@ section.campaign.bv-page {
   &__stack {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap: 12px;
   }
 
   &__card {
@@ -9473,19 +9481,18 @@ section.campaign.bv-page {
     border-radius: 12px;
     overflow: visible;
     box-shadow: 0 1px 2px rgba(17, 24, 39, 0.04);
-  }
 
-  &__card-top {
-    display: flex;
-    justify-content: flex-start;
-    padding: 14px 24px 0;
+    &.is-open {
+      box-shadow: 0 10px 32px rgba(17, 24, 39, 0.08);
+    }
   }
 
   &__languages {
     appearance: none;
     border: 0;
     background: none;
-    padding: 0;
+    padding: 0 4px 4px;
+    align-self: flex-start;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -9565,9 +9572,93 @@ section.campaign.bv-page {
       border-color: #00A878;
     }
 
+    &.is-pending {
+      background: #E5E7EB;
+      border-color: #E5E7EB;
+
+      &::after {
+        content: "";
+        width: 6px;
+        height: 6px;
+        border-radius: 50%;
+        background: #fff;
+      }
+    }
+
     &.is-muted {
       border-color: #E5E7EB;
     }
+  }
+
+  &__expand-head {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 22px 24px 8px;
+
+    h2 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #111827;
+    }
+
+    p {
+      margin: 4px 0 0;
+      color: #6B7280;
+      font-size: 14px;
+    }
+  }
+
+  &__expand-body {
+    padding: 8px 24px 8px;
+  }
+
+  &__expand-split {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 220px;
+    gap: 28px;
+    align-items: start;
+
+    @media (max-width: 720px) {
+      grid-template-columns: 1fr;
+    }
+  }
+
+  &__expand-foot {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 16px 24px 20px;
+    border-top: 1px solid #F0F1F3;
+    margin-top: 8px;
+  }
+
+  &__expand-actions {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-left: auto;
+  }
+
+  &__recip-summary {
+    margin-top: 18px;
+    font-size: 14px;
+    color: #111827;
+  }
+
+  &__inbox-title {
+    font-size: 15px;
+    font-weight: 800;
+    margin: 0 0 10px;
+    color: #111827;
+  }
+
+  &__field em {
+    color: #DE350B;
+    font-style: normal;
   }
 
   &__design-copy {
@@ -9932,18 +10023,6 @@ section.campaign.bv-page {
     min-height: 52px;
 
     &.is-active {
-      strong {
-        display: flex;
-        justify-content: space-between;
-        font-size: 0.78rem;
-      }
-
-      span {
-        font-weight: 500;
-        color: #9ca3af;
-        font-size: 0.7rem;
-      }
-
       em,
       small {
         display: block;
@@ -9966,6 +10045,27 @@ section.campaign.bv-page {
       background: linear-gradient(#eceff3, #eceff3) 0 10px / 70% 8px no-repeat,
         linear-gradient(#f3f4f6, #f3f4f6) 0 24px / 90% 6px no-repeat,
         linear-gradient(#f3f4f6, #f3f4f6) 0 36px / 55% 6px no-repeat;
+    }
+  }
+
+  &__inbox-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+
+    strong {
+      font-size: 0.78rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    span {
+      font-weight: 500;
+      color: #9ca3af;
+      font-size: 0.7rem;
+      flex-shrink: 0;
     }
   }
 }
@@ -10922,6 +11022,46 @@ section.campaign.bv-page {
       font-size: 0.8125rem;
     }
 
+    &__host-field {
+      display: block;
+      margin: 0 0 1rem;
+    }
+
+    &__host-label {
+      display: block;
+      margin-bottom: 0.35rem;
+      font-size: 0.8125rem;
+      font-weight: 600;
+      color: $bv-grey-900;
+    }
+
+    &__host-input {
+      display: block;
+      width: 100%;
+      max-width: 28rem;
+      min-height: 42px;
+      padding: 0.55rem 0.75rem;
+      border: 1px solid $bv-grey-300;
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 0.9375rem;
+      color: $bv-grey-900;
+
+      &:focus {
+        outline: none;
+        border-color: #635BFF;
+        box-shadow: 0 0 0 3px rgba(99, 91, 255, 0.12);
+      }
+    }
+
+    &__host-hint {
+      display: block;
+      margin-top: 0.35rem;
+      color: $bv-muted;
+      font-size: 0.75rem;
+      line-height: 1.45;
+    }
+
     &__grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
@@ -11239,6 +11379,39 @@ section.campaign.bv-page {
   color: #fff;
 }
 
+.domain-add__optional {
+  font-size: 0.72em;
+  font-weight: 500;
+  color: $bv-muted;
+}
+
+.domain-add__skip-link {
+  display: block;
+  width: 100%;
+  max-width: 36rem;
+  margin: 0 0 1.25rem;
+  padding: 0.85rem 1rem;
+  text-align: left;
+  font-family: inherit;
+  font-size: 0.875rem;
+  line-height: 1.45;
+  color: #111827;
+  background: #f5f3ff;
+  border: 1px solid #c4b5fd;
+  border-radius: 8px;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: #ede9fe;
+    border-color: #635BFF;
+  }
+
+  &:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+}
+
 .domain-add__intro {
   max-width: 640px;
   margin-bottom: 1.15rem;
@@ -11364,6 +11537,7 @@ section.campaign.bv-page {
 }
 
 .sdd-wizard__prev,
+.sdd-wizard__secondary,
 .sdd-wizard__primary {
   appearance: none;
   font-family: inherit;
@@ -11376,6 +11550,21 @@ section.campaign.bv-page {
 }
 
 .sdd-wizard__prev {
+  background: #fff;
+  border: 1px solid $bv-grey-300;
+  color: #111827;
+
+  &:hover:not(:disabled) {
+    background: $bv-grey-100;
+  }
+
+  &:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
+.sdd-wizard__secondary {
   background: #fff;
   border: 1px solid $bv-grey-300;
   color: #111827;

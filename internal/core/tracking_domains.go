@@ -36,15 +36,30 @@ func (c *Core) GetTrackingDomain(id, userID int) (models.TrackingDomain, error) 
 }
 
 // CreateTrackingDomain creates a pending CTD for userID. Body user_id must never be trusted.
-func (c *Core) CreateTrackingDomain(userID int, domain, dnsName, dnsValue string) (models.TrackingDomain, error) {
+func (c *Core) CreateTrackingDomain(userID int, domain, baseDomain, dnsName, dnsValue string) (models.TrackingDomain, error) {
 	var out models.TrackingDomain
-	if err := c.q.CreateTrackingDomain.Get(&out, userID, domain, dnsName, dnsValue); err != nil {
+	if err := c.q.CreateTrackingDomain.Get(&out, userID, domain, baseDomain, dnsName, dnsValue); err != nil {
 		if pqErr, ok := err.(*pq.Error); ok && pqErr.Constraint == "custom_tracking_domains_domain_key" {
 			return out, echo.NewHTTPError(http.StatusConflict, "tracking domain already exists")
 		}
 		c.log.Printf("error creating tracking domain: %v", err)
 		return out, echo.NewHTTPError(http.StatusInternalServerError,
 			c.i18n.Ts("globals.messages.errorCreating", "name", "tracking domain", "error", pqErrMsg(err)))
+	}
+	return out, nil
+}
+
+// UpdateTrackingDomainHost sets the tracking hostname before DNS verification.
+func (c *Core) UpdateTrackingDomainHost(id, userID int, domain, dnsName string) (models.TrackingDomain, error) {
+	var out models.TrackingDomain
+	if err := c.q.UpdateTrackingDomainHost.Get(&out, id, userID, domain, dnsName); err != nil {
+		if err == sql.ErrNoRows {
+			return out, echo.NewHTTPError(http.StatusNotFound,
+				c.i18n.Ts("globals.messages.notFound", "name", "tracking domain"))
+		}
+		c.log.Printf("error updating tracking domain host: %v", err)
+		return out, echo.NewHTTPError(http.StatusInternalServerError,
+			c.i18n.Ts("globals.messages.errorUpdating", "name", "tracking domain", "error", pqErrMsg(err)))
 	}
 	return out, nil
 }

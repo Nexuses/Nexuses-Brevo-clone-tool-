@@ -175,7 +175,9 @@
             <template v-for="d in filteredDomains">
               <tr :key="d.id" class="sdd-table__row" :data-id="d.id" data-cy="domain-card">
                 <td>
-                  <strong class="sdd-table__name" data-cy="domain-name">{{ d.domain }}</strong>
+                  <strong class="sdd-table__name" data-cy="domain-name">
+                    {{ displayDomainName(d) }}
+                  </strong>
                 </td>
                 <td>
                   <span
@@ -217,10 +219,31 @@
                   <div class="ctd-dns">
                     <h3 class="ctd-dns__title">DNS record</h3>
                     <p class="ctd-dns__help">
-                      Add this CNAME at your DNS provider, then click <strong>Verify DNS</strong>.
-                      Use <strong>{{ dnsHostLabel(d.domain) }}</strong> as the host/name if the
-                      panel already includes your domain.
+                      Add this CNAME at your DNS provider for
+                      <strong>{{ baseDomainFor(d) }}</strong>, then click
+                      <strong>Verify DNS</strong>.
                     </p>
+                    <label
+                      v-if="canManage && d.status !== 'verified'"
+                      class="ctd-dns__host-field"
+                    >
+                      <span class="ctd-dns__host-label">Tracking hostname</span>
+                      <input
+                        v-model="trackingHostDraft[d.id]"
+                        class="ctd-dns__host-input"
+                        type="text"
+                        :placeholder="`emailtrack.${baseDomainFor(d)}`"
+                        autocomplete="off"
+                        spellcheck="false"
+                        data-cy="tracking-host"
+                        @input="onTrackingHostInput(d)"
+                      >
+                      <span class="ctd-dns__host-hint">
+                        Enter the full tracking host (e.g.
+                        <code>emailtrack.{{ baseDomainFor(d) }}</code>).
+                        The record name below is the subdomain part only.
+                      </span>
+                    </label>
                     <dl class="ctd-dns__grid">
                       <div class="ctd-dns__item">
                         <dt>Type</dt>
@@ -228,7 +251,7 @@
                       </div>
                       <div class="ctd-dns__item">
                         <dt>Name</dt>
-                        <dd><copy-text :text="dnsHostLabel(d.domain)" /></dd>
+                        <dd><copy-text :text="dnsHostLabelFor(d)" /></dd>
                       </div>
                       <div class="ctd-dns__item is-value">
                         <dt>Value</dt>
@@ -281,6 +304,7 @@ export default Vue.extend({
       busyId: null,
       expandedDomain: null,
       expandedSender: null,
+      trackingHostDraft: {},
       domainQuery: '',
       senderQuery: '',
       fromEmail: '',
@@ -334,10 +358,64 @@ export default Vue.extend({
       )) || null;
     },
 
-    dnsHostLabel(domain) {
-      const parts = (domain || '').split('.').filter(Boolean);
+    dnsHostLabel(trackingHost, baseDomain) {
+      const host = this.normalizeHost(trackingHost);
+      const base = this.normalizeHost(baseDomain || trackingHost);
+      if (!host) return '';
+      if (host === base) return '';
+      if (host.endsWith(`.${base}`)) {
+        return host.slice(0, -(base.length + 1));
+      }
+      const parts = host.split('.').filter(Boolean);
       if (parts.length > 2) return parts[0];
-      return domain || '';
+      return host;
+    },
+
+    normalizeHost(raw) {
+      return String(raw || '')
+        .trim()
+        .toLowerCase()
+        .replace(/^https?:\/\//, '')
+        .replace(/^www\./, '')
+        .replace(/\/.*$/, '')
+        .replace(/\.$/, '');
+    },
+
+    baseDomainFor(d) {
+      return this.normalizeHost(d.baseDomain || d.domain);
+    },
+
+    trackingHostFor(d) {
+      const draft = this.trackingHostDraft[d.id];
+      if (draft !== undefined && draft !== null) {
+        return this.normalizeHost(draft);
+      }
+      return this.normalizeHost(d.domain);
+    },
+
+    dnsHostLabelFor(d) {
+      const host = this.trackingHostFor(d);
+      const base = this.baseDomainFor(d);
+      const label = this.dnsHostLabel(host, base);
+      return label || '—';
+    },
+
+    isValidTrackingHost(d) {
+      const host = this.trackingHostFor(d);
+      const base = this.baseDomainFor(d);
+      if (!host || !base || host === base) return false;
+      return host.endsWith(`.${base}`) && this.isValidDomain(host);
+    },
+
+    isValidDomain(domain) {
+      return /^[a-z0-9]([a-z0-9-]*[a-z0-9])?(\.[a-z0-9]([a-z0-9-]*[a-z0-9])?)+$/.test(domain);
+    },
+
+    onTrackingHostInput(d) {
+      this.trackingHostDraft = {
+        ...this.trackingHostDraft,
+        [d.id]: this.trackingHostDraft[d.id] || '',
+      };
     },
 
     toggleSender(email) {
@@ -377,6 +455,7 @@ export default Vue.extend({
         dnsRecordType: d.dnsRecordType || 'CNAME',
         dnsRecordName: d.dnsRecordName || d.domain || '',
         dnsRecordValue: d.dnsRecordValue || '',
+        baseDomain: d.baseDomain || d.base_domain || d.domain || '',
         lastError: d.lastError || '',
       };
     },
@@ -388,12 +467,31 @@ export default Vue.extend({
     },
 
     onDomainAction(d) {
-      this.expandedDomain = this.expandedDomain === d.id ? null : d.id;
+      const opening = this.expandedDomain !== d.id;
+      this.expandedDomain = opening ? d.id : null;
+      if (opening) {
+        const host = this.normalizeHost(d.domain);
+        const base = this.baseDomainFor(d);
+        this.trackingHostDraft = {
+          ...this.trackingHostDraft,
+          [d.id]: host !== base ? host : '',
+        };
+      }
     },
 
     onVerifyDomain(d) {
+      if (!this.isValidTrackingHost(d)) {
+        this.$utils.toast(
+          `Enter a tracking subdomain such as emailtrack.${this.baseDomainFor(d)} before verifying.`,
+          'is-warning',
+          5000,
+        );
+        return;
+      }
+
       this.busyId = d.id;
-      this.$api.verifyTrackingDomain(d.id).then((data) => {
+      const payload = { domain: this.trackingHostFor(d) };
+      this.$api.verifyTrackingDomain(d.id, payload).then((data) => {
         this.busyId = null;
         const resp = data || {};
         const record = resp.id ? resp : resp.domain;
@@ -422,6 +520,15 @@ export default Vue.extend({
       }, () => {
         this.busyId = null;
       });
+    },
+
+    displayDomainName(d) {
+      const base = this.baseDomainFor(d);
+      const host = this.normalizeHost(d.domain);
+      if (d.status === 'verified' || host !== base) {
+        return host;
+      }
+      return base;
     },
 
     onDeleteDomain(d) {

@@ -97,20 +97,23 @@
       <b-loading :active="loading" :is-full-page="false" />
 
       <div class="campaign-brevo__stack">
-        <section class="campaign-brevo__card">
-          <div class="campaign-brevo__card-top">
-            <button type="button" class="campaign-brevo__languages" @click="onAddLanguages">
-              Add languages
-              <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-                <path d="M7 1.2l1.5 3.1 3.4.5-2.45 2.4.6 3.4L7 9l-3.05 1.6.6-3.4L2.1 4.8l3.4-.5L7 1.2z"
-                  fill="#E8B931" stroke="#C99514" stroke-width="0.6" />
-              </svg>
-            </button>
-          </div>
+        <button
+          v-if="!panel"
+          type="button"
+          class="campaign-brevo__languages"
+          @click="onAddLanguages"
+        >
+          Add languages
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M7 1.2l1.5 3.1 3.4.5-2.45 2.4.6 3.4L7 9l-3.05 1.6.6-3.4L2.1 4.8l3.4-.5L7 1.2z"
+              fill="#E8B931" stroke="#C99514" stroke-width="0.6" />
+          </svg>
+        </button>
 
-          <div class="campaign-brevo__row">
+        <section class="campaign-brevo__card" :class="{ 'is-open': panel === 'sender' }">
+          <div v-if="panel !== 'sender'" class="campaign-brevo__row">
             <div class="campaign-brevo__row-main">
-              <span class="campaign-brevo__check" :class="{ 'is-done': senderDone }" aria-hidden="true">
+              <span class="campaign-brevo__check" :class="senderDone ? 'is-done' : 'is-pending'" aria-hidden="true">
                 <svg v-if="senderDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
                     stroke-linejoin="round" />
@@ -122,13 +125,65 @@
               </div>
             </div>
             <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="openPanel('sender')">
-              Manage sender
+              {{ senderDone ? 'Manage sender' : 'Add sender' }}
             </button>
           </div>
+          <div v-else class="campaign-brevo__expand">
+            <header class="campaign-brevo__expand-head">
+              <div class="campaign-brevo__row-main">
+                <span class="campaign-brevo__check" :class="senderDone ? 'is-done' : 'is-pending'" aria-hidden="true">
+                  <svg v-if="senderDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <div>
+                  <h2>Sender</h2>
+                  <p>Who is sending this email campaign?</p>
+                </div>
+              </div>
+              <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
+            </header>
+            <div class="campaign-brevo__expand-body campaign-brevo__expand-split">
+              <div>
+                <label class="campaign-brevo__field">
+                  <span>Email address</span>
+                  <select v-model="draft.senderEmail" :disabled="!canEdit">
+                    <option v-for="em in senderEmails" :key="em" :value="em">{{ em }}</option>
+                  </select>
+                </label>
+                <label class="campaign-brevo__field">
+                  <span>Name</span>
+                  <input v-model="draft.senderName" maxlength="200" :disabled="!canEdit" placeholder="Sender name" />
+                </label>
+              </div>
+              <div class="campaign-brevo__phone" aria-hidden="true">
+                <div class="campaign-brevo__phone-screen">
+                  <div class="campaign-brevo__inbox-title">Inbox</div>
+                  <div class="campaign-brevo__inbox-row is-active">
+                    <div class="campaign-brevo__inbox-meta">
+                      <strong>{{ draft.senderName || 'Sender name' }}</strong>
+                      <span>17:45</span>
+                    </div>
+                    <em>{{ form.subject || 'Message subject...' }}</em>
+                    <small>{{ form.previewText || 'Your preview text' }}</small>
+                  </div>
+                  <div class="campaign-brevo__inbox-row" />
+                  <div class="campaign-brevo__inbox-row" />
+                </div>
+              </div>
+            </div>
+            <footer class="campaign-brevo__expand-foot">
+              <button type="button" class="campaign-brevo__link" @click="closePanel">Cancel</button>
+              <button type="button" class="campaign-brevo__btn campaign-brevo__btn--dark" @click="saveSender">Save</button>
+            </footer>
+          </div>
+        </section>
 
-          <div class="campaign-brevo__row">
+        <section class="campaign-brevo__card" :class="{ 'is-open': panel === 'recipients' }">
+          <div v-if="panel !== 'recipients'" class="campaign-brevo__row">
             <div class="campaign-brevo__row-main">
-              <span class="campaign-brevo__check" :class="{ 'is-done': recipientsDone }" aria-hidden="true">
+              <span class="campaign-brevo__check" :class="recipientsDone ? 'is-done' : 'is-pending'" aria-hidden="true">
                 <svg v-if="recipientsDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
                     stroke-linejoin="round" />
@@ -140,13 +195,76 @@
               </div>
             </div>
             <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="openPanel('recipients')">
-              Edit recipients
+              {{ recipientsDone ? 'Edit recipients' : 'Add recipients' }}
             </button>
           </div>
+          <div v-else class="campaign-brevo__expand">
+            <header class="campaign-brevo__expand-head">
+              <div class="campaign-brevo__row-main">
+                <span class="campaign-brevo__check" :class="recipientsDone ? 'is-done' : 'is-pending'" aria-hidden="true">
+                  <svg v-if="recipientsDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <div>
+                  <h2>Recipients</h2>
+                  <p>The people who receive your campaign</p>
+                </div>
+              </div>
+              <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
+            </header>
+            <div class="campaign-brevo__expand-body">
+              <label class="campaign-brevo__field">
+                <span>Send to</span>
+                <div class="campaign-brevo__chips">
+                  <span v-for="l in draft.lists" :key="l.id" class="campaign-brevo__chip">
+                    {{ l.name }}
+                    <button v-if="canEdit" type="button" aria-label="Remove list" @click="removeDraftList(l.id)">×</button>
+                  </span>
+                  <select v-if="canEdit" :value="''" aria-label="Add list" @change="addDraftList($event)">
+                    <option value="">Select list(s), segment(s) or individual contacts</option>
+                    <option v-for="l in availableLists" :key="l.id" :value="l.id">{{ l.name }}</option>
+                  </select>
+                </div>
+              </label>
+              <label class="campaign-brevo__checkline">
+                <input v-model="draft.skipUnengaged" type="checkbox" :disabled="!canEdit" />
+                Don’t send to unengaged contacts
+              </label>
+              <button type="button" class="campaign-brevo__advanced" @click="advancedOpen = !advancedOpen">
+                Advanced options
+                <span>{{ advancedOpen ? '▴' : '▾' }}</span>
+              </button>
+              <div v-if="advancedOpen">
+                <label class="campaign-brevo__field">
+                  <span>Don’t send to</span>
+                  <select disabled>
+                    <option>Select list(s), segment(s) or individual contacts</option>
+                  </select>
+                </label>
+                <p class="campaign-brevo__hint">Exclude lists or segments after you save this campaign.</p>
+              </div>
+              <div class="campaign-brevo__recip-summary">
+                <strong>{{ draftRecipientCountLabel }}</strong>
+              </div>
+            </div>
+            <footer class="campaign-brevo__expand-foot">
+              <p class="campaign-brevo__hint">Send to as many recipients as you wish, within your plan limits.</p>
+              <div class="campaign-brevo__expand-actions">
+                <button type="button" class="campaign-brevo__link" @click="closePanel">Cancel</button>
+                <button type="button" class="campaign-brevo__btn campaign-brevo__btn--dark" @click="saveRecipients">
+                  Save
+                </button>
+              </div>
+            </footer>
+          </div>
+        </section>
 
-          <div class="campaign-brevo__row">
+        <section class="campaign-brevo__card" :class="{ 'is-open': panel === 'subject' }">
+          <div v-if="panel !== 'subject'" class="campaign-brevo__row">
             <div class="campaign-brevo__row-main">
-              <span class="campaign-brevo__check" :class="{ 'is-done': subjectDone }" aria-hidden="true">
+              <span class="campaign-brevo__check" :class="subjectDone ? 'is-done' : 'is-pending'" aria-hidden="true">
                 <svg v-if="subjectDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
                     stroke-linejoin="round" />
@@ -158,13 +276,89 @@
               </div>
             </div>
             <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="openPanel('subject')">
-              Edit subject
+              {{ subjectDone ? 'Edit subject' : 'Add subject' }}
             </button>
           </div>
+          <div v-else class="campaign-brevo__expand">
+            <header class="campaign-brevo__expand-head">
+              <div class="campaign-brevo__row-main">
+                <span class="campaign-brevo__check" :class="subjectDone ? 'is-done' : 'is-pending'" aria-hidden="true">
+                  <svg v-if="subjectDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
+                    <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
+                      stroke-linejoin="round" />
+                  </svg>
+                </span>
+                <div>
+                  <h2>Subject</h2>
+                  <p>Add a subject line for this campaign.</p>
+                </div>
+              </div>
+              <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
+            </header>
+            <div class="campaign-brevo__expand-body campaign-brevo__expand-split">
+              <div>
+                <label class="campaign-brevo__field">
+                  <span>Subject line <em>*</em></span>
+                  <div class="campaign-brevo__textarea-wrap">
+                    <textarea
+                      ref="subjectBox"
+                      v-model="draft.subject"
+                      rows="3"
+                      maxlength="5000"
+                      :disabled="!canEdit"
+                      required
+                    />
+                    <div class="campaign-brevo__toolbox">
+                      <button type="button" aria-label="Insert emoji" @click="insertAt('subject', '🎉')">☺</button>
+                      <button type="button" aria-label="Insert personalization" @click="insertName('subject')">{}</button>
+                      <button type="button" aria-label="Suggest subject" @click="suggestSubject">✦</button>
+                    </div>
+                  </div>
+                </label>
+                <label class="campaign-brevo__field">
+                  <span>Preview text</span>
+                  <div class="campaign-brevo__textarea-wrap">
+                    <textarea v-model="draft.previewText" rows="3" maxlength="500" :disabled="!canEdit" />
+                    <div class="campaign-brevo__toolbox">
+                      <button type="button" aria-label="Insert emoji" @click="insertAt('previewText', '✨')">☺</button>
+                      <button type="button" aria-label="Insert personalization" @click="insertName('previewText')">{}</button>
+                    </div>
+                  </div>
+                </label>
+              </div>
+              <div class="campaign-brevo__phone" aria-hidden="true">
+                <div class="campaign-brevo__phone-screen">
+                  <div class="campaign-brevo__inbox-title">Inbox</div>
+                  <div class="campaign-brevo__inbox-row is-active">
+                    <div class="campaign-brevo__inbox-meta">
+                      <strong>{{ draft.senderName || senderName || 'Sender' }}</strong>
+                      <span>17:45</span>
+                    </div>
+                    <em>{{ draft.subject || 'Message subject...' }}</em>
+                    <small>{{ draft.previewText || 'Your preview text' }}</small>
+                  </div>
+                  <div class="campaign-brevo__inbox-row" />
+                  <div class="campaign-brevo__inbox-row" />
+                </div>
+                <p>Actual email preview may vary depending on the email client.</p>
+              </div>
+            </div>
+            <footer class="campaign-brevo__expand-foot">
+              <span />
+              <div class="campaign-brevo__expand-actions">
+                <button type="button" class="campaign-brevo__link" @click="closePanel">Cancel</button>
+                <button type="button" class="campaign-brevo__btn campaign-brevo__btn--dark" @click="saveSubject">
+                  Save
+                </button>
+              </div>
+            </footer>
+          </div>
+        </section>
 
+        <section class="campaign-brevo__card">
           <div class="campaign-brevo__row campaign-brevo__row--design">
             <div class="campaign-brevo__row-main">
-              <span class="campaign-brevo__check" :class="{ 'is-done': designDone }" aria-hidden="true">
+              <span class="campaign-brevo__check" :class="designDone ? 'is-done' : 'is-pending'" aria-hidden="true">
                 <svg v-if="designDone" width="11" height="11" viewBox="0 0 12 12" fill="none">
                   <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
                     stroke-linejoin="round" />
@@ -190,9 +384,10 @@
                     </ul>
                   </div>
                 </div>
-                <div class="campaign-brevo__thumb">
+                <p>Create your email content.</p>
+                <div v-if="designDone" class="campaign-brevo__thumb">
                   <iframe
-                    v-if="campaignId && designDone"
+                    v-if="campaignId"
                     class="campaign-brevo__thumb-frame"
                     :src="previewSrc"
                     title="Email preview"
@@ -204,272 +399,91 @@
               </div>
             </div>
             <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="openDesign">
-              Edit design
+              {{ designDone ? 'Edit design' : 'Start designing' }}
             </button>
           </div>
         </section>
 
-        <section class="campaign-brevo__card">
-          <div class="campaign-brevo__row">
+        <section class="campaign-brevo__card" :class="{ 'is-open': panel === 'settings' }">
+          <div v-if="panel !== 'settings'" class="campaign-brevo__row">
             <div class="campaign-brevo__row-main">
               <span class="campaign-brevo__check is-muted" aria-hidden="true" />
               <div>
-                <h2>Additional settings</h2>
+                <h2>Advanced options</h2>
                 <p v-if="settingsSummary">{{ settingsSummary }}</p>
-                <p v-else class="is-muted">Sending and tracking</p>
+                <p v-else>Sending and tracking</p>
               </div>
             </div>
             <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="openPanel('settings')">
-              Edit settings
+              Edit
             </button>
+          </div>
+          <div v-else class="campaign-brevo__expand">
+            <header class="campaign-brevo__expand-head">
+              <div class="campaign-brevo__row-main">
+                <span class="campaign-brevo__check is-muted" aria-hidden="true" />
+                <div>
+                  <h2>Advanced options</h2>
+                  <p>Sending and tracking</p>
+                </div>
+              </div>
+              <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
+            </header>
+            <div class="campaign-brevo__expand-body">
+              <h3 class="campaign-brevo__section-label">Personalization</h3>
+              <label class="campaign-brevo__toggle">
+                <span>Personalize the ‘Send To’ field</span>
+                <input v-model="draft.personalizeTo" type="checkbox" :disabled="!canEdit" />
+              </label>
+              <h3 class="campaign-brevo__section-label">Sending and Tracking</h3>
+              <label class="campaign-brevo__toggle">
+                <span>Use a different Reply-to address</span>
+                <input v-model="draft.useReplyTo" type="checkbox" :disabled="!canEdit" />
+              </label>
+              <label v-if="draft.useReplyTo" class="campaign-brevo__field">
+                <span class="is-sr-only">Reply-to email</span>
+                <input v-model="draft.replyTo" type="email" :disabled="!canEdit" placeholder="reply@example.com" />
+              </label>
+              <label class="campaign-brevo__toggle">
+                <span>Activate UTM tracking</span>
+                <input v-model="draft.utmOn" type="checkbox" :disabled="!canEdit" />
+              </label>
+              <div v-if="draft.utmOn" class="campaign-brevo__utm">
+                <input v-model="draft.utmSource" :disabled="!canEdit" placeholder="utm_source" />
+                <input v-model="draft.utmMedium" :disabled="!canEdit" placeholder="utm_medium" />
+                <input v-model="draft.utmCampaign" :disabled="!canEdit" placeholder="utm_campaign" />
+              </div>
+              <label class="campaign-brevo__toggle">
+                <span>Add an attachment</span>
+                <input v-model="draft.attachOn" type="checkbox" :disabled="!canEdit" />
+              </label>
+              <div v-if="draft.attachOn" class="campaign-brevo__attach">
+                <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="$emit('attach')">
+                  Choose files
+                </button>
+                <span v-if="form.media && form.media.length">{{ form.media.length }} attached</span>
+              </div>
+              <label class="campaign-brevo__toggle">
+                <span>Add a tag</span>
+                <input v-model="draft.tagsOn" type="checkbox" :disabled="!canEdit" />
+              </label>
+              <div v-if="draft.tagsOn">
+                <b-taginput v-model="draft.tags" :disabled="!canEdit" ellipsis icon="tag-outline" placeholder="Tags" />
+              </div>
+            </div>
+            <footer class="campaign-brevo__expand-foot">
+              <span />
+              <div class="campaign-brevo__expand-actions">
+                <button type="button" class="campaign-brevo__link" @click="closePanel">Cancel</button>
+                <button type="button" class="campaign-brevo__btn campaign-brevo__btn--dark" @click="saveSettings">
+                  Save
+                </button>
+              </div>
+            </footer>
           </div>
         </section>
       </div>
     </template>
-
-    <!-- Sender modal -->
-    <div v-if="panel === 'sender'" class="campaign-brevo-modal" role="dialog" aria-modal="true" aria-labelledby="sender-title">
-      <button type="button" class="campaign-brevo-modal__backdrop" aria-label="Close" @click="closePanel" />
-      <div class="campaign-brevo-modal__card">
-        <header class="campaign-brevo-modal__head">
-          <div class="campaign-brevo-modal__head-main">
-            <span class="campaign-brevo__check is-done" aria-hidden="true">
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-            </span>
-            <div>
-              <h2 id="sender-title">Sender</h2>
-              <p>Who is sending this email campaign?</p>
-            </div>
-          </div>
-          <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
-        </header>
-        <div class="campaign-brevo-modal__body campaign-brevo-modal__split">
-          <div>
-            <label class="campaign-brevo__field">
-              <span>Email address</span>
-              <select v-model="draft.senderEmail" :disabled="!canEdit">
-                <option v-for="em in senderEmails" :key="em" :value="em">{{ em }}</option>
-              </select>
-            </label>
-            <label class="campaign-brevo__field">
-              <span>Name</span>
-              <input v-model="draft.senderName" maxlength="200" :disabled="!canEdit" placeholder="Sender name" />
-            </label>
-          </div>
-          <div class="campaign-brevo__phone" aria-hidden="true">
-            <div class="campaign-brevo__phone-screen">
-              <div class="campaign-brevo__inbox-row is-active">
-                <strong>{{ draft.senderName || 'Sender name' }}</strong>
-                <span>17:45</span>
-                <em>{{ form.subject || 'Message subject...' }}</em>
-                <small>{{ form.previewText || 'Your preview text' }}</small>
-              </div>
-              <div class="campaign-brevo__inbox-row" />
-              <div class="campaign-brevo__inbox-row" />
-            </div>
-            <p>Actual email preview may vary depending on the email client.</p>
-          </div>
-        </div>
-        <footer class="campaign-brevo-modal__foot">
-          <button type="button" class="campaign-brevo__link" @click="closePanel">Cancel</button>
-          <button type="button" class="campaign-brevo__btn campaign-brevo__btn--dark" @click="saveSender">Save</button>
-        </footer>
-      </div>
-    </div>
-
-    <!-- Recipients modal -->
-    <div v-if="panel === 'recipients'" class="campaign-brevo-modal" role="dialog" aria-modal="true" aria-labelledby="recip-title">
-      <button type="button" class="campaign-brevo-modal__backdrop" aria-label="Close" @click="closePanel" />
-      <div class="campaign-brevo-modal__card is-wide">
-        <header class="campaign-brevo-modal__head">
-          <div class="campaign-brevo-modal__head-main">
-            <span class="campaign-brevo__check" :class="{ 'is-done': recipientsDone }" aria-hidden="true">
-              <svg v-if="recipientsDone" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-            </span>
-            <div>
-              <h2 id="recip-title">Recipients</h2>
-              <p>{{ recipientsSummary }}</p>
-            </div>
-          </div>
-          <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
-        </header>
-        <div class="campaign-brevo-modal__body">
-          <label class="campaign-brevo__field">
-            <span>Send to</span>
-            <div class="campaign-brevo__chips">
-              <span v-for="l in draft.lists" :key="l.id" class="campaign-brevo__chip">
-                {{ l.name }}
-                <button v-if="canEdit" type="button" aria-label="Remove list" @click="removeDraftList(l.id)">×</button>
-              </span>
-              <select v-if="canEdit" :value="''" aria-label="Add list" @change="addDraftList($event)">
-                <option value="">Select list(s), segment(s) or individual contacts</option>
-                <option v-for="l in availableLists" :key="l.id" :value="l.id">{{ l.name }}</option>
-              </select>
-            </div>
-          </label>
-          <label class="campaign-brevo__checkline">
-            <input v-model="draft.skipUnengaged" type="checkbox" :disabled="!canEdit" />
-            Don’t send to unengaged contacts
-          </label>
-          <button type="button" class="campaign-brevo__advanced" @click="advancedOpen = !advancedOpen">
-            Advanced options
-            <span>{{ advancedOpen ? '▴' : '▾' }}</span>
-          </button>
-          <div v-if="advancedOpen">
-            <label class="campaign-brevo__field">
-              <span>Don’t send to</span>
-              <select disabled>
-                <option>Select list(s), segment(s) or individual contacts</option>
-              </select>
-            </label>
-            <p class="campaign-brevo__hint">Exclude lists or segments after you save this campaign.</p>
-          </div>
-          <div class="campaign-brevo__recip-foot">
-            <strong>{{ recipientCountLabel }}</strong>
-            <p>Send to as many recipients as you wish, within your plan limits.</p>
-          </div>
-        </div>
-        <footer class="campaign-brevo-modal__foot">
-          <button type="button" class="campaign-brevo__link" @click="closePanel">Cancel</button>
-          <button type="button" class="campaign-brevo__btn campaign-brevo__btn--dark" @click="saveRecipients">Save</button>
-        </footer>
-      </div>
-    </div>
-
-    <!-- Subject modal -->
-    <div v-if="panel === 'subject'" class="campaign-brevo-modal" role="dialog" aria-modal="true" aria-labelledby="subj-title">
-      <button type="button" class="campaign-brevo-modal__backdrop" aria-label="Close" @click="closePanel" />
-      <div class="campaign-brevo-modal__card is-wide">
-        <header class="campaign-brevo-modal__head">
-          <div class="campaign-brevo-modal__head-main">
-            <span class="campaign-brevo__check" :class="{ 'is-done': subjectDone }" aria-hidden="true">
-              <svg v-if="subjectDone" width="12" height="12" viewBox="0 0 12 12" fill="none">
-                <path d="M2.5 6.2l2.4 2.4 4.6-5" stroke="#fff" stroke-width="1.8" stroke-linecap="round"
-                  stroke-linejoin="round" />
-              </svg>
-            </span>
-            <div>
-              <h2 id="subj-title">Subject</h2>
-              <p>Add a subject line for this campaign.</p>
-            </div>
-          </div>
-          <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
-        </header>
-        <div class="campaign-brevo-modal__body campaign-brevo-modal__split">
-          <div>
-            <label class="campaign-brevo__field">
-              <span>Subject line *</span>
-              <div class="campaign-brevo__textarea-wrap">
-                <textarea
-                  ref="subjectBox"
-                  v-model="draft.subject"
-                  rows="3"
-                  maxlength="5000"
-                  :disabled="!canEdit"
-                  required
-                />
-                <div class="campaign-brevo__toolbox">
-                  <button type="button" aria-label="Insert emoji" @click="insertAt('subject', '🎉')">☺</button>
-                  <button type="button" aria-label="Insert personalization" @click="insertName('subject')">{}</button>
-                  <button type="button" aria-label="Suggest subject" @click="suggestSubject">✦</button>
-                </div>
-              </div>
-            </label>
-            <label class="campaign-brevo__field">
-              <span>Preview text</span>
-              <div class="campaign-brevo__textarea-wrap">
-                <textarea v-model="draft.previewText" rows="3" maxlength="500" :disabled="!canEdit" />
-                <div class="campaign-brevo__toolbox">
-                  <button type="button" aria-label="Insert emoji" @click="insertAt('previewText', '✨')">☺</button>
-                  <button type="button" aria-label="Insert personalization" @click="insertName('previewText')">{}</button>
-                </div>
-              </div>
-            </label>
-          </div>
-          <div class="campaign-brevo__phone" aria-hidden="true">
-            <div class="campaign-brevo__phone-screen">
-              <div class="campaign-brevo__inbox-row is-active">
-                <strong>{{ senderName || 'Sender' }}</strong>
-                <span>17:45</span>
-                <em>{{ draft.subject || 'Message subject...' }}</em>
-                <small>{{ draft.previewText || 'Your preview text' }}</small>
-              </div>
-              <div class="campaign-brevo__inbox-row" />
-              <div class="campaign-brevo__inbox-row" />
-            </div>
-            <p>Actual email preview may vary depending on the email client.</p>
-          </div>
-        </div>
-        <footer class="campaign-brevo-modal__foot">
-          <button type="button" class="campaign-brevo__link" @click="closePanel">Cancel</button>
-          <button type="button" class="campaign-brevo__btn campaign-brevo__btn--dark" @click="saveSubject">Save</button>
-        </footer>
-      </div>
-    </div>
-
-    <!-- Additional settings modal -->
-    <div v-if="panel === 'settings'" class="campaign-brevo-modal" role="dialog" aria-modal="true" aria-labelledby="set-title">
-      <button type="button" class="campaign-brevo-modal__backdrop" aria-label="Close" @click="closePanel" />
-      <div class="campaign-brevo-modal__card">
-        <header class="campaign-brevo-modal__head">
-          <h2 id="set-title">Additional settings</h2>
-          <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
-        </header>
-        <div class="campaign-brevo-modal__body">
-          <h3 class="campaign-brevo__section-label">Personalization</h3>
-          <label class="campaign-brevo__toggle">
-            <span>Personalize the ‘Send To’ field</span>
-            <input v-model="draft.personalizeTo" type="checkbox" :disabled="!canEdit" />
-          </label>
-
-          <h3 class="campaign-brevo__section-label">Sending and Tracking</h3>
-          <label class="campaign-brevo__toggle">
-            <span>Use a different Reply-to address</span>
-            <input v-model="draft.useReplyTo" type="checkbox" :disabled="!canEdit" />
-          </label>
-          <label v-if="draft.useReplyTo" class="campaign-brevo__field">
-            <span class="is-sr-only">Reply-to email</span>
-            <input v-model="draft.replyTo" type="email" :disabled="!canEdit" placeholder="reply@example.com" />
-          </label>
-          <label class="campaign-brevo__toggle">
-            <span>Activate UTM tracking</span>
-            <input v-model="draft.utmOn" type="checkbox" :disabled="!canEdit" />
-          </label>
-          <div v-if="draft.utmOn" class="campaign-brevo__utm">
-            <input v-model="draft.utmSource" :disabled="!canEdit" placeholder="utm_source" />
-            <input v-model="draft.utmMedium" :disabled="!canEdit" placeholder="utm_medium" />
-            <input v-model="draft.utmCampaign" :disabled="!canEdit" placeholder="utm_campaign" />
-          </div>
-          <label class="campaign-brevo__toggle">
-            <span>Add an attachment</span>
-            <input v-model="draft.attachOn" type="checkbox" :disabled="!canEdit" />
-          </label>
-          <div v-if="draft.attachOn" class="campaign-brevo__attach">
-            <button type="button" class="campaign-brevo__btn campaign-brevo__btn--ghost" @click="$emit('attach')">
-              Choose files
-            </button>
-            <span v-if="form.media && form.media.length">{{ form.media.length }} attached</span>
-          </div>
-          <label class="campaign-brevo__toggle">
-            <span>Add a tag</span>
-            <input v-model="draft.tagsOn" type="checkbox" :disabled="!canEdit" />
-          </label>
-          <div v-if="draft.tagsOn">
-            <b-taginput v-model="draft.tags" :disabled="!canEdit" ellipsis icon="tag-outline" placeholder="Tags" />
-          </div>
-        </div>
-        <footer class="campaign-brevo-modal__foot">
-          <button type="button" class="campaign-brevo__link" @click="closePanel">Cancel</button>
-          <button type="button" class="campaign-brevo__btn campaign-brevo__btn--dark" @click="saveSettings">Save</button>
-        </footer>
-      </div>
-    </div>
 
     <!-- Schedule modal -->
     <div v-if="panel === 'schedule'" class="campaign-brevo-modal" role="dialog" aria-modal="true" aria-labelledby="sched-title">
@@ -661,8 +675,20 @@ export default Vue.extend({
       return `${lists} list${lists === 1 ? '' : 's'} selected`;
     },
 
+    draftRecipientCount() {
+      return (this.draft.lists || []).reduce((sum, l) => sum + (Number(l.subscriberCount) || 0), 0);
+    },
+
+    draftRecipientCountLabel() {
+      const n = this.$utils.formatNumber(this.draftRecipientCount);
+      const lists = (this.draft.lists || []).length;
+      if (!lists) return '0 recipients';
+      if (this.draftRecipientCount > 0) return `${n} recipients`;
+      return `${lists} list${lists === 1 ? '' : 's'} selected`;
+    },
+
     recipientsSummary() {
-      if (!this.recipientsDone) return 'Select who should receive this campaign';
+      if (!this.recipientsDone) return 'The people who receive your campaign';
       return this.recipientCountLabel;
     },
 
@@ -671,8 +697,8 @@ export default Vue.extend({
     },
 
     subjectSummary() {
-      if (!this.subjectDone) return 'Add a subject line for this campaign';
-      return `Subject: ${this.form.subject}`;
+      if (!this.subjectDone) return 'Add a subject line for this campaign.';
+      return this.form.subject;
     },
 
     designDone() {

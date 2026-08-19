@@ -1,22 +1,34 @@
 -- custom tracking domains
 -- name: get-tracking-domains
-SELECT id, user_id, domain, status, dns_record_type, dns_record_name, dns_record_value,
+SELECT id, user_id, domain, base_domain, status, dns_record_type, dns_record_name, dns_record_value,
        verified_at, last_error, created_at, updated_at
 FROM custom_tracking_domains
 WHERE user_id = $1
 ORDER BY created_at DESC;
 
 -- name: get-tracking-domain
-SELECT id, user_id, domain, status, dns_record_type, dns_record_name, dns_record_value,
+SELECT id, user_id, domain, base_domain, status, dns_record_type, dns_record_name, dns_record_value,
        verified_at, last_error, created_at, updated_at
 FROM custom_tracking_domains
 WHERE id = $1 AND user_id = $2;
 
 -- name: create-tracking-domain
 INSERT INTO custom_tracking_domains
-    (user_id, domain, status, dns_record_type, dns_record_name, dns_record_value)
-VALUES ($1, $2, 'pending', 'CNAME', $3, $4)
-RETURNING id, user_id, domain, status, dns_record_type, dns_record_name, dns_record_value,
+    (user_id, domain, base_domain, status, dns_record_type, dns_record_name, dns_record_value)
+VALUES ($1, $2, $3, 'pending', 'CNAME', $4, $5)
+RETURNING id, user_id, domain, base_domain, status, dns_record_type, dns_record_name, dns_record_value,
+          verified_at, last_error, created_at, updated_at;
+
+-- name: update-tracking-domain-host
+UPDATE custom_tracking_domains SET
+    domain = $3,
+    dns_record_name = $4,
+    status = 'pending',
+    verified_at = NULL,
+    last_error = '',
+    updated_at = NOW()
+WHERE id = $1 AND user_id = $2 AND status IN ('pending', 'failed')
+RETURNING id, user_id, domain, base_domain, status, dns_record_type, dns_record_name, dns_record_value,
           verified_at, last_error, created_at, updated_at;
 
 -- name: update-tracking-domain-verification
@@ -27,7 +39,7 @@ UPDATE custom_tracking_domains SET
     dns_record_value = COALESCE(NULLIF($5, ''), dns_record_value),
     updated_at = NOW()
 WHERE id = $1 AND user_id = $2
-RETURNING id, user_id, domain, status, dns_record_type, dns_record_name, dns_record_value,
+RETURNING id, user_id, domain, base_domain, status, dns_record_type, dns_record_name, dns_record_value,
           verified_at, last_error, created_at, updated_at;
 
 -- name: delete-tracking-domain

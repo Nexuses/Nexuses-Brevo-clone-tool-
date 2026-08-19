@@ -141,3 +141,27 @@ func TestExpectedCNAMETarget(t *testing.T) {
 		t.Fatalf("fallback got %q", got)
 	}
 }
+
+func TestDNSHostLabel(t *testing.T) {
+	tests := []struct {
+		host, base, want string
+	}{
+		{"emailtrack.eguardian.in", "eguardian.in", "emailtrack"},
+		{"click.example.com", "example.com", "click"},
+		{"example.com", "example.com", "@"},
+	}
+	for _, tt := range tests {
+		if got := DNSHostLabel(tt.host, tt.base); got != tt.want {
+			t.Fatalf("DNSHostLabel(%q, %q)=%q, want %q", tt.host, tt.base, got, tt.want)
+		}
+	}
+}
+
+func TestIsUnderBase(t *testing.T) {
+	if !IsUnderBase("emailtrack.eguardian.in", "eguardian.in") {
+		t.Fatal("subdomain should be under base")
+	}
+	if IsUnderBase("other.com", "eguardian.in") {
+		t.Fatal("unrelated domain should not match")
+	}
+}

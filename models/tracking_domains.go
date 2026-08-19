@@ -15,6 +15,7 @@ type TrackingDomain struct {
 
 	UserID         int       `db:"user_id" json:"user_id"`
 	Domain         string    `db:"domain" json:"domain"`
+	BaseDomain     string    `db:"base_domain" json:"base_domain"`
 	Status         string    `db:"status" json:"status"`
 	DNSRecordType  string    `db:"dns_record_type" json:"dns_record_type"`
 	DNSRecordName  string    `db:"dns_record_name" json:"dns_record_name"`

@@ -159,6 +159,36 @@ func HostFromURL(raw string) string {
 	return CanonicalHost(s)
 }
 
+// IsUnderBase reports whether host is base or a subdomain of base.
+func IsUnderBase(host, base string) bool {
+	host = CanonicalHost(host)
+	base = CanonicalHost(base)
+	if host == "" || base == "" {
+		return false
+	}
+	return host == base || strings.HasSuffix(host, "."+base)
+}
+
+// DNSHostLabel returns the CNAME record name relative to baseDomain.
+func DNSHostLabel(trackingHost, baseDomain string) string {
+	host := CanonicalHost(trackingHost)
+	base := CanonicalHost(baseDomain)
+	if host == "" {
+		return ""
+	}
+	if host == base {
+		return "@"
+	}
+	if strings.HasSuffix(host, "."+base) {
+		return strings.TrimSuffix(host, "."+base)
+	}
+	parts := strings.Split(host, ".")
+	if len(parts) > 2 {
+		return parts[0]
+	}
+	return host
+}
+
 // ExpectedCNAMETarget returns the hostname CTD CNAMEs must point to.
 // Empty trackingURL falls back to rootURL.
 func ExpectedCNAMETarget(trackingURL, rootURL string) string {
