@@ -95,6 +95,16 @@
                 Edit
               </button>
               <button
+                v-if="canManage"
+                type="button"
+                class="sdd-icon-btn is-danger"
+                data-cy="btn-delete-sender"
+                aria-label="Remove sender"
+                @click="onDeleteSender(s)"
+              >
+                <b-icon icon="trash-can-outline" />
+              </button>
+              <button
                 type="button"
                 class="sdd-icon-btn"
                 :aria-expanded="expandedSender === s.email ? 'true' : 'false'"
@@ -423,6 +433,19 @@ export default Vue.extend({
         ...this.trackingHostDraft,
         [d.id]: this.trackingHostDraft[d.id] || '',
       };
+    },
+
+    onDeleteSender(s) {
+      this.$utils.confirm(
+        `Remove sender ${this.senderLabel(s)}? Campaigns will have no default From address until a new sender is added.`,
+        () => {
+          this.$api.updateAppFromEmail('').then(() => {
+            if (this.expandedSender === s.email) this.expandedSender = null;
+            this.loadSender();
+            this.$utils.toast(`Sender ${s.email} removed.`);
+          });
+        },
+      );
     },
 
     toggleSender(email) {
