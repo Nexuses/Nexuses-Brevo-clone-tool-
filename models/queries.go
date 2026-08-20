@@ -99,6 +99,8 @@ type Queries struct {
 	GetOneCampaignSubscriber *sqlx.Stmt `query:"get-one-campaign-subscriber"`
 	UpdateCampaign           *sqlx.Stmt `query:"update-campaign"`
 	UpdateCampaignStatus     *sqlx.Stmt `query:"update-campaign-status"`
+	SetCampaignTrackingDomainIfEmpty *sqlx.Stmt `query:"set-campaign-tracking-domain-if-empty"`
+	AttachTrackingDomainToPendingCampaigns *sqlx.Stmt `query:"attach-tracking-domain-to-pending-campaigns"`
 	UpdateCampaignCounts     *sqlx.Stmt `query:"update-campaign-counts"`
 	UpdateCampaignArchive    *sqlx.Stmt `query:"update-campaign-archive"`
 	RegisterCampaignView     *sqlx.Stmt `query:"register-campaign-view"`

@@ -523,6 +523,20 @@ UPDATE campaigns SET
     updated_at=NOW()
 WHERE id = $1;
 
+-- name: set-campaign-tracking-domain-if-empty
+UPDATE campaigns SET
+    tracking_domain_id = $2,
+    updated_at = NOW()
+WHERE id = $1
+  AND tracking_domain_id IS NULL;
+
+-- name: attach-tracking-domain-to-pending-campaigns
+UPDATE campaigns SET
+    tracking_domain_id = $1,
+    updated_at = NOW()
+WHERE tracking_domain_id IS NULL
+  AND status = ANY('{draft,scheduled,paused}'::campaign_status[]);
+
 -- name: update-campaign-archive
 UPDATE campaigns SET
     archive=$2,

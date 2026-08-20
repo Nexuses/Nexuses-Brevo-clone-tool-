@@ -315,6 +315,33 @@ func (c *Core) UpdateCampaignStatus(id int, status string) (models.Campaign, err
 	return cm, nil
 }
 
+// SetCampaignTrackingDomainIfEmpty binds a verified CTD when the campaign has none.
+func (c *Core) SetCampaignTrackingDomainIfEmpty(campaignID, trackingDomainID int) error {
+	if campaignID <= 0 || trackingDomainID <= 0 {
+		return nil
+	}
+	if _, err := c.q.SetCampaignTrackingDomainIfEmpty.Exec(campaignID, trackingDomainID); err != nil {
+		c.log.Printf("error setting campaign tracking domain: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError,
+			c.i18n.Ts("globals.messages.errorUpdating", "name", "{globals.terms.campaign}", "error", pqErrMsg(err)))
+	}
+	return nil
+}
+
+// AttachTrackingDomainToPendingCampaigns backfills draft/scheduled/paused campaigns
+// that do not yet have a tracking domain (so newly verified CTDs apply before send).
+func (c *Core) AttachTrackingDomainToPendingCampaigns(trackingDomainID int) error {
+	if trackingDomainID <= 0 {
+		return nil
+	}
+	if _, err := c.q.AttachTrackingDomainToPendingCampaigns.Exec(trackingDomainID); err != nil {
+		c.log.Printf("error attaching tracking domain to pending campaigns: %v", err)
+		return echo.NewHTTPError(http.StatusInternalServerError,
+			c.i18n.Ts("globals.messages.errorUpdating", "name", "{globals.terms.campaign}", "error", pqErrMsg(err)))
+	}
+	return nil
+}
+
 // UpdateCampaignArchive updates a campaign's archive properties.
 func (c *Core) UpdateCampaignArchive(id int, enabled bool, tplID int, meta models.JSON, archiveSlug string) error {
 	if _, err := c.q.UpdateCampaignArchive.Exec(id, enabled, archiveSlug, tplID, meta); err != nil {

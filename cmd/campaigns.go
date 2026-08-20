@@ -377,6 +377,19 @@ func (a *App) UpdateCampaignStatus(c echo.Context) error {
 		return err
 	}
 
+	// Bind the latest verified custom tracking domain before send/schedule so
+	// click and open URLs use the branded host (not only campaigns created after verify).
+	if req.Status == models.CampaignStatusRunning || req.Status == models.CampaignStatusScheduled {
+		user := auth.GetUser(c)
+		if tdID, err := a.core.GetLatestVerifiedTrackingDomainID(user.ID); err != nil {
+			return err
+		} else if tdID > 0 {
+			if err := a.core.SetCampaignTrackingDomainIfEmpty(id, tdID); err != nil {
+				return err
+			}
+		}
+	}
+
 	// Update the campaign status in the DB.
 	out, err := a.core.UpdateCampaignStatus(id, req.Status)
 	if err != nil {

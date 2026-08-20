@@ -133,6 +133,12 @@ func (a *App) VerifyTrackingDomain(c echo.Context) error {
 		return err
 	}
 
+	// Newly verified CTDs should apply to draft/scheduled campaigns that
+	// were created before authentication completed.
+	if res.Status == trackingdomain.StatusVerified {
+		_ = a.core.AttachTrackingDomainToPendingCampaigns(out.ID)
+	}
+
 	return c.JSON(http.StatusOK, okResp{trackingDomainVerifyResp{
 		TrackingDomain: out,
 		Verification:   res,
