@@ -470,14 +470,9 @@
       </div>
 
       <div class="campaign-report__section-head campaign-report__section-head--table">
-        <h2 class="campaign-report__inline-title">
-          Opens breakdown by
-          <select v-model="breakdownBy" class="campaign-report__select" aria-label="Breakdown">
-            <option value="lists">lists</option>
-          </select>
-        </h2>
+        <h2 class="campaign-report__inline-title">Who opened</h2>
         <div class="campaign-report__table-actions">
-          <span class="hint">Bot opens excluded.</span>
+          <span class="hint">Email address and open time for each contact.</span>
           <a
             v-if="canExport"
             :href="`/api/campaigns/${campaign.id}/report`"
@@ -490,37 +485,13 @@
         </div>
       </div>
 
-      <div class="campaign-report__table-wrap">
-        <table class="campaign-report__table">
-          <thead>
-            <tr>
-              <th>List name</th>
-              <th class="is-num">Open rate</th>
-              <th class="is-num">Total opens</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="audienceLists.length === 0">
-              <td colspan="3" class="is-empty">No lists attached to this campaign.</td>
-            </tr>
-            <tr v-for="l in audienceLists" :key="`open-${l.id}`">
-              <td>
-                <div class="cell-name">{{ l.name }}</div>
-                <div class="cell-meta">
-                  #{{ l.id }} · {{ n(l.subscriberCount || 0) }} contacts - {{ listShare(l) }} of all
-                </div>
-              </td>
-              <td class="is-num">
-                <strong>{{ openRate }}</strong>
-                <span class="sub">{{ n(listStat(l, uniqueOpens)) }} opens</span>
-              </td>
-              <td class="is-num">
-                <strong>{{ totalOpenRate }}</strong>
-                <span class="sub">{{ n(listStat(l, totalOpens)) }} opens</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="campaign-report__records">
+        <analytics-records-table
+          typ="views"
+          :campaigns="[campaign]"
+          :from="recordsFrom"
+          :to="recordsTo"
+        />
       </div>
     </div>
 
@@ -580,14 +551,9 @@
       </div>
 
       <div class="campaign-report__section-head campaign-report__section-head--table">
-        <h2 class="campaign-report__inline-title">
-          Clicks breakdown by
-          <select v-model="breakdownBy" class="campaign-report__select" aria-label="Breakdown">
-            <option value="lists">lists</option>
-          </select>
-        </h2>
+        <h2 class="campaign-report__inline-title">Who clicked</h2>
         <div class="campaign-report__table-actions">
-          <span class="hint">Bot clicks are excluded</span>
+          <span class="hint">Email address, clicked link, and click time for each contact.</span>
           <a
             v-if="canExport"
             :href="`/api/campaigns/${campaign.id}/report`"
@@ -600,37 +566,13 @@
         </div>
       </div>
 
-      <div class="campaign-report__table-wrap">
-        <table class="campaign-report__table">
-          <thead>
-            <tr>
-              <th>List name</th>
-              <th class="is-num">Clicks percentage</th>
-              <th class="is-num">Total clicks</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr v-if="audienceLists.length === 0">
-              <td colspan="3" class="is-empty">No lists attached to this campaign.</td>
-            </tr>
-            <tr v-for="l in audienceLists" :key="`click-${l.id}`">
-              <td>
-                <div class="cell-name">{{ l.name }}</div>
-                <div class="cell-meta">
-                  #{{ l.id }} · {{ n(l.subscriberCount || 0) }} contacts - {{ listShare(l) }} of all
-                </div>
-              </td>
-              <td class="is-num">
-                <strong>{{ clickRate }}</strong>
-                <span class="sub">{{ n(listStat(l, uniqueClicks)) }} clicks</span>
-              </td>
-              <td class="is-num">
-                <strong>{{ totalClickRate }}</strong>
-                <span class="sub">{{ n(listStat(l, totalClicks)) }} clicks</span>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+      <div class="campaign-report__records">
+        <analytics-records-table
+          typ="clicks"
+          :campaigns="[campaign]"
+          :from="recordsFrom"
+          :to="recordsTo"
+        />
       </div>
     </div>
 
@@ -812,9 +754,14 @@
 import dayjs from 'dayjs';
 import Vue from 'vue';
 import { mapState } from 'vuex';
+import AnalyticsRecordsTable from './AnalyticsRecordsTable.vue';
 
 export default Vue.extend({
   name: 'CampaignReport',
+
+  components: {
+    AnalyticsRecordsTable,
+  },
 
   props: {
     campaign: { type: Object, required: true },
@@ -1006,6 +953,19 @@ export default Vue.extend({
         return { name: 'subscribers_list', params: { listID: first.id } };
       }
       return { name: 'subscribers' };
+    },
+
+    // Date range for open/click detail records (campaign start → now).
+    recordsFrom() {
+      const raw = this.campaign.startedAt
+        || this.campaign.sendAt
+        || this.campaign.createdAt;
+      if (raw) return dayjs(raw).toDate();
+      return dayjs().subtract(1, 'year').toDate();
+    },
+
+    recordsTo() {
+      return dayjs().add(1, 'day').toDate();
     },
   },
 

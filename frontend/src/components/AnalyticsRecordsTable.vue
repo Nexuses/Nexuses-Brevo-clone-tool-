@@ -20,10 +20,11 @@
         </template>
         <span v-else class="has-text-grey-light">{{ $t('analytics.anonymous') }}</span>
       </b-table-column>
-      <b-table-column v-if="typ === 'clicks'" field="url" :label="$t('analytics.links')" v-slot="props">
+      <b-table-column v-if="typ === 'clicks'" field="url" label="Link clicked" v-slot="props">
         <a v-if="props.row.url" :href="props.row.url" target="_blank" rel="noopener noreferrer">
           {{ truncateUrl(props.row.url) }}
         </a>
+        <span v-else class="has-text-grey-light">—</span>
       </b-table-column>
       <b-table-column field="createdAt" :label="$t('globals.fields.createdAt')" v-slot="props">
         {{ $utils.duration(new Date(), props.row.createdAt, true) }}
