@@ -370,7 +370,11 @@ func (m *Manager) TemplateFuncs(c *models.Campaign) template.FuncMap {
 				subUUID = dummyUUID
 			}
 
-			base := m.trackingBase(msg.Campaign)
+			// Open pixels use the platform host (app.tracking_url / root_url), not the
+			// custom tracking domain. CTD hostnames often lack a matching TLS cert;
+			// Gmail/Yahoo image proxies refuse invalid HTTPS and opens stay at zero.
+			// Click links still use the branded CTD via trackingBase().
+			base := trackingdomain.ResolveTrackingBase("", m.cfg.TrackingURL, m.cfg.RootURL)
 			return template.HTML(fmt.Sprintf(`<img src="%s" alt="" />`,
 				trackingdomain.ViewTrackPath(base, msg.Campaign.UUID, subUUID)))
 		},
