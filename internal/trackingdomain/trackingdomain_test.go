@@ -5,6 +5,7 @@ import (
 	"errors"
 	"net"
 	"testing"
+	"time"
 )
 
 func TestNormalizeDomain(t *testing.T) {
@@ -76,6 +77,25 @@ func TestVerifyCNAME(t *testing.T) {
 	same := VerifyCNAME(ctx, fakeResolver{cname: "clicks.brand.com."}, "clicks.brand.com", "track.platform.example")
 	if same.Status != StatusPending {
 		t.Fatalf("pending self: %+v", same)
+	}
+}
+
+func TestQueryCNAMEPublic(t *testing.T) {
+	if testing.Short() {
+		t.Skip("network")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), 8*time.Second)
+	defer cancel()
+
+	r := &NetResolver{Timeout: 5 * time.Second}
+	// Well-known public CNAME (www.github.com often CNAMEs); use a host we control in docs...
+	// Skip if network blocked; this is a smoke check for packing/unpacking.
+	cname, err := r.LookupCNAME(ctx, "www.github.com")
+	if err != nil {
+		t.Skipf("network/DNS unavailable: %v", err)
+	}
+	if CanonicalHost(cname) == "" || CanonicalHost(cname) == "www.github.com" {
+		t.Fatalf("expected real CNAME target for www.github.com, got %q", cname)
 	}
 }
 
