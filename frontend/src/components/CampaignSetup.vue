@@ -493,28 +493,38 @@
           <h2 id="sched-title">Schedule</h2>
           <button type="button" class="campaign-brevo__icon-btn" aria-label="Close" @click="closePanel">×</button>
         </header>
-        <div class="campaign-brevo-modal__body">
+        <div class="campaign-brevo-modal__body campaign-brevo-modal__body--schedule">
           <p v-if="!canScheduleSend" class="campaign-brevo__hint">
             Complete sender, recipients, and subject before scheduling.
           </p>
-          <label class="campaign-brevo__radio">
-            <input v-model="draft.sendNow" type="radio" :value="true" />
-            Send now
-          </label>
-          <label class="campaign-brevo__radio">
-            <input v-model="draft.sendNow" type="radio" :value="false" />
-            Schedule for later
-          </label>
-          <b-datetimepicker
-            v-if="!draft.sendNow"
-            v-model="draft.sendAt"
-            required
-            editable
-            mobile-native
-            icon="calendar-clock"
-            :timepicker="{ hourFormat: '24' }"
-            placeholder="Date and time"
-          />
+          <div class="campaign-brevo__schedule-options">
+            <label class="campaign-brevo__radio-card" :class="{ 'is-selected': draft.sendNow === true }">
+              <input v-model="draft.sendNow" type="radio" :value="true" />
+              <span class="campaign-brevo__radio-card-text">
+                <strong>Send now</strong>
+                <em>Start sending this campaign immediately</em>
+              </span>
+            </label>
+            <label class="campaign-brevo__radio-card" :class="{ 'is-selected': draft.sendNow === false }">
+              <input v-model="draft.sendNow" type="radio" :value="false" />
+              <span class="campaign-brevo__radio-card-text">
+                <strong>Schedule for later</strong>
+                <em>Pick a date and time to send</em>
+              </span>
+            </label>
+          </div>
+          <div v-if="!draft.sendNow" class="campaign-brevo__schedule-when">
+            <span class="campaign-brevo__field-label">Send at</span>
+            <b-datetimepicker
+              v-model="draft.sendAt"
+              required
+              editable
+              mobile-native
+              icon="calendar-clock"
+              :timepicker="{ hourFormat: '24' }"
+              placeholder="Date and time"
+            />
+          </div>
         </div>
         <footer class="campaign-brevo-modal__foot">
           <button type="button" class="campaign-brevo__link" @click="closePanel">Cancel</button>
